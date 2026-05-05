@@ -18,9 +18,6 @@ type Props = {
   linkCaptureUrl: string;
   linkCapture: MobileWorkflowLinkCapture | null;
   coreValue: string;
-  clarifyIntent: string;
-  clarifyAudience: string;
-  clarifyTone: string;
   structures: MobileWorkflowStructure[];
   selectedStructureId: string | null;
   draftContent: string;
@@ -43,9 +40,6 @@ type Props = {
   onSaveVoiceCapture: () => void;
   onDiscardVoiceCapture: () => void;
   onCopyVoiceTranscript: () => void;
-  onClarifyIntentChange: (value: string) => void;
-  onClarifyAudienceChange: (value: string) => void;
-  onClarifyToneChange: (value: string) => void;
   onCreateStructures: () => void;
   onSelectStructure: (id: string) => void;
   onCopySelectedStructureOutline: () => void;
@@ -86,9 +80,6 @@ export function MobileWorkflowPanel({
   linkCaptureUrl,
   linkCapture,
   coreValue,
-  clarifyIntent,
-  clarifyAudience,
-  clarifyTone,
   structures,
   selectedStructureId,
   draftContent,
@@ -111,9 +102,6 @@ export function MobileWorkflowPanel({
   onSaveVoiceCapture,
   onDiscardVoiceCapture,
   onCopyVoiceTranscript,
-  onClarifyIntentChange,
-  onClarifyAudienceChange,
-  onClarifyToneChange,
   onCreateStructures,
   onSelectStructure,
   onCopySelectedStructureOutline,

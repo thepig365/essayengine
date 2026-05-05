@@ -6,28 +6,29 @@ import { UserGuide } from "@/components/UserGuide";
 import {
   CONSOLE_VIEW_STORAGE_KEY,
   DESKTOP_MIN,
-  type ConsoleViewPreference,
+  type ViewMode,
 } from "@/essay-engine/breakpoints";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { EngineResponse } from "@/types/engine";
 
 export default function HomePage() {
   const [result, setResult] = useState<EngineResponse | null>(null);
-  const [consoleViewPreference, setConsoleViewPreference] = useState<ConsoleViewPreference>("auto");
+  /** User-chosen shell on wide screens. Ignored when viewport is narrow (always mobile shell). */
+  const [viewMode, setViewMode] = useState<ViewMode>("auto");
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CONSOLE_VIEW_STORAGE_KEY);
       if (raw === "desktop" || raw === "mobile" || raw === "auto") {
-        setConsoleViewPreference(raw);
+        setViewMode(raw);
       }
     } catch {
       /* ignore */
     }
   }, []);
 
-  const setConsolePreference = useCallback((next: ConsoleViewPreference) => {
-    setConsoleViewPreference(next);
+  const persistViewMode = useCallback((next: ViewMode) => {
+    setViewMode(next);
     try {
       localStorage.setItem(CONSOLE_VIEW_STORAGE_KEY, next);
     } catch {
@@ -36,8 +37,13 @@ export default function HomePage() {
   }, []);
 
   const viewportIsDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
+  /**
+   * Same engine state; only shell changes.
+   * - Narrow: always mobile layout (matches `viewMode === "auto" && viewport < 1024` when auto).
+   * - Wide: `viewMode === "mobile"` forces mobile shell; `auto` and `desktop` use desktop console.
+   */
   const effectiveIsMobileLayout =
-    !viewportIsDesktop || (viewportIsDesktop && consoleViewPreference === "mobile");
+    !viewportIsDesktop || (viewportIsDesktop && viewMode === "mobile");
 
   return (
     <main className="page">
@@ -52,7 +58,7 @@ export default function HomePage() {
             <button
               type="button"
               className="console-view-toggle"
-              onClick={() => setConsolePreference(effectiveIsMobileLayout ? "desktop" : "mobile")}
+              onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
             >
               {effectiveIsMobileLayout ? "Desktop Console View" : "Mobile Friendly View"}
             </button>
@@ -61,7 +67,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <EngineForm result={result} onResult={setResult} consoleViewPreference={consoleViewPreference} />
+      <EngineForm result={result} onResult={setResult} viewMode={viewMode} />
 
       <style jsx>{`
         .page {

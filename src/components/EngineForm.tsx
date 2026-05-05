@@ -60,7 +60,7 @@ import {
   YOUTUBE_RE,
 } from "@/essay-engine/constants";
 import { EssayEngineProvider } from "@/essay-engine/EssayEngineContext";
-import { DESKTOP_MIN, type ConsoleViewPreference } from "@/essay-engine/breakpoints";
+import { DESKTOP_MIN, type ViewMode } from "@/essay-engine/breakpoints";
 import { MOBILE_WORKFLOW_STEPS, resolveMobileWorkflowPanelMode } from "@/essay-engine/mobileWorkflowSteps";
 type TimestampChapter = {
   id: string;
@@ -347,10 +347,10 @@ function countWords(text: string): number {
 type Props = {
   result: EngineResponse | null;
   onResult: (result: EngineResponse | null) => void;
-  consoleViewPreference: ConsoleViewPreference;
+  viewMode: ViewMode;
 };
 
-export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
+export function EngineForm({ result, onResult, viewMode }: Props) {
   const [task, setTask] = useState<EngineTask>("translate");
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"source" | "draft" | "result">("draft");
@@ -584,6 +584,9 @@ export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
     sourceLanguage,
     targetLanguage,
     tone,
+    taskLabel: activeTask.label,
+    instructionPreset,
+    customInstruction,
     providers,
     currentSourceVersionId,
     essayDraftContent,
@@ -666,7 +669,7 @@ export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
 
   const viewportIsDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
   const effectiveIsMobileLayout =
-    !viewportIsDesktop || (viewportIsDesktop && consoleViewPreference === "mobile");
+    !viewportIsDesktop || (viewportIsDesktop && viewMode === "mobile");
   const effectiveIsDesktopConsole = !effectiveIsMobileLayout;
 
   const mobileWorkflowStepId = MOBILE_WORKFLOW_STEPS[mobileWorkflowStepIndex]?.id;
@@ -2538,9 +2541,6 @@ export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
           linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
           linkCapture={mobileWorkflow.linkCapture}
           coreValue={mobileWorkflow.coreValue}
-          clarifyIntent={mobileWorkflow.clarifyIntent}
-          clarifyAudience={mobileWorkflow.clarifyAudience}
-          clarifyTone={mobileWorkflow.clarifyTone}
           structures={mobileWorkflow.workflowStructures}
           selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
           draftContent={essayDraftContent}
@@ -2561,9 +2561,6 @@ export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
           onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
           onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
           onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
-          onClarifyIntentChange={mobileWorkflow.setClarifyIntent}
-          onClarifyAudienceChange={mobileWorkflow.setClarifyAudience}
-          onClarifyToneChange={mobileWorkflow.setClarifyTone}
           onCreateStructures={mobileWorkflow.createWorkflowStructures}
           onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
           onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}

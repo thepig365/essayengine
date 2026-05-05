@@ -31,6 +31,10 @@ type UseMobileWorkflowParams = {
   sourceLanguage: string;
   targetLanguage: string;
   tone: string;
+  /** Same surface as desktop: active transformation label (e.g. Humanize English). */
+  taskLabel: string;
+  instructionPreset: string;
+  customInstruction: string;
   providers: LLMProvider[];
   currentSourceVersionId: string | null;
   essayDraftContent: string;
@@ -91,6 +95,17 @@ function compactText(text: string): string {
 
 function countWords(text: string): number {
   return text.trim().match(/[\p{L}\p{N}'-]+/gu)?.length ?? 0;
+}
+
+/** Aligns prompts with desktop engine controls (task + instruction preset + custom instruction + tone). */
+function engineControlBriefLines(taskLabel: string, instructionPreset: string, customInstruction: string, tone: string) {
+  const instructionLine =
+    [instructionPreset.trim(), customInstruction.trim()].filter(Boolean).join(". ") || "not specified";
+  return {
+    taskLine: taskLabel.trim() || "not specified",
+    instructionLine,
+    toneLine: tone.trim() || "not specified",
+  };
 }
 
 function draftParagraphs(text: string): string[] {
@@ -522,6 +537,9 @@ export function useMobileWorkflow({
   sourceLanguage,
   targetLanguage,
   tone,
+  taskLabel,
+  instructionPreset,
+  customInstruction,
   providers,
   currentSourceVersionId,
   essayDraftContent,
@@ -556,6 +574,11 @@ export function useMobileWorkflow({
   const [linkCapture, setLinkCapture] = useState<MobileWorkflowLinkCapture | null>(null);
   const voiceRecorder = useVoiceCapture();
 
+  const engineBrief = useMemo(
+    () => engineControlBriefLines(taskLabel, instructionPreset, customInstruction, tone),
+    [taskLabel, instructionPreset, customInstruction, tone],
+  );
+
   const selectedWorkflowStructure = useMemo(
     () => workflowStructures.find((structure) => structure.id === selectedWorkflowStructureId) ?? null,
     [workflowStructures, selectedWorkflowStructureId],
@@ -564,15 +587,15 @@ export function useMobileWorkflow({
   const workflowInstruction = useMemo(() => {
     if (!selectedWorkflowStructure) return "";
     return [
-      "Use this mobile workflow brief when drafting or revising.",
+      "Use this brief when drafting or revising (same controls as desktop console).",
       `Core value: ${coreValue || captureIdea}`,
-      `Intent: ${clarifyIntent || "not specified"}`,
-      `Audience: ${clarifyAudience || "not specified"}`,
-      `Tone: ${clarifyTone || tone || "not specified"}`,
+      `Task (transformation): ${engineBrief.taskLine}`,
+      `Instruction context: ${engineBrief.instructionLine}`,
+      `Tone (engine): ${engineBrief.toneLine}`,
       `Structure: ${selectedWorkflowStructure.title}`,
       ...selectedWorkflowStructure.outline.map((item, index) => `${index + 1}. ${item}`),
     ].join("\n");
-  }, [captureIdea, clarifyAudience, clarifyIntent, clarifyTone, coreValue, selectedWorkflowStructure, tone]);
+  }, [captureIdea, coreValue, engineBrief, selectedWorkflowStructure]);
 
   function workflowState(): MobileWorkflowState {
     return {
@@ -736,10 +759,10 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
-          "Extract writing material from this linked source for the Essay Engine guided workflow.",
+          "Extract writing material from this linked source for the Essay Engine.",
           "Do not write the essay.",
           "Do not hallucinate claims not supported by the source text.",
           "If the source is weak, thin, promotional, or mostly navigation, say so in cautions.",
@@ -797,7 +820,7 @@ export function useMobileWorkflow({
       return [current.trim(), content].filter(Boolean).join("\n\n");
     });
     setCoreValue((current) => current || (linkCapture.coreIdea ? `Core value: ${linkCapture.coreIdea}` : ""));
-    setMobileWorkflowStatus("Link material saved as capture text. It can now feed Clarify, Structure, and Draft.");
+    setMobileWorkflowStatus("Link material saved as capture text. It can now feed structure and draft steps.");
   }
 
   async function copyWorkflowText(text: string, successMessage: string) {
@@ -862,19 +885,19 @@ export function useMobileWorkflow({
           "CURRENT SOURCE CONTEXT:",
           input || "(not provided)",
           "",
-          `INTENT: ${clarifyIntent || "not specified"}`,
-          `AUDIENCE: ${clarifyAudience || "not specified"}`,
-          `TONE: ${clarifyTone || tone || "not specified"}`,
+          `TASK: ${engineBrief.taskLine}`,
+          `INSTRUCTION CONTEXT: ${engineBrief.instructionLine}`,
+          `TONE: ${engineBrief.toneLine}`,
           `TARGET LANGUAGE: ${targetLanguage || "English"}`,
         ].join("\n"),
         task: "extract",
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
-          "Create exactly 3 essay structure options for the guided writing workflow.",
+          "Create exactly 3 essay structure options for the Essay Engine workspace.",
           "The options must be Personal Essay, Argument Essay, and Reflective / Poetic Essay.",
           "Keep section guidance concrete and useful for drafting.",
           "Do not write the essay. Only design the structure.",
@@ -956,14 +979,14 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
           "Write a complete essay draft from this captured idea.",
           coreValue,
-          `Intent: ${clarifyIntent || "make the idea clear and useful"}`,
-          `Audience: ${clarifyAudience || "general thoughtful readers"}`,
-          `Tone: ${clarifyTone || tone || "clear, human, reflective"}`,
+          `Task: ${engineBrief.taskLine}`,
+          `Instruction context: ${engineBrief.instructionLine}`,
+          `Tone: ${engineBrief.toneLine}`,
           `Use this structure: ${selectedWorkflowStructure.title}`,
           ...selectedWorkflowStructure.outline.map((item, index) => `${index + 1}. ${item}`),
           "Use readable paragraphs.",
@@ -1049,9 +1072,9 @@ export function useMobileWorkflow({
           "CORE IDEA:",
           coreValue || "(not provided)",
           "",
-          `INTENT: ${clarifyIntent || "not specified"}`,
-          `AUDIENCE: ${clarifyAudience || "not specified"}`,
-          `TONE: ${clarifyTone || tone || "not specified"}`,
+          `TASK: ${engineBrief.taskLine}`,
+          `INSTRUCTION CONTEXT: ${engineBrief.instructionLine}`,
+          `TONE: ${engineBrief.toneLine}`,
           selectedWorkflowStructure ? `STRUCTURE: ${selectedWorkflowStructure.title}\n${selectedWorkflowStructure.outline.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
           "",
           `MARKED PARAGRAPHS: ${marked.map((index) => index + 1).join(", ")}`,
@@ -1061,7 +1084,7 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
           "Revise the draft using the user's marks and instruction.",
@@ -1135,9 +1158,9 @@ export function useMobileWorkflow({
           "CORE IDEA:",
           coreValue || "(not provided)",
           "",
-          `INTENT: ${clarifyIntent || "not specified"}`,
-          `AUDIENCE: ${clarifyAudience || "not specified"}`,
-          `TONE: ${clarifyTone || tone || "not specified"}`,
+          `TASK: ${engineBrief.taskLine}`,
+          `INSTRUCTION CONTEXT: ${engineBrief.instructionLine}`,
+          `TONE: ${engineBrief.toneLine}`,
           selectedWorkflowStructure ? `STRUCTURE: ${selectedWorkflowStructure.title}\n${selectedWorkflowStructure.outline.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
           markedParagraphs.length > 0 ? `MARKED PARAGRAPHS: ${markedParagraphs.map((index) => index + 1).join(", ")}` : "MARKED PARAGRAPHS: none",
           markedParagraphs.map((index) => `Paragraph ${index + 1}: ${paragraphs[index] ?? ""}`).join("\n\n"),
@@ -1146,10 +1169,10 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
-          "Diagnose this essay draft for a mobile guided writing workflow.",
+          "Diagnose this essay draft in the Essay Engine workspace.",
           "Do not rewrite the draft.",
           "Focus on clarity, structure, voice, specificity, paragraph density, and next revision actions.",
           "Keep findings concise and directly useful.",
@@ -1201,7 +1224,7 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
           `Generate 3 alternative polished versions based on these selected directions: ${directions.join(", ")}.`,
@@ -1286,7 +1309,7 @@ export function useMobileWorkflow({
         outputMode: "content_only",
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || "English",
-        tone: clarifyTone || tone || undefined,
+        tone: tone || undefined,
         providers: providers.length > 0 ? providers : undefined,
         userInstruction: [
           "Adapt the draft into the selected formats.",
@@ -1359,9 +1382,6 @@ export function useMobileWorkflow({
     workflowInstruction,
     setCaptureIdea,
     setLinkCaptureUrl,
-    setClarifyIntent,
-    setClarifyAudience,
-    setClarifyTone,
     setSelectedWorkflowStructureId,
     setRevisionInstruction,
     togglePolishDirection,
