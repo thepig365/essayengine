@@ -55,8 +55,8 @@ export default function HomePage() {
           --font-size-label-mobile: 16px;
           --font-size-button: 15px;
           --font-size-button-mobile: 17px;
-          --font-size-prose: 16px;
-          --font-size-prose-mobile: 18px;
+          --font-size-prose: 18px;
+          --font-size-prose-mobile: 20px;
           min-height: 100vh;
           background:
             radial-gradient(circle at top left, rgba(63, 143, 138, 0.12), transparent 34rem),
@@ -670,6 +670,12 @@ export default function HomePage() {
           color: #DFF7F5 !important;
           box-shadow: 0 0 0 3px rgba(63, 143, 138, 0.12) !important;
         }
+        :global(.flow-item span) {
+          border-color: var(--accent-primary) !important;
+          background: #123C38 !important;
+          color: #DFF7F5 !important;
+          box-shadow: none !important;
+        }
         :global(audio) {
           background: var(--bg-input) !important;
         }
@@ -680,6 +686,10 @@ export default function HomePage() {
         :global(.mobile-result-output),
         :global(.essay-draft-workspace textarea),
         :global(.mobile-panel textarea),
+        :global(.source-layer textarea),
+        :global(.source-capture textarea),
+        :global(.transcript-column textarea),
+        :global(.work-column textarea),
         :global(.transcript-preview),
         :global(.transcript-box),
         :global(.mini-card p),
@@ -808,6 +818,10 @@ export default function HomePage() {
           :global(.mobile-result-output),
           :global(.essay-draft-workspace textarea),
           :global(.mobile-panel textarea),
+          :global(.source-layer textarea),
+          :global(.source-capture textarea),
+          :global(.transcript-column textarea),
+          :global(.work-column textarea),
           :global(.mini-card p),
           :global(.paragraph span),
           :global(.diagnosis),
@@ -818,10 +832,13 @@ export default function HomePage() {
             line-height: 1.66 !important;
           }
           :global(input),
-          :global(textarea),
           :global(select) {
             font-size: 16px !important;
             line-height: 1.55 !important;
+          }
+          :global(textarea) {
+            font-size: var(--font-size-prose-mobile) !important;
+            line-height: 1.66 !important;
           }
           :global(.eyebrow),
           :global(.workflow-step > span),
