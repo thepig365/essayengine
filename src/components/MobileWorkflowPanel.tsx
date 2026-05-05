@@ -9,6 +9,7 @@ import type {
 } from "@/lib/projectStorage";
 import type { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { POLISH_DIRECTIONS, REPURPOSE_FORMATS } from "@/hooks/useMobileWorkflow";
+import type { MobileWorkflowPanelMode } from "@/essay-engine/mobileWorkflowSteps";
 
 type Props = {
   captureIdea: string;
@@ -62,6 +63,10 @@ type Props = {
   onToggleRepurposeFormat: (format: string) => void;
   onRepurpose: () => void;
   onCopyRepurposeOutput: (output: MobileWorkflowRepurposeOutput) => void;
+  /** full = desktop work-column; slice-off hides the panel (e.g. engines/transcript steps). */
+  mode?: MobileWorkflowPanelMode;
+  /** Shorten primary button labels for narrow screens */
+  compactLabels?: boolean;
 };
 
 function paragraphs(text: string): string[] {
@@ -120,21 +125,46 @@ export function MobileWorkflowPanel({
   onToggleRepurposeFormat,
   onRepurpose,
   onCopyRepurposeOutput,
+  mode = "full",
+  compactLabels = false,
 }: Props) {
+  if (mode === "slice-off") {
+    return null;
+  }
+
   const draftParagraphs = paragraphs(draftContent);
   const selectedStructure = structures.find((structure) => structure.id === selectedStructureId) ?? null;
   const hasDraft = draftContent.trim().length > 0;
   const canReviseMarkedDraft = hasDraft && markedParagraphs.length > 0 && revisionInstruction.trim().length > 0 && !busy;
 
+  const showFull = mode === "full";
+  const showSource = showFull || mode === "slice-source";
+  const showStructureBuilder =
+    showFull || mode === "slice-structure" || mode === "slice-structure-builder";
+  const showDraftFromStructure =
+    showFull || mode === "slice-structure" || mode === "slice-draft-generate";
+  const showMark = showFull || mode === "slice-mark";
+  const showRevise = showFull || mode === "slice-revise";
+  const showDiagnose = showFull || mode === "slice-diagnose";
+  const showPolish = showFull || mode === "slice-polish";
+
   return (
-    <section className="mobile-workflow-panel">
-      <div className="panel-head">
-        <p className="eyebrow">Guided Mobile Workflow</p>
-        <h2>Capture to Repurpose</h2>
-        <p>One decision at a time: capture, clarify, structure, draft, listen, revise, diagnose, polish, and repurpose.</p>
-      </div>
+    <section className={mode === "full" ? "mobile-workflow-panel" : "mobile-workflow-panel mode-sliced"}>
+      {(showFull || !compactLabels) && (
+        <div className={showFull ? "panel-head" : "panel-head compact"}>
+          <p className="eyebrow">Guided Mobile Workflow</p>
+          {showFull && (
+            <>
+              <h2>Capture to Repurpose</h2>
+              <p>One decision at a time: capture, clarify, structure, draft, listen, revise, diagnose, polish, and repurpose.</p>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="workflow-grid">
+        {showSource ? (
+        <>
         <article className="workflow-step">
           <span>1. Capture</span>
           <h3>Capture Inbox</h3>
@@ -306,12 +336,14 @@ export function MobileWorkflowPanel({
             <input value={clarifyTone} onChange={(event) => onClarifyToneChange(event.target.value)} placeholder="How should it sound?" />
           </label>
         </article>
+        </>
+        ) : null}
 
+        {showStructureBuilder ? (
         <article className="workflow-step">
-          <span>3. Structure</span>
           <h3>Structure Builder</h3>
           <button type="button" onClick={onCreateStructures} disabled={busy || (!captureIdea.trim() && !coreValue.trim())}>
-            {busy ? "Creating structures..." : "Create 3 AI structures"}
+            {busy ? "Creating structures..." : compactLabels ? "Create structures" : "Create 3 AI structures"}
           </button>
           <div className="structure-list">
             {structures.map((structure) => (
@@ -335,7 +367,9 @@ export function MobileWorkflowPanel({
             Copy selected outline
           </button>
         </article>
+        ) : null}
 
+        {showDraftFromStructure ? (
         <article className="workflow-step">
           <span>4. Draft</span>
           <h3>Generate From Structure</h3>
@@ -345,15 +379,17 @@ export function MobileWorkflowPanel({
               : "Choose a structure before generating a structured draft."}
           </p>
           <button type="button" onClick={onGenerateDraft} disabled={busy || !selectedStructureId || (!captureIdea.trim() && !coreValue.trim())}>
-            {busy ? "Generating..." : "Generate draft and replace Essay Draft"}
+            {busy ? "Generating..." : compactLabels ? "Generate draft" : "Generate draft and replace Essay Draft"}
           </button>
         </article>
+        ) : null}
 
+        {showMark ? (
         <article className="workflow-step wide">
           <span>5. Listen and Mark</span>
           <h3>Mark Paragraphs</h3>
           <button type="button" onClick={onEnterListenMode} disabled={!draftContent.trim() || busy}>
-            Enter Listen and Mark mode
+            {compactLabels ? "Start marking" : "Enter Listen and Mark mode"}
           </button>
           {draftParagraphs.length > 0 ? (
             <div className="paragraph-list">
@@ -373,7 +409,9 @@ export function MobileWorkflowPanel({
             <p className="helper">No draft yet. Generate or paste a draft first.</p>
           )}
         </article>
+        ) : null}
 
+        {showRevise ? (
         <article className="workflow-step">
           <span>6. Voice/Text Revise</span>
           <h3>Revision Request</h3>
@@ -390,7 +428,9 @@ export function MobileWorkflowPanel({
             {busy ? "Revising..." : "Revise marked paragraphs"}
           </button>
         </article>
+        ) : null}
 
+        {showDiagnose ? (
         <article className="workflow-step">
           <span>7. Diagnose</span>
           <h3>Draft Quality</h3>
@@ -410,7 +450,10 @@ export function MobileWorkflowPanel({
             </>
           )}
         </article>
+        ) : null}
 
+        {showPolish ? (
+        <>
         <article className="workflow-step">
           <span>8. Polish</span>
           <h3>Polish Versions</h3>
@@ -443,7 +486,7 @@ export function MobileWorkflowPanel({
                 )}
                 <div className="button-row">
                   <button type="button" onClick={() => onUsePolishVersion(version)}>
-                    Use as Essay Draft
+                    {compactLabels ? "Use draft" : "Use as Essay Draft"}
                   </button>
                   <button type="button" onClick={() => onCopyPolishVersion(version)}>
                     Copy polish version
@@ -492,6 +535,9 @@ export function MobileWorkflowPanel({
             ))}
           </div>
         </article>
+        </>
+        ) : null}
+
       </div>
 
       {status && <div className="workflow-status">{status}</div>}
@@ -503,6 +549,13 @@ export function MobileWorkflowPanel({
           background: #ffffff;
           box-shadow: 0 14px 34px rgba(31, 45, 61, 0.07);
           padding: 18px;
+        }
+        .workflow-grid {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          min-width: 0;
+          max-width: 100%;
         }
         .panel-head {
           margin-bottom: 14px;
@@ -534,10 +587,11 @@ export function MobileWorkflowPanel({
           font-size: 13px;
           line-height: 1.45;
         }
-        .workflow-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
+        .mobile-workflow-panel.mode-sliced .workflow-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .panel-head.compact {
+          margin-bottom: 8px;
         }
         .workflow-step {
           display: grid;

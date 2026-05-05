@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { DESKTOP_MIN } from "@/essay-engine/breakpoints";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { FinalResultSelection } from "@/lib/projectStorage";
 import type { EngineResponse, EngineTask, LLMProvider, ProviderResult } from "@/types/engine";
 
@@ -77,6 +79,7 @@ function ResultCard({
   onReplaceDraftWithResult,
   onMarkFinal,
   stepLabel,
+  compactLabels,
 }: {
   result: ProviderResult;
   task: EngineTask;
@@ -89,6 +92,7 @@ function ResultCard({
   onReplaceDraftWithResult: (output: string) => void;
   onMarkFinal: (output: string, provider?: LLMProvider, providerLabel?: string) => void;
   stepLabel: string;
+  compactLabels?: boolean;
 }) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const requestedLabel = providerLabel(result.requestedProvider);
@@ -133,7 +137,7 @@ function ResultCard({
           }}
           disabled={!result.output}
         >
-          Promote to new source version
+          {compactLabels ? "Promote source" : "Promote to new source version"}
         </button>
         <button
           type="button"
@@ -143,7 +147,7 @@ function ResultCard({
           }}
           disabled={!result.output}
         >
-          Add this result to source
+          {compactLabels ? "Add to source" : "Add this result to source"}
         </button>
         <button
           type="button"
@@ -177,7 +181,7 @@ function ResultCard({
           }}
           disabled={!result.output}
         >
-          Replace Essay Draft with this result
+          {compactLabels ? "Replace draft" : "Replace Essay Draft with this result"}
         </button>
         <button
           type="button"
@@ -571,12 +575,19 @@ export function OutputPanel({
   resultStep,
 }: Props) {
   const [fallbackStatus, setFallbackStatus] = useState<string | null>(null);
+  const [compareTab, setCompareTab] = useState(0);
   const outputs = result?.outputs ?? [];
   const isMulti = outputs.length > 1;
+  const compactLabels = useMediaQuery(`(max-width: ${DESKTOP_MIN - 1}px)`, false);
+  const useResultTabs = isMulti && compactLabels;
   const selectedIsMulti = selectedProviders.length > 1;
   const providersUsed = outputs.length
     ? outputs.map((o) => providerLabel(o.actualProvider)).join(", ")
     : "-";
+
+  useEffect(() => {
+    setCompareTab(0);
+  }, [result?.outputs]);
 
   return (
     <section className="result-layer">
@@ -624,6 +635,41 @@ export function OutputPanel({
           </dl>
 
           {outputs.length > 0 ? (
+            useResultTabs ? (
+              <>
+                <div className="compare-tabs" role="tablist" aria-label="Engine comparison">
+                  {outputs.map((o, i) => (
+                    <button
+                      key={`${o.requestedProvider}-${i}-tab`}
+                      type="button"
+                      role="tab"
+                      aria-selected={compareTab === i}
+                      className={compareTab === i ? "compare-tab active" : "compare-tab"}
+                      onClick={() => setCompareTab(i)}
+                    >
+                      {providerLabel(o.requestedProvider)}
+                    </button>
+                  ))}
+                </div>
+                <div className="result-grid">
+                  <ResultCard
+                    key={`${outputs[compareTab].requestedProvider}-${compareTab}`}
+                    result={outputs[compareTab]}
+                    task={task}
+                    outputMode={result.outputMode}
+                    onReplaceResultSource={onReplaceResultSource}
+                    onAddResultToSource={onAddResultToSource}
+                    onContinueResult={onContinueResult}
+                    onReadResult={onReadResult}
+                    onAddResultToDraft={onAddResultToDraft}
+                    onReplaceDraftWithResult={onReplaceDraftWithResult}
+                    onMarkFinal={onMarkFinal}
+                    stepLabel={`Step ${resultStep} result`}
+                    compactLabels={compactLabels}
+                  />
+                </div>
+              </>
+            ) : (
             <div className={isMulti ? "result-grid multi" : "result-grid"}>
               {outputs.map((o, i) => (
                 <ResultCard
@@ -639,9 +685,11 @@ export function OutputPanel({
                   onReplaceDraftWithResult={onReplaceDraftWithResult}
                   onMarkFinal={onMarkFinal}
                   stepLabel={`Step ${resultStep} result`}
+                  compactLabels={compactLabels}
                 />
               ))}
             </div>
+            )
           ) : (
             <div className="fallback-wrap">
               <div className="fallback-output">{result.output || "(no output)"}</div>
@@ -821,6 +869,30 @@ export function OutputPanel({
           font-weight: 700;
           line-height: 1.5;
         }
+        .compare-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .compare-tab {
+          flex: 1 1 auto;
+          min-height: 44px;
+          border: 1px solid #cfd8e3;
+          border-radius: 999px;
+          background: #f8fafc;
+          color: #22303f;
+          padding: 10px 14px;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .compare-tab.active {
+          border-color: #1d5f63;
+          background: #1d5f63;
+          color: #ffffff;
+        }
         .final-result {
           display: flex;
           gap: 10px;
@@ -876,9 +948,8 @@ export function OutputPanel({
           align-items: stretch;
         }
         .result-grid.multi {
-          grid-template-columns: repeat(3, minmax(270px, 1fr));
-          overflow-x: auto;
-          padding-bottom: 2px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          overflow-x: visible;
         }
         .preview-grid {
           align-items: stretch;

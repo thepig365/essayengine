@@ -3,10 +3,23 @@
 import { useMemo, useRef, useState } from "react";
 import { EssayDraftWorkspace } from "@/components/EssayDraftWorkspace";
 import { FinalPanel } from "@/components/FinalPanel";
+import { DesktopConsoleLayout } from "@/components/layout/DesktopConsoleLayout";
+import { MobileWorkflowLayout } from "@/components/layout/MobileWorkflowLayout";
 import { MobileWorkflowPanel } from "@/components/MobileWorkflowPanel";
 import { OutputPanel } from "@/components/OutputPanel";
+import {
+  DraftGeneratorPanel,
+  EngineSelectionPanel,
+  EssayAssemblyPanel,
+  ListenAndMarkPanel,
+  ResultValidationPanel,
+  SourceMaterialPanel,
+  StructureBuilderPanel,
+  TranscriptWorkspacePanel,
+} from "@/components/essay-engine/panels";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useProjectWorkspace } from "@/hooks/useProjectWorkspace";
 import { useTranscriptLibraryWorkspace } from "@/hooks/useTranscriptLibraryWorkspace";
@@ -30,173 +43,25 @@ import type {
   TranscriptSegment,
 } from "@/types/engine";
 
-const TASKS: { value: EngineTask; label: string; helper: string }[] = [
-  { value: "translate", label: "Translate", helper: "Convert content to target language" },
-  { value: "paraphrase", label: "Paraphrase", helper: "Express differently" },
-  { value: "rewrite", label: "Rewrite", helper: "Change style or clarity" },
-  { value: "summarize", label: "Summarize", helper: "Condense content" },
-  { value: "extract", label: "Extract", helper: "Pull key info" },
-  { value: "improve", label: "Improve", helper: "Refine quality" },
-];
-
-const TASK_ICONS: Record<EngineTask, string> = {
-  rewrite: "📝",
-  paraphrase: "🔁",
-  translate: "🌍",
-  summarize: "📄",
-  extract: "🔍",
-  improve: "✨",
-};
-
-const MODES: { value: OutputMode; label: string; helper: string }[] = [
-  { value: "auto", label: "Auto", helper: "Engine decides safest behavior" },
-  { value: "content_only", label: "Content Only", helper: "Best for normal writing" },
-  { value: "same_format", label: "Same Format", helper: "Preserves HTML / JSX / Markdown / JSON" },
-  { value: "text_node_only", label: "Text Nodes Only", helper: "Safe for code/page replacement" },
-  { value: "diff", label: "Diff", helper: "Only changed lines (Cursor workflow)" },
-  { value: "structured_data", label: "Structured JSON", helper: "For CMS / templates / automation" },
-];
-
-const SOURCE_LANGUAGES = [
-  { value: "", label: "Auto Detect" },
-  { value: "English", label: "English" },
-  { value: "Chinese Simplified", label: "Chinese Simplified" },
-  { value: "Chinese Traditional", label: "Chinese Traditional" },
-  { value: "Spanish", label: "Spanish" },
-  { value: "French", label: "French" },
-  { value: "German", label: "German" },
-  { value: "Japanese", label: "Japanese" },
-  { value: "Korean", label: "Korean" },
-  { value: "Portuguese", label: "Portuguese" },
-  { value: "Italian", label: "Italian" },
-  { value: "Arabic", label: "Arabic" },
-  { value: "Hindi", label: "Hindi" },
-];
-
-const TARGET_LANGUAGES = [
-  { value: "English", label: "English" },
-  { value: "Chinese Simplified", label: "Chinese Simplified" },
-  { value: "Chinese Traditional", label: "Chinese Traditional" },
-  { value: "Spanish", label: "Spanish" },
-  { value: "French", label: "French" },
-  { value: "German", label: "German" },
-  { value: "Japanese", label: "Japanese" },
-  { value: "Korean", label: "Korean" },
-  { value: "Portuguese", label: "Portuguese" },
-  { value: "Italian", label: "Italian" },
-  { value: "Arabic", label: "Arabic" },
-  { value: "Hindi", label: "Hindi" },
-];
-
-const TONES = [
-  { value: "", label: "Default" },
-  { value: "Clear", label: "Clear" },
-  { value: "Formal", label: "Formal" },
-  { value: "Friendly", label: "Friendly" },
-  { value: "Warm", label: "Warm" },
-  { value: "Professional", label: "Professional" },
-  { value: "Concise", label: "Concise" },
-  { value: "Persuasive", label: "Persuasive" },
-  { value: "Gentle", label: "Gentle" },
-  { value: "Academic", label: "Academic" },
-];
-
-const INSTRUCTION_PRESETS = [
-  { value: "", label: "None" },
-  {
-    value:
-      "Rewrite this in natural human English. Preserve meaning. Avoid AI-sounding phrasing, inflated academic wording, generic transitions, and unnatural synonyms. Keep the voice clear, grounded, and author-like.",
-    label: "Humanize English",
-  },
-  {
-    value:
-      "Rewrite this as a thoughtful human essay paragraph. Keep the meaning, improve rhythm and clarity, reduce stiffness, and avoid corporate or academic AI tone.",
-    label: "Author-style rewrite",
-  },
-  {
-    value:
-      "Remove AI-like phrasing. Avoid over-polished, generic, inflated, or robotic language. Make the writing sound natural, specific, and human.",
-    label: "Remove AI tone",
-  },
-  {
-    value: "用自然、流畅、有作者感的中文改写。保留原意，避免翻译腔、AI腔、空泛表达和过度正式的措辞。",
-    label: "Natural Chinese rewrite",
-  },
-  {
-    value:
-      "请根据 Source 内容写成一篇中文散文。风格清雅、含蓄、细腻，有早期现代中文散文的抒情气质；语言自然、有画面感，避免AI腔、口号式表达和过度总结。保留原意，但可以重组结构，使其成为一篇完整、有节奏的短文。不要直接仿写任何具体作家。",
-    label: "Modern Chinese lyrical prose",
-  },
-  {
-    value:
-      "Rewrite with a warm, reflective, essay-like voice. Keep the meaning clear, but make the rhythm more human and emotionally grounded.",
-    label: "Warm essay voice",
-  },
-  {
-    value:
-      "Polish for academic clarity and precision while preserving the original meaning. Avoid unnecessary complexity.",
-    label: "Academic polish",
-  },
-  { value: "preserve the original structure", label: "Preserve structure" },
-  { value: "only change visible text", label: "Only change visible text" },
-  { value: "output a diff", label: "Output diff" },
-  { value: "keep the same format", label: "Keep same format" },
-  { value: "make the output more natural", label: "Make it more natural" },
-  { value: "make the output more concise", label: "Make it more concise" },
-  { value: "make the output warmer", label: "Make it warmer" },
-  { value: "make the output more formal", label: "Make it more formal" },
-  { value: "extract the key points", label: "Extract key points" },
-  { value: "return structured JSON", label: "Return structured JSON" },
-];
-
-const PROVIDER_OPTIONS: { value: LLMProvider; label: string; note: string }[] = [
-  { value: "openai", label: "OpenAI", note: "general quality" },
-  { value: "deepseek", label: "DeepSeek", note: "long text / cost" },
-  { value: "qwen", label: "Qwen", note: "Chinese strength" },
-];
-
-const SOURCE_CHIPS = [
-  {
-    label: "Text",
-    placeholder: "Paste plain text or essay content here.",
-    helper: "Paste source text to translate, rewrite, summarize, or improve.",
-  },
-  {
-    label: "Webpage URL",
-    placeholder: "Paste a public webpage URL here.",
-    helper: "The engine will fetch webpage content server-side and process it as source material.",
-  },
-  {
-    label: "YouTube",
-    placeholder: "Paste a YouTube URL here.",
-    helper: "Fetch a transcript and use it as source material for writing, summaries, or articles.",
-  },
-  {
-    label: "HTML / JSX",
-    placeholder: "Paste HTML, JSX, or TSX here.",
-    helper: "Use Same Format or Text Nodes Only to preserve structure.",
-  },
-  {
-    label: "JSON",
-    placeholder: "Paste JSON here.",
-    helper: "Use Structured JSON or Same Format depending on your goal.",
-  },
-  {
-    label: "Notes",
-    placeholder: "Paste notes, rough ideas, or NotebookLM material here.",
-    helper: "Turn notes into clearer essays, summaries, or thought-leader drafts.",
-  },
-  {
-    label: "Article Draft",
-    placeholder: "Paste an article draft here.",
-    helper: "Improve, rewrite, translate, or repurpose the draft.",
-  },
-];
-const TTS_VOICES = ["echo", "alloy", "verse", "aria", "coral", "sage"];
-const TTS_SPEEDS = [0.8, 1.0, 1.1, 1.2];
-const TTS_STYLES = ["Default", "Calm", "Warm", "Clear", "Reflective"];
-const YOUTUBE_RE = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?[^ ]*v=|shorts\/)|youtu\.be\/)[\w-]{11}/i;
-const WEBPAGE_RE = /^https?:\/\/\S+$/i;
+import {
+  INSTRUCTION_PRESETS,
+  MODES,
+  PROVIDER_OPTIONS,
+  SOURCE_CHIPS,
+  SOURCE_LANGUAGES,
+  TARGET_LANGUAGES,
+  TASKS,
+  TASK_ICONS,
+  TONES,
+  TTS_SPEEDS,
+  TTS_STYLES,
+  TTS_VOICES,
+  WEBPAGE_RE,
+  YOUTUBE_RE,
+} from "@/essay-engine/constants";
+import { EssayEngineProvider } from "@/essay-engine/EssayEngineContext";
+import { DESKTOP_MIN } from "@/essay-engine/breakpoints";
+import { MOBILE_WORKFLOW_STEPS, resolveMobileWorkflowPanelMode } from "@/essay-engine/mobileWorkflowSteps";
 type TimestampChapter = {
   id: string;
   start: number;
@@ -488,6 +353,9 @@ export function EngineForm({ result, onResult }: Props) {
   const [task, setTask] = useState<EngineTask>("translate");
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"source" | "draft" | "result">("draft");
+  const [mobileWorkflowStepIndex, setMobileWorkflowStepIndex] = useState(0);
+  const [mobileShellTab, setMobileShellTab] = useState<"workspace" | "tools" | "sources">("workspace");
+  const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
   const [outputMode, setOutputMode] = useState<OutputMode>("auto");
   const [sourceLanguage, setSourceLanguage] = useState("");
   const [targetLanguage, setTargetLanguage] = useState("Chinese Simplified");
@@ -794,6 +662,29 @@ export function EngineForm({ result, onResult }: Props) {
     ],
   });
   setProjectStatusRef.current = setProjectStatus;
+
+  const isDesktopLayout = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
+
+  const mobileWorkflowStepId = MOBILE_WORKFLOW_STEPS[mobileWorkflowStepIndex]?.id;
+
+  const mobileWorkflowPanelMode = useMemo(() => {
+    if (isDesktopLayout) return "full" as const;
+    if (mobileShellTab === "sources") return "slice-source" as const;
+    return resolveMobileWorkflowPanelMode(false, mobileWorkflowStepId);
+  }, [isDesktopLayout, mobileShellTab, mobileWorkflowStepId]);
+
+  const essayEngineController = useMemo(
+    () => ({
+      mobileWorkflowStepIndex,
+      setMobileWorkflowStepIndex,
+      mobileShellTab,
+      setMobileShellTab,
+      mobileToolsDrawerOpen,
+      setMobileToolsDrawerOpen,
+      isDesktopLayout,
+    }),
+    [isDesktopLayout, mobileShellTab, mobileToolsDrawerOpen, mobileWorkflowStepIndex],
+  );
 
   function toggleProvider(p: LLMProvider) {
     setProviders((curr) =>
@@ -1890,8 +1781,14 @@ export function EngineForm({ result, onResult }: Props) {
   }
 
   return (
-    <div className="workspace">
-      <aside className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
+    <EssayEngineProvider value={essayEngineController}>
+    <div
+      className={`workspace${!isDesktopLayout ? ` ee-narrow ee-shell-${mobileShellTab}` : ""}`}
+      data-mobile-step={!isDesktopLayout && mobileWorkflowStepId ? mobileWorkflowStepId : undefined}
+    >
+      <DesktopConsoleLayout>
+      <aside id="ee-panel-engines" className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
+        <EngineSelectionPanel>
         <div className="control-panel-toggle">
           <button
             type="button"
@@ -2201,9 +2098,11 @@ export function EngineForm({ result, onResult }: Props) {
             {projectStatus && <strong>{projectStatus}</strong>}
           </div>
         </section>
+        </EngineSelectionPanel>
       </aside>
 
-      <section className="layer transcript-column">
+      <section id="ee-panel-transcript" className="layer transcript-column">
+        <TranscriptWorkspacePanel className="ee-narrow-step-transcript ee-narrow-tab-sources">
         <div className="layer-head">
           <p className="eyebrow">Transcript Workspace</p>
           <h2>Transcript Workspace</h2>
@@ -2313,7 +2212,7 @@ export function EngineForm({ result, onResult }: Props) {
           </label>
           <div className="library-grid">
             <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
-              Save transcript to folder
+              {isDesktopLayout ? "Save transcript to folder" : "Save transcript"}
             </button>
             <label className="field">
               <span>Load transcript</span>
@@ -2598,9 +2497,11 @@ export function EngineForm({ result, onResult }: Props) {
             </details>
           </div>
         )}
+        </TranscriptWorkspacePanel>
       </section>
 
-      <div className="work-column">
+      <div id="ee-panel-workspace" className="work-column">
+        <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-step-assemble">
         <WorkflowTimeline
           versions={sourceVersions}
           currentSourceVersionId={currentSourceVersionId}
@@ -2611,7 +2512,9 @@ export function EngineForm({ result, onResult }: Props) {
           onMarkFinal={markSourceVersionAsFinal}
           onStartFresh={startFreshWritingPipeline}
         />
+        </SourceMaterialPanel>
 
+        <StructureBuilderPanel className="ee-narrow-step-source ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-tab-sources">
         <MobileWorkflowPanel
           captureIdea={mobileWorkflow.captureIdea}
           voiceCapture={mobileWorkflow.voiceCapture}
@@ -2664,8 +2567,12 @@ export function EngineForm({ result, onResult }: Props) {
           onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
           onRepurpose={mobileWorkflow.createRepurposeOutputs}
           onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
+          mode={mobileWorkflowPanelMode}
+          compactLabels={!isDesktopLayout}
         />
+        </StructureBuilderPanel>
 
+        <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-tab-sources">
         <section className="layer source-layer">
           <div className="layer-head">
             <p className="eyebrow">Source → Generate</p>
@@ -3105,7 +3012,9 @@ export function EngineForm({ result, onResult }: Props) {
             <span>{input.trim().length.toLocaleString()} characters captured</span>
           </div>
         </section>
+        </SourceMaterialPanel>
 
+        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate ee-narrow-step-assemble">
         <OutputPanel
           result={result}
           task={task}
@@ -3120,7 +3029,9 @@ export function EngineForm({ result, onResult }: Props) {
           finalResult={finalResult}
           resultStep={workflowStep + 1}
         />
+        </ResultValidationPanel>
 
+        <DraftGeneratorPanel className="ee-narrow-step-draft ee-narrow-step-assemble">
         <EssayDraftWorkspace
           title={essayDraftTitle}
           content={essayDraftContent}
@@ -3145,7 +3056,9 @@ export function EngineForm({ result, onResult }: Props) {
           audioBusy={ttsLoading}
           status={essayDraftStatus}
         />
+        </DraftGeneratorPanel>
 
+        <ListenAndMarkPanel className="ee-narrow-step-mark">
         <section className="layer audio-panel">
           <div className="layer-head">
             <p className="eyebrow">Listen</p>
@@ -3279,7 +3192,9 @@ export function EngineForm({ result, onResult }: Props) {
           </div>
           {ttsStatus && <p className="tts-status">{ttsStatus}</p>}
         </section>
+        </ListenAndMarkPanel>
 
+        <EssayAssemblyPanel className="ee-narrow-step-assemble">
         <FinalPanel
           finalVersion={finalVersion}
           onCopyFinal={copyFinalArticle}
@@ -3289,61 +3204,20 @@ export function EngineForm({ result, onResult }: Props) {
           onCopyGoogleDocs={copyFinalForGoogleDocs}
           audioBusy={ttsLoading}
         />
+        </EssayAssemblyPanel>
       </div>
+      </DesktopConsoleLayout>
 
       <section className="mobile-first-workspace" aria-label="Mobile Essay Engine workspace">
-        <MobileWorkflowPanel
-          captureIdea={mobileWorkflow.captureIdea}
-          voiceCapture={mobileWorkflow.voiceCapture}
-          voiceRecorder={mobileWorkflow.voiceRecorder}
-          linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
-          linkCapture={mobileWorkflow.linkCapture}
-          coreValue={mobileWorkflow.coreValue}
-          clarifyIntent={mobileWorkflow.clarifyIntent}
-          clarifyAudience={mobileWorkflow.clarifyAudience}
-          clarifyTone={mobileWorkflow.clarifyTone}
-          structures={mobileWorkflow.workflowStructures}
-          selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
-          draftContent={essayDraftContent}
-          markedParagraphs={mobileWorkflow.markedParagraphs}
-          revisionInstruction={mobileWorkflow.revisionInstruction}
-          diagnosis={mobileWorkflow.workflowDiagnosis}
-          polishVersions={mobileWorkflow.polishVersions}
-          repurposeOutputs={mobileWorkflow.repurposeOutputs}
-          busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
-          status={mobileWorkflow.mobileWorkflowStatus}
-          onCaptureChange={mobileWorkflow.setCaptureIdea}
-          onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
-          onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
-          onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
-          onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
-          onExtractValue={mobileWorkflow.extractCoreWritingValue}
-          onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
-          onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
-          onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
-          onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
-          onClarifyIntentChange={mobileWorkflow.setClarifyIntent}
-          onClarifyAudienceChange={mobileWorkflow.setClarifyAudience}
-          onClarifyToneChange={mobileWorkflow.setClarifyTone}
-          onCreateStructures={mobileWorkflow.createWorkflowStructures}
-          onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
-          onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
-          onGenerateDraft={mobileWorkflow.generateStructuredDraft}
-          onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
-          onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
-          onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
-          onRequestRevision={mobileWorkflow.reviseMarkedDraft}
-          onDiagnose={mobileWorkflow.diagnoseDraftQuality}
-          onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
-          selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
-          onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
-          onCreatePolishVersions={mobileWorkflow.createPolishVersions}
-          onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
-          onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
-          selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
-          onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
-          onRepurpose={mobileWorkflow.createRepurposeOutputs}
-          onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
+        <MobileWorkflowLayout
+          activeStepIndex={mobileWorkflowStepIndex}
+          onActiveStepIndexChange={setMobileWorkflowStepIndex}
+          mobileShellTab={mobileShellTab}
+          onMobileShellTabChange={setMobileShellTab}
+          onPrimaryWorkspaceAction={() => void generate()}
+          primaryWorkspaceDisabled={loading || !input.trim() || generateBlocked}
+          primaryWorkspaceLabel={loading ? "Generating…" : runLabel}
+          desktopMinWidth={DESKTOP_MIN}
         />
 
         <div className="mobile-classic-head">
@@ -3574,9 +3448,13 @@ export function EngineForm({ result, onResult }: Props) {
       <style jsx>{`
         .workspace {
           display: grid;
-          grid-template-columns: minmax(240px, 0.75fr) minmax(720px, 2.3fr) minmax(340px, 1fr);
+          grid-template-columns: minmax(0, 0.75fr) minmax(0, 2.3fr) minmax(0, 1fr);
           gap: 18px;
           align-items: start;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
         .control-column {
           display: flex;
@@ -4818,28 +4696,140 @@ export function EngineForm({ result, onResult }: Props) {
         .mobile-player {
           display: none;
         }
-        @media (max-width: 980px) {
+        .desktop-console-layout {
+          display: contents;
+        }
+        @media (max-width: 1023px) {
           .workspace {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
             padding-bottom: 190px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
           }
           .control-column,
           .transcript-column {
             position: static;
-          }
-          .transcript-column {
-            display: none;
+            max-height: none;
+            overflow: visible;
+            min-width: 0;
+            max-width: 100%;
           }
           .work-column {
-            display: none;
+            position: static;
+            min-width: 0;
+            max-width: 100%;
           }
-          .control-column {
-            display: none;
+
+          .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > aside,
+          .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > .work-column {
+            display: none !important;
           }
+
+          .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > .work-column > * {
+            display: none !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="engines"] .desktop-console-layout > aside {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="transcript"]
+            .desktop-console-layout
+            > section.transcript-column {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="source"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="structure"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="draft"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="mark"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="revise"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="validate"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="assemble"] .desktop-console-layout > .work-column {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="source"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-source {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="structure"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-structure {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="draft"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-draft {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="mark"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-mark {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="revise"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-revise {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="validate"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-validate {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="assemble"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-assemble {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > aside,
+          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > .work-column {
+            display: none !important;
+          }
+          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > aside {
+            display: block !important;
+          }
+
+          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > aside {
+            display: none !important;
+          }
+          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column {
+            display: block !important;
+          }
+          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column > * {
+            display: none !important;
+          }
+          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column > .ee-narrow-tab-sources {
+            display: block !important;
+          }
+
           .mobile-first-workspace {
             display: grid;
             gap: 14px;
-            order: 1;
+            order: -1;
+            min-width: 0;
+            max-width: 100%;
           }
           .mobile-classic-head {
             display: grid;
@@ -5244,5 +5234,6 @@ export function EngineForm({ result, onResult }: Props) {
         }
       `}</style>
     </div>
+    </EssayEngineProvider>
   );
 }
