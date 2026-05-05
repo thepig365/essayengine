@@ -1,0 +1,21 @@
+---
+description: User preference for copyable completion messages
+alwaysApply: true
+---
+
+# Completion Message Copy Style
+
+When telling the user that work is done, completed, finished, verified, or ready, end that completion sentence with three dots (`...`) so the user can copy it easily.
+
+Always output reports in a copy-friendly plain Markdown format:
+
+- Use clear headings and flat bullets.
+- Avoid tables unless the user explicitly asks for a table.
+- Avoid UI-only formatting that is hard to copy.
+- Keep file paths, commands, and labels as plain text or inline code.
+
+Examples:
+
+- `已完成...`
+- `UI 已重启并验证通过...`
+- `构建和 smoke tests 都通过...`
