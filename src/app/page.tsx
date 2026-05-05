@@ -46,11 +46,25 @@ export default function HomePage() {
           --warning: #D6A85C;
           --error: #E07A7A;
           --info: #7BA7D9;
+          --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+          --font-size-body: 16px;
+          --font-size-body-mobile: 17px;
+          --font-size-helper: 13.5px;
+          --font-size-helper-mobile: 14px;
+          --font-size-label: 14px;
+          --font-size-label-mobile: 15px;
+          --font-size-button: 15px;
+          --font-size-button-mobile: 16px;
+          --font-size-prose: 16px;
+          --font-size-prose-mobile: 17px;
           min-height: 100vh;
           background:
             radial-gradient(circle at top left, rgba(63, 143, 138, 0.12), transparent 34rem),
             linear-gradient(180deg, var(--bg-main), #0d141b 42%, var(--bg-main));
           color: var(--text-primary);
+          font-family: var(--font-system);
+          font-size: var(--font-size-body);
+          line-height: 1.6;
           padding: 28px;
           color-scheme: dark;
         }
@@ -65,7 +79,7 @@ export default function HomePage() {
         .hero p {
           margin: 0 0 5px;
           color: #7fb7b3;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.06em;
           text-transform: uppercase;
@@ -85,9 +99,27 @@ export default function HomePage() {
         .hero-actions span {
           max-width: 520px;
           color: #94a3b8;
-          font-size: 13px;
-          line-height: 1.5;
+          font-size: 15px;
+          line-height: 1.55;
           text-align: right;
+        }
+        :global(body),
+        :global(button),
+        :global(input),
+        :global(textarea),
+        :global(select) {
+          font-family: var(--font-system) !important;
+        }
+        :global(.workspace),
+        :global(.layer),
+        :global(.mobile-workflow-panel),
+        :global(.essay-draft-workspace),
+        :global(.result-layer),
+        :global(.final-panel),
+        :global(.workflow-timeline),
+        :global(.guide-panel) {
+          font-size: var(--font-size-body) !important;
+          line-height: 1.6 !important;
         }
         :global(.workspace) {
           max-width: 1440px;
@@ -443,6 +475,19 @@ export default function HomePage() {
         :global(.preview-card h3),
         :global(.result-card h3) {
           color: var(--text-primary) !important;
+          line-height: 1.25 !important;
+        }
+        :global(.layer-head h2),
+        :global(.panel-head h2),
+        :global(.workflow-step h3),
+        :global(.mobile-panel-head strong),
+        :global(.version-card h3),
+        :global(.result-card h3),
+        :global(.preview-card h3),
+        :global(.final-panel h2),
+        :global(.essay-draft-workspace h2),
+        :global(.workflow-timeline h2) {
+          font-size: clamp(18px, 1.7vw, 22px) !important;
         }
         :global(.layer-head p),
         :global(.panel-head p),
@@ -473,6 +518,18 @@ export default function HomePage() {
         :global(.run-meta dt),
         :global(.mobile-player span) {
           color: var(--text-secondary) !important;
+          font-size: var(--font-size-helper) !important;
+          line-height: 1.5 !important;
+        }
+        :global(label),
+        :global(.field span),
+        :global(.run-summary dt),
+        :global(.metadata dt),
+        :global(.run-meta dt),
+        :global(.mobile-panel-head span) {
+          font-size: var(--font-size-label) !important;
+          line-height: 1.35 !important;
+          font-weight: 700 !important;
         }
         :global(.eyebrow),
         :global(.workflow-step > span),
@@ -480,6 +537,8 @@ export default function HomePage() {
         :global(.link-material small),
         :global(.flow-item strong) {
           color: var(--accent-primary-hover) !important;
+          font-size: 13px !important;
+          line-height: 1.35 !important;
         }
         :global(textarea),
         :global(input),
@@ -487,6 +546,8 @@ export default function HomePage() {
           border-color: var(--border-medium) !important;
           background: var(--bg-input) !important;
           color: var(--text-primary) !important;
+          font-size: 16px !important;
+          line-height: 1.5 !important;
           box-shadow: none !important;
           caret-color: var(--accent-primary-hover);
         }
@@ -517,6 +578,9 @@ export default function HomePage() {
           border-color: var(--border-medium) !important;
           background: #1C2A36 !important;
           color: #D9E3EC !important;
+          font-size: var(--font-size-button) !important;
+          line-height: 1.3 !important;
+          font-weight: 700 !important;
           box-shadow: none !important;
         }
         :global(button:hover:not(:disabled)),
@@ -609,9 +673,43 @@ export default function HomePage() {
         :global(audio) {
           background: var(--bg-input) !important;
         }
+        :global(.output-text),
+        :global(.fallback-output),
+        :global(.preview-output),
+        :global(.final-output-preview),
+        :global(.mobile-result-output),
+        :global(.essay-draft-workspace textarea),
+        :global(.mobile-panel textarea),
+        :global(.transcript-preview),
+        :global(.transcript-box),
+        :global(.mini-card p),
+        :global(.paragraph span),
+        :global(.diagnosis),
+        :global(.notes-list),
+        :global(.link-material),
+        :global(.value-box) {
+          font-size: var(--font-size-prose) !important;
+          line-height: 1.65 !important;
+        }
+        :global(.mini-card small),
+        :global(.project-helper),
+        :global(.source-footer),
+        :global(.transcript-note),
+        :global(.voice-status),
+        :global(.project-meta),
+        :global(.workflow-status),
+        :global(.draft-status),
+        :global(.mobile-status),
+        :global(.tts-status),
+        :global(.error) {
+          font-size: var(--font-size-helper) !important;
+          line-height: 1.5 !important;
+        }
         @media (max-width: 820px) {
           .page {
             padding: 18px;
+            font-size: var(--font-size-body-mobile);
+            line-height: 1.62;
           }
           .hero {
             align-items: flex-start;
@@ -635,12 +733,102 @@ export default function HomePage() {
           }
           .hero h1 {
             font-size: 28px;
+            line-height: 1.08;
           }
           .hero-actions {
             gap: 10px;
           }
           .hero-actions span {
-            font-size: 12px;
+            font-size: 14px;
+            line-height: 1.55;
+          }
+          :global(.workspace),
+          :global(.layer),
+          :global(.mobile-workflow-panel),
+          :global(.essay-draft-workspace),
+          :global(.result-layer),
+          :global(.final-panel),
+          :global(.workflow-timeline),
+          :global(.guide-panel) {
+            font-size: var(--font-size-body-mobile) !important;
+            line-height: 1.62 !important;
+          }
+          :global(.layer-head h2),
+          :global(.panel-head h2),
+          :global(.workflow-step h3),
+          :global(.mobile-panel-head strong),
+          :global(.version-card h3),
+          :global(.result-card h3),
+          :global(.preview-card h3),
+          :global(.final-panel h2),
+          :global(.essay-draft-workspace h2),
+          :global(.workflow-timeline h2) {
+            font-size: 19px !important;
+            line-height: 1.25 !important;
+          }
+          :global(.layer-head p),
+          :global(.panel-head p),
+          :global(.helper),
+          :global(.mini-card small),
+          :global(.project-helper),
+          :global(.source-footer),
+          :global(.transcript-note),
+          :global(.workflow-status),
+          :global(.draft-status),
+          :global(.mobile-status),
+          :global(.tts-status),
+          :global(.error) {
+            font-size: var(--font-size-helper-mobile) !important;
+            line-height: 1.52 !important;
+          }
+          :global(label),
+          :global(.field span),
+          :global(.run-summary dt),
+          :global(.metadata dt),
+          :global(.run-meta dt),
+          :global(.mobile-panel-head span) {
+            font-size: var(--font-size-label-mobile) !important;
+          }
+          :global(button),
+          :global(.secondary),
+          :global(.copy-action),
+          :global(.source-read),
+          :global(.task-icon-button),
+          :global(.library-button),
+          :global(.structure),
+          :global(.paragraph),
+          :global(.read-result) {
+            font-size: var(--font-size-button-mobile) !important;
+            line-height: 1.3 !important;
+          }
+          :global(.output-text),
+          :global(.fallback-output),
+          :global(.preview-output),
+          :global(.final-output-preview),
+          :global(.mobile-result-output),
+          :global(.essay-draft-workspace textarea),
+          :global(.mobile-panel textarea),
+          :global(.mini-card p),
+          :global(.paragraph span),
+          :global(.diagnosis),
+          :global(.notes-list),
+          :global(.link-material),
+          :global(.value-box) {
+            font-size: var(--font-size-prose-mobile) !important;
+            line-height: 1.66 !important;
+          }
+          :global(input),
+          :global(textarea),
+          :global(select) {
+            font-size: 16px !important;
+            line-height: 1.55 !important;
+          }
+          :global(.eyebrow),
+          :global(.workflow-step > span),
+          :global(.guide-head p),
+          :global(.link-material small) {
+            font-size: 13px !important;
+            letter-spacing: 0.04em !important;
           }
         }
       `}</style>
