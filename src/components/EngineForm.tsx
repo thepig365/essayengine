@@ -4705,9 +4705,6 @@ export function EngineForm({ result, onResult }: Props) {
         .mobile-player {
           display: none;
         }
-        .desktop-console-layout {
-          display: contents;
-        }
         @media (max-width: 1023px) {
           .workspace {
             grid-template-columns: minmax(0, 1fr);
