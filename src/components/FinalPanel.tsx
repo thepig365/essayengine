@@ -45,7 +45,7 @@ export function FinalPanel({
             Final source: {formatOrigin(finalVersion.origin)} • Provider/task chain: {finalVersion.provider ?? "manual"} /{" "}
             {finalVersion.task ?? "source version"}
           </div>
-          <div className="final-output-preview">{finalVersion.content}</div>
+          <div className="final-output-preview selectable-output" data-selectable-output="true">{finalVersion.content}</div>
           <div className="final-actions">
             <button type="button" onClick={onCopyFinal}>
               Copy final article
@@ -144,6 +144,9 @@ export function FinalPanel({
           color: #15202b;
           padding: 16px;
           font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          user-select: text;
+          -webkit-user-select: text;
+          touch-action: manipulation;
         }
         .final-actions {
           display: flex;

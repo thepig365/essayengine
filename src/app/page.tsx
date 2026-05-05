@@ -715,6 +715,14 @@ export default function HomePage() {
           font-size: var(--font-size-helper) !important;
           line-height: 1.5 !important;
         }
+        @media (min-width: 1024px) {
+          :global(.output-text),
+          :global(.fallback-output),
+          :global(.final-output-preview) {
+            font-size: 16px !important;
+            line-height: 1.65 !important;
+          }
+        }
         @media (max-width: 820px) {
           .page {
             padding: 18px;

@@ -114,7 +114,7 @@ function ResultCard({
         <span className={result.fallbackUsed ? "route fallback" : "route"}>{routeLabel}</span>
       </header>
 
-      <div className="output-text">{result.output || "(no output)"}</div>
+      <div className="output-text selectable-output" data-selectable-output="true">{result.output || "(no output)"}</div>
 
       <div className="suggested-action">Suggested: {suggestion}</div>
       <div className="flow-hint">Original source → Result → Next step</div>
@@ -357,6 +357,9 @@ function ResultCard({
           color: #15202b;
           padding: 20px;
           font: 16px/1.78 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          user-select: text;
+          -webkit-user-select: text;
+          touch-action: manipulation;
         }
         .suggested-action {
           border: 1px solid #cfe3e1;

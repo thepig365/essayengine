@@ -7,6 +7,28 @@ body,
   overflow-x: hidden;
 }
 
+body {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Ensure mobile can select/copy engine output and final text; inputs stay editable. */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: manipulation;
+}
+
+.selectable-output,
+[data-selectable-output="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  touch-action: manipulation;
+}
+
 #__next,
 .main-app-root {
   width: 100%;

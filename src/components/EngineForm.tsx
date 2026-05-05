@@ -2109,135 +2109,6 @@ export function EngineForm({ result, onResult }: Props) {
           <p>Select, filter, and prepare transcript content before sending to Source.</p>
         </div>
 
-        <section className="transcript-library-panel">
-          <div className="range-head">
-            <strong>Transcript Library</strong>
-            <p>
-              Save fetched transcripts into subject folders and reuse them later. Transcripts are reusable source
-              materials. Projects save your full workspace; Transcript Library saves fetched transcripts by topic.
-            </p>
-          </div>
-          <div className="library-grid">
-            <label className="field">
-              <span>Folder</span>
-              <select
-                value={selectedTranscriptFolderId}
-                onChange={(e) => {
-                  setSelectedTranscriptFolderId(e.target.value);
-                  setSelectedTranscriptId("");
-                }}
-              >
-                {transcriptFolders.map((folder) => (
-                  <option key={folder.id} value={folder.id}>
-                    {folder.name} ({transcriptFolderCounts.get(folder.id) ?? 0})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="secondary library-button"
-              onClick={() => {
-                setFolderFormMode("create");
-                setNewTranscriptFolderName("");
-                setTranscriptLibraryStatus(null);
-              }}
-            >
-              New folder
-            </button>
-            <button
-              type="button"
-              className="secondary library-button"
-              onClick={() => {
-                setFolderFormMode("rename");
-                setFolderRenameName(selectedTranscriptFolder?.name ?? "");
-                setTranscriptLibraryStatus(null);
-              }}
-              disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
-            >
-              Rename folder
-            </button>
-            <button
-              type="button"
-              className="copy-action library-button"
-              onClick={deleteCurrentLibraryFolder}
-              disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
-            >
-              Delete folder
-            </button>
-          </div>
-          {folderFormMode === "create" && (
-            <div className="library-inline-form">
-              <label className="field">
-                <span>New folder name</span>
-                <input
-                  value={newTranscriptFolderName}
-                  onChange={(e) => setNewTranscriptFolderName(e.target.value)}
-                  placeholder="Mend, AI Trading, Psychology, Writing Ideas"
-                />
-              </label>
-              <button type="button" className="primary library-button" onClick={createLibraryFolder} disabled={!canCreateTranscriptFolder}>
-                Create
-              </button>
-              <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
-                Cancel
-              </button>
-            </div>
-          )}
-          {folderFormMode === "rename" && (
-            <div className="library-inline-form">
-              <label className="field">
-                <span>Rename folder</span>
-                <input
-                  value={folderRenameName}
-                  onChange={(e) => setFolderRenameName(e.target.value)}
-                  placeholder="New folder name"
-                />
-              </label>
-              <button type="button" className="primary library-button" onClick={renameCurrentLibraryFolder} disabled={!canRenameTranscriptFolder}>
-                Rename
-              </button>
-              <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
-                Cancel
-              </button>
-            </div>
-          )}
-          <label className="field">
-            <span>Transcript title</span>
-            <input
-              value={transcriptLibraryTitle}
-              onChange={(e) => setTranscriptLibraryTitle(e.target.value)}
-              placeholder="Lisa Barrett — Anxiety and Body Budget"
-            />
-          </label>
-          <div className="library-grid">
-            <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
-              {isDesktopLayout ? "Save transcript to folder" : "Save transcript"}
-            </button>
-            <label className="field">
-              <span>Load transcript</span>
-              <select value={selectedTranscriptId} onChange={(e) => setSelectedTranscriptId(e.target.value)}>
-                <option value="">Choose saved transcript</option>
-                {folderTranscripts.map((transcript) => (
-                  <option key={transcript.id} value={transcript.id}>
-                    {transcript.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="secondary library-button" onClick={loadSelectedLibraryTranscript}>
-              Load transcript
-            </button>
-            <button type="button" className="copy-action library-button" onClick={duplicateSelectedLibraryTranscript}>
-              Duplicate transcript
-            </button>
-            <button type="button" className="copy-action library-button" onClick={deleteSelectedLibraryTranscript}>
-              Delete transcript
-            </button>
-          </div>
-          {transcriptLibraryStatus && <span className="range-status">{transcriptLibraryStatus}</span>}
-        </section>
-
         {!transcriptText && (
           <div className="transcript-empty">
             <strong>{isYouTubeUrl ? "YouTube source detected" : "No transcript loaded"}</strong>
@@ -2497,6 +2368,140 @@ export function EngineForm({ result, onResult }: Props) {
             </details>
           </div>
         )}
+
+        <details className="ee-transcript-library-drawer" open={isDesktopLayout}>
+          <summary className="ee-transcript-library-summary">
+            Transcript Library — folders, save transcript, load saved
+          </summary>
+          <section className="transcript-library-panel">
+            <div className="range-head">
+              <strong>Transcript Library</strong>
+              <p>
+                Save fetched transcripts into subject folders and reuse them later. Transcripts are reusable source
+                materials. Projects save your full workspace; Transcript Library saves fetched transcripts by topic.
+              </p>
+            </div>
+            <div className="library-grid">
+              <label className="field">
+                <span>Folder</span>
+                <select
+                  value={selectedTranscriptFolderId}
+                  onChange={(e) => {
+                    setSelectedTranscriptFolderId(e.target.value);
+                    setSelectedTranscriptId("");
+                  }}
+                >
+                  {transcriptFolders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name} ({transcriptFolderCounts.get(folder.id) ?? 0})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="secondary library-button"
+                onClick={() => {
+                  setFolderFormMode("create");
+                  setNewTranscriptFolderName("");
+                  setTranscriptLibraryStatus(null);
+                }}
+              >
+                New folder
+              </button>
+              <button
+                type="button"
+                className="secondary library-button"
+                onClick={() => {
+                  setFolderFormMode("rename");
+                  setFolderRenameName(selectedTranscriptFolder?.name ?? "");
+                  setTranscriptLibraryStatus(null);
+                }}
+                disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
+              >
+                Rename folder
+              </button>
+              <button
+                type="button"
+                className="copy-action library-button"
+                onClick={deleteCurrentLibraryFolder}
+                disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
+              >
+                Delete folder
+              </button>
+            </div>
+            {folderFormMode === "create" && (
+              <div className="library-inline-form">
+                <label className="field">
+                  <span>New folder name</span>
+                  <input
+                    value={newTranscriptFolderName}
+                    onChange={(e) => setNewTranscriptFolderName(e.target.value)}
+                    placeholder="Mend, AI Trading, Psychology, Writing Ideas"
+                  />
+                </label>
+                <button type="button" className="primary library-button" onClick={createLibraryFolder} disabled={!canCreateTranscriptFolder}>
+                  Create
+                </button>
+                <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
+                  Cancel
+                </button>
+              </div>
+            )}
+            {folderFormMode === "rename" && (
+              <div className="library-inline-form">
+                <label className="field">
+                  <span>Rename folder</span>
+                  <input
+                    value={folderRenameName}
+                    onChange={(e) => setFolderRenameName(e.target.value)}
+                    placeholder="New folder name"
+                  />
+                </label>
+                <button type="button" className="primary library-button" onClick={renameCurrentLibraryFolder} disabled={!canRenameTranscriptFolder}>
+                  Rename
+                </button>
+                <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
+                  Cancel
+                </button>
+              </div>
+            )}
+            <label className="field">
+              <span>Transcript title</span>
+              <input
+                value={transcriptLibraryTitle}
+                onChange={(e) => setTranscriptLibraryTitle(e.target.value)}
+                placeholder="Lisa Barrett — Anxiety and Body Budget"
+              />
+            </label>
+            <div className="library-grid">
+              <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
+                {isDesktopLayout ? "Save transcript to folder" : "Save transcript"}
+              </button>
+              <label className="field">
+                <span>Load transcript</span>
+                <select value={selectedTranscriptId} onChange={(e) => setSelectedTranscriptId(e.target.value)}>
+                  <option value="">Choose saved transcript</option>
+                  {folderTranscripts.map((transcript) => (
+                    <option key={transcript.id} value={transcript.id}>
+                      {transcript.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" className="secondary library-button" onClick={loadSelectedLibraryTranscript}>
+                Load transcript
+              </button>
+              <button type="button" className="copy-action library-button" onClick={duplicateSelectedLibraryTranscript}>
+                Duplicate transcript
+              </button>
+              <button type="button" className="copy-action library-button" onClick={deleteSelectedLibraryTranscript}>
+                Delete transcript
+              </button>
+            </div>
+            {transcriptLibraryStatus && <span className="range-status">{transcriptLibraryStatus}</span>}
+          </section>
+        </details>
         </TranscriptWorkspacePanel>
       </section>
 
@@ -3220,12 +3225,13 @@ export function EngineForm({ result, onResult }: Props) {
           desktopMinWidth={DESKTOP_MIN}
         />
 
-        <div className="mobile-classic-head">
-          <p className="eyebrow">Classic Editor</p>
-          <h2>Source / Draft / Result</h2>
-          <p>Use these tabs for direct editing after the guided workflow, or when you want to manually move text between source, draft, and result.</p>
-        </div>
-
+        <details className="ee-mobile-classic-editor" open={isDesktopLayout}>
+          <summary className="ee-mobile-classic-summary">
+            <span className="eyebrow">Classic Editor</span>
+            <strong className="ee-mobile-classic-title">Source / Draft / Result</strong>
+            <span className="ee-mobile-classic-hint">Optional quick edit — expand for tabs</span>
+          </summary>
+          <div className="ee-mobile-classic-body">
         <nav className="mobile-primary-tabs" aria-label="Mobile workflow tabs">
           {[
             { id: "source", label: "Source" },
@@ -3321,7 +3327,7 @@ export function EngineForm({ result, onResult }: Props) {
               <strong>Result</strong>
               <span>Latest generated output</span>
             </div>
-            <div className="mobile-result-output">{primaryResultOutput || "No result yet. Generate from Source first."}</div>
+            <div className="mobile-result-output" data-selectable-output="true">{primaryResultOutput || "No result yet. Generate from Source first."}</div>
             <div className="mobile-action-grid">
               <button type="button" onClick={() => appendToEssayDraft(primaryResultOutput, "Result added to Essay Draft.")} disabled={!primaryResultOutput}>
                 Add to Draft
@@ -3338,6 +3344,9 @@ export function EngineForm({ result, onResult }: Props) {
             </div>
           </section>
         )}
+          </div>
+        </details>
+
       </section>
 
       <nav className="mobile-tabs legacy-mobile-tabs" aria-label="Mobile workflow tabs">
@@ -4830,6 +4839,66 @@ export function EngineForm({ result, onResult }: Props) {
             order: -1;
             min-width: 0;
             max-width: 100%;
+          }
+          .ee-transcript-library-drawer {
+            min-width: 0;
+            max-width: 100%;
+          }
+          .ee-transcript-library-summary {
+            cursor: pointer;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px solid #dfe5ec;
+            border-radius: 12px;
+            background: #f8fafc;
+            font-size: 14px;
+            font-weight: 800;
+            color: #22303f;
+            list-style: none;
+          }
+          .ee-transcript-library-summary::-webkit-details-marker {
+            display: none;
+          }
+          .ee-mobile-classic-editor {
+            min-width: 0;
+            max-width: 100%;
+          }
+          .ee-mobile-classic-summary {
+            cursor: pointer;
+            display: grid;
+            gap: 4px;
+            padding: 12px 14px;
+            border: 1px solid #dfe5ec;
+            border-radius: 14px;
+            background: #ffffff;
+            min-height: 48px;
+            list-style: none;
+          }
+          .ee-mobile-classic-summary::-webkit-details-marker {
+            display: none;
+          }
+          .ee-mobile-classic-title {
+            color: #17202a;
+            font-size: 17px;
+            line-height: 1.2;
+          }
+          .ee-mobile-classic-hint {
+            color: #617080;
+            font-size: 13px;
+            font-weight: 650;
+          }
+          .ee-mobile-classic-body {
+            margin-top: 12px;
+            min-width: 0;
+            max-width: 100%;
+          }
+          .mobile-result-output {
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: manipulation;
+            white-space: pre-wrap;
           }
           .mobile-classic-head {
             display: grid;
