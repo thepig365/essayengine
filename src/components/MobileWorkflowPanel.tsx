@@ -63,8 +63,14 @@ type Props = {
   onToggleRepurposeFormat: (format: string) => void;
   onRepurpose: () => void;
   onCopyRepurposeOutput: (output: MobileWorkflowRepurposeOutput) => void;
-  /** full = desktop work-column; slice-off hides the panel (e.g. engines/transcript steps). */
   mode?: MobileWorkflowPanelMode;
+  /** Compact active source summary for desktop support rail */
+  supportRailSourceSummary?: {
+    type: string;
+    sections: number;
+    words: number;
+    from: string;
+  } | null;
   /** Shorten primary button labels for narrow screens */
   compactLabels?: boolean;
 };
@@ -125,7 +131,8 @@ export function MobileWorkflowPanel({
   onToggleRepurposeFormat,
   onRepurpose,
   onCopyRepurposeOutput,
-  mode = "full",
+  mode = "slice-off",
+  supportRailSourceSummary = null,
   compactLabels = false,
 }: Props) {
   if (mode === "slice-off") {
@@ -136,6 +143,380 @@ export function MobileWorkflowPanel({
   const selectedStructure = structures.find((structure) => structure.id === selectedStructureId) ?? null;
   const hasDraft = draftContent.trim().length > 0;
   const canReviseMarkedDraft = hasDraft && markedParagraphs.length > 0 && revisionInstruction.trim().length > 0 && !busy;
+
+  if (mode === "support-rail") {
+    return (
+      <section className="mobile-workflow-panel ee-support-rail" aria-label="Workspace aids and capture tools">
+        <div className="panel-head compact">
+          <p className="eyebrow">Workspace aids</p>
+          <h2>Capture &amp; context</h2>
+          <p className="helper">Same tools as mobile layout — expand a section when you need it. Main engine steps stay in the center column.</p>
+        </div>
+        {supportRailSourceSummary ? (
+          <div className="support-source-summary">
+            <strong>Active source</strong>
+            <dl>
+              <div>
+                <dt>Type</dt>
+                <dd>{supportRailSourceSummary.type}</dd>
+              </div>
+              <div>
+                <dt>Sections</dt>
+                <dd>{supportRailSourceSummary.sections}</dd>
+              </div>
+              <div>
+                <dt>Words</dt>
+                <dd>{supportRailSourceSummary.words.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>From</dt>
+                <dd>{supportRailSourceSummary.from}</dd>
+              </div>
+            </dl>
+          </div>
+        ) : null}
+
+        <details className="ee-support-details" open>
+          <summary>Quick notes &amp; capture inbox</summary>
+          <div className="workflow-grid single-col">
+            <article className="workflow-step">
+              <textarea
+                value={captureIdea}
+                onChange={(event) => onCaptureChange(event.target.value)}
+                rows={5}
+                placeholder="Quick notes, snippets, or raw capture text (optional)."
+              />
+              <div className="button-row">
+                <button type="button" onClick={onExtractValue} disabled={!captureIdea.trim()}>
+                  Extract core value
+                </button>
+                <button type="button" onClick={onUseCaptureAsSource} disabled={!captureIdea.trim()}>
+                  Use as Source
+                </button>
+              </div>
+              {coreValue ? <div className="value-box">{coreValue}</div> : null}
+            </article>
+          </div>
+        </details>
+
+        <details className="ee-support-details">
+          <summary>Link capture &amp; voice note</summary>
+          <div className="workflow-grid single-col">
+            <article className="workflow-step">
+              <div className="link-capture-box">
+                <div>
+                  <strong>Link capture</strong>
+                  <p>Paste a URL to analyze and save as material.</p>
+                </div>
+                <label>
+                  Link URL
+                  <input
+                    value={linkCaptureUrl}
+                    onChange={(event) => onLinkCaptureUrlChange(event.target.value)}
+                    placeholder="https://example.com/article"
+                    inputMode="url"
+                  />
+                </label>
+                <div className="button-row">
+                  <button type="button" onClick={onAnalyzeLinkCapture} disabled={!linkCaptureUrl.trim() || busy}>
+                    {busy ? "Analyzing link..." : "Analyze link"}
+                  </button>
+                  <button type="button" onClick={onSaveLinkCapture} disabled={!linkCapture}>
+                    Save as capture
+                  </button>
+                  <button type="button" onClick={onCopyLinkCapture} disabled={!linkCapture}>
+                    Copy link material
+                  </button>
+                </div>
+                {linkCapture ? (
+                  <div className="link-material">
+                    <small>Use this as essay material</small>
+                    <strong>{linkCapture.sourceTitle}</strong>
+                    <p>{linkCapture.coreIdea || linkCapture.sourceExcerpt}</p>
+                  </div>
+                ) : null}
+              </div>
+              <div className="voice-capture-box">
+                <div>
+                  <strong>Voice note</strong>
+                  <p>Record, transcribe, then save as capture text.</p>
+                </div>
+                <div className="button-row">
+                  <button type="button" onClick={voiceRecorder.startVoiceRecording} disabled={voiceRecorder.isRecording || busy}>
+                    Record voice note
+                  </button>
+                  <button type="button" onClick={voiceRecorder.stopVoiceRecording} disabled={!voiceRecorder.isRecording}>
+                    Stop recording
+                  </button>
+                </div>
+                <div className="voice-status">
+                  <span>{voiceRecorder.isRecording ? "Recording..." : voiceRecorder.recordingStatus}</span>
+                  <span>{voiceRecorder.recordingDurationSeconds}s</span>
+                </div>
+                {voiceRecorder.recordingError ? <p className="voice-error">{voiceRecorder.recordingError}</p> : null}
+                {voiceRecorder.recordedAudioUrl ? (
+                  <div className="voice-preview">
+                    <audio controls src={voiceRecorder.recordedAudioUrl} />
+                    <button type="button" onClick={voiceRecorder.transcribeRecording} disabled={voiceRecorder.isTranscribing}>
+                      {voiceRecorder.isTranscribing ? "Transcribing..." : "Transcribe voice note"}
+                    </button>
+                    {(voiceRecorder.transcriptionText || voiceRecorder.isTranscribing) && (
+                      <label>
+                        Voice transcript
+                        <textarea
+                          value={voiceRecorder.transcriptionText}
+                          onChange={(event) => voiceRecorder.setTranscriptionText(event.target.value)}
+                          rows={4}
+                        />
+                      </label>
+                    )}
+                    <div className="button-row">
+                      <button type="button" onClick={onSaveVoiceCapture}>
+                        Save transcript as capture
+                      </button>
+                      <button type="button" onClick={onCopyVoiceTranscript} disabled={!voiceRecorder.transcriptionText.trim()}>
+                        Copy transcript
+                      </button>
+                      <button type="button" onClick={onDiscardVoiceCapture}>
+                        Discard
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          </div>
+        </details>
+
+        <details className="ee-support-details">
+          <summary>AI outline, polish &amp; repurpose (optional)</summary>
+          <div className="workflow-grid single-col">
+            <article className="workflow-step">
+              <h3>Structure Builder</h3>
+              <button type="button" onClick={onCreateStructures} disabled={busy || (!captureIdea.trim() && !coreValue.trim())}>
+                {busy ? "Creating structures..." : "Create AI structures"}
+              </button>
+              <div className="structure-list">
+                {structures.map((structure) => (
+                  <button
+                    type="button"
+                    className={structure.id === selectedStructureId ? "structure selected" : "structure"}
+                    key={structure.id}
+                    onClick={() => onSelectStructure(structure.id)}
+                  >
+                    <strong>{structure.title}</strong>
+                    <small>{structure.angle}</small>
+                    <ol>
+                      {structure.outline.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ol>
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={onCopySelectedStructureOutline} disabled={!selectedStructure}>
+                Copy selected outline
+              </button>
+            </article>
+            <article className="workflow-step">
+              <h3>Generate from structure</h3>
+              <p className="helper">
+                {selectedStructure
+                  ? `Selected: ${selectedStructure.title}.`
+                  : "Choose a structure before generating a structured draft."}
+              </p>
+              <button type="button" onClick={onGenerateDraft} disabled={busy || !selectedStructureId || (!captureIdea.trim() && !coreValue.trim())}>
+                {busy ? "Generating..." : "Generate draft to Essay Draft"}
+              </button>
+            </article>
+            <article className="workflow-step wide">
+              <h3>Mark paragraphs</h3>
+              <button type="button" onClick={onEnterListenMode} disabled={!draftContent.trim() || busy}>
+                Start marking
+              </button>
+              {draftParagraphs.length > 0 ? (
+                <div className="paragraph-list">
+                  {draftParagraphs.map((paragraph, index) => (
+                    <button
+                      type="button"
+                      key={`${index}-${paragraph.slice(0, 24)}`}
+                      className={markedParagraphs.includes(index) ? "paragraph marked" : "paragraph"}
+                      onClick={() => onToggleParagraphMark(index)}
+                    >
+                      <strong>Paragraph {index + 1}</strong>
+                      <span>{paragraph}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="helper">No draft yet. Generate or paste a draft first.</p>
+              )}
+            </article>
+            <article className="workflow-step">
+              <h3>Revision request</h3>
+              <textarea
+                value={revisionInstruction}
+                onChange={(event) => onRevisionInstructionChange(event.target.value)}
+                rows={3}
+                placeholder="Instructions for revising marked paragraphs."
+              />
+              <button type="button" onClick={onRequestRevision} disabled={!canReviseMarkedDraft}>
+                {busy ? "Revising..." : "Revise marked paragraphs"}
+              </button>
+            </article>
+            <article className="workflow-step">
+              <h3>Draft quality</h3>
+              <button type="button" onClick={onDiagnose} disabled={!draftContent.trim() || busy}>
+                Diagnose draft
+              </button>
+              {diagnosis.length > 0 ? (
+                <>
+                  <ul className="diagnosis">
+                    {diagnosis.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <button type="button" onClick={onCopyDiagnosis}>
+                    Copy diagnosis
+                  </button>
+                </>
+              ) : null}
+            </article>
+            <article className="workflow-step">
+              <h3>Polish versions</h3>
+              <div className="choice-list" aria-label="Polish directions">
+                {POLISH_DIRECTIONS.map((direction) => (
+                  <label key={direction} className="choice">
+                    <input
+                      type="checkbox"
+                      checked={selectedPolishDirections.includes(direction)}
+                      onChange={() => onTogglePolishDirection(direction)}
+                    />
+                    {direction}
+                  </label>
+                ))}
+              </div>
+              <button type="button" onClick={onCreatePolishVersions} disabled={!draftContent.trim() || busy}>
+                {busy ? "Creating polish versions..." : "Create polish versions"}
+              </button>
+              <div className="version-list">
+                {polishVersions.map((version) => (
+                  <div className="mini-card" key={version.id}>
+                    <strong>{version.label}</strong>
+                    <p>{version.content}</p>
+                    <div className="button-row">
+                      <button type="button" onClick={() => onUsePolishVersion(version)}>
+                        Use as Essay Draft
+                      </button>
+                      <button type="button" onClick={() => onCopyPolishVersion(version)}>
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+            <article className="workflow-step">
+              <h3>Repurpose outputs</h3>
+              <div className="choice-list" aria-label="Repurpose formats">
+                {REPURPOSE_FORMATS.map((format) => (
+                  <label key={format} className="choice">
+                    <input
+                      type="checkbox"
+                      checked={selectedRepurposeFormats.includes(format)}
+                      onChange={() => onToggleRepurposeFormat(format)}
+                    />
+                    {format}
+                  </label>
+                ))}
+              </div>
+              <button type="button" onClick={onRepurpose} disabled={!draftContent.trim() || busy}>
+                {busy ? "Creating formats..." : "Create selected formats"}
+              </button>
+              <div className="version-list">
+                {repurposeOutputs.map((output) => (
+                  <div className="mini-card" key={output.id}>
+                    <strong>{output.format}</strong>
+                    {output.title && <small>{output.title}</small>}
+                    <p>{output.content}</p>
+                    <button type="button" onClick={() => onCopyRepurposeOutput(output)}>
+                      Copy
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </details>
+
+        {status ? <div className="workflow-status">{status}</div> : null}
+
+        <style jsx>{`
+          .ee-support-rail .support-source-summary {
+            display: grid;
+            gap: 8px;
+            border: 1px solid #e3e9ef;
+            border-radius: 12px;
+            background: #fbfcfe;
+            padding: 12px;
+            margin-bottom: 10px;
+          }
+          .ee-support-rail .support-source-summary strong {
+            color: #174447;
+            font-size: 14px;
+          }
+          .ee-support-rail .support-source-summary dl {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 0;
+          }
+          .ee-support-rail .support-source-summary div {
+            border: 1px solid #e3e9ef;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 8px;
+          }
+          .ee-support-rail .support-source-summary dt {
+            color: #617080;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+          }
+          .ee-support-rail .support-source-summary dd {
+            margin: 2px 0 0;
+            color: #17202a;
+            font-size: 13px;
+            font-weight: 650;
+          }
+          .ee-support-details {
+            border: 1px solid #e3e9ef;
+            border-radius: 12px;
+            background: #ffffff;
+            margin-bottom: 10px;
+            overflow: hidden;
+          }
+          .ee-support-details summary {
+            cursor: pointer;
+            padding: 12px 14px;
+            font-weight: 850;
+            color: #174447;
+            background: #f8fcfb;
+            list-style: none;
+          }
+          .ee-support-details summary::-webkit-details-marker {
+            display: none;
+          }
+          .ee-support-details .workflow-grid {
+            padding: 0 12px 12px;
+          }
+          .workflow-grid.single-col {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        `}</style>
+      </section>
+    );
+  }
 
   const showFull = mode === "full";
   const showSource = showFull || mode === "slice-source";
@@ -150,24 +531,12 @@ export function MobileWorkflowPanel({
 
   return (
     <section className={mode === "full" ? "mobile-workflow-panel" : "mobile-workflow-panel mode-sliced"}>
-      {(showFull || !compactLabels) && (
-        <div className={showFull ? "panel-head" : "panel-head compact"}>
-          <p className="eyebrow">Guided Mobile Workflow</p>
-          {showFull && (
-            <>
-              <h2>Capture to Repurpose</h2>
-              <p>One decision at a time: capture, clarify, structure, draft, listen, revise, diagnose, polish, and repurpose.</p>
-            </>
-          )}
-        </div>
-      )}
-
       <div className="workflow-grid">
         {showSource ? (
         <>
         <article className="workflow-step">
-          <span>1. Capture</span>
-          <h3>Capture Inbox</h3>
+          <span>Capture</span>
+          <h3>Capture inbox</h3>
           <textarea
             value={captureIdea}
             onChange={(event) => onCaptureChange(event.target.value)}
@@ -320,22 +689,6 @@ export function MobileWorkflowPanel({
           {coreValue && <div className="value-box">{coreValue}</div>}
         </article>
 
-        <article className="workflow-step">
-          <span>2. Clarify</span>
-          <h3>Three Questions</h3>
-          <label>
-            Intent
-            <input value={clarifyIntent} onChange={(event) => onClarifyIntentChange(event.target.value)} placeholder="What should this essay do?" />
-          </label>
-          <label>
-            Audience
-            <input value={clarifyAudience} onChange={(event) => onClarifyAudienceChange(event.target.value)} placeholder="Who is this for?" />
-          </label>
-          <label>
-            Tone
-            <input value={clarifyTone} onChange={(event) => onClarifyToneChange(event.target.value)} placeholder="How should it sound?" />
-          </label>
-        </article>
         </>
         ) : null}
 

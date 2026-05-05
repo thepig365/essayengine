@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DESKTOP_MIN } from "@/essay-engine/breakpoints";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useEssayEngine } from "@/essay-engine/EssayEngineContext";
 import type { FinalResultSelection } from "@/lib/projectStorage";
 import type { EngineResponse, EngineTask, LLMProvider, ProviderResult } from "@/types/engine";
 
@@ -581,7 +580,8 @@ export function OutputPanel({
   const [compareTab, setCompareTab] = useState(0);
   const outputs = result?.outputs ?? [];
   const isMulti = outputs.length > 1;
-  const compactLabels = useMediaQuery(`(max-width: ${DESKTOP_MIN - 1}px)`, false);
+  const { isDesktopLayout } = useEssayEngine();
+  const compactLabels = !isDesktopLayout;
   const useResultTabs = isMulti && compactLabels;
   const selectedIsMulti = selectedProviders.length > 1;
   const providersUsed = outputs.length

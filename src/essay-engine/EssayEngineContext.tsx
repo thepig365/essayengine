@@ -14,8 +14,13 @@ export type EssayEngineController = Record<string, unknown> & {
   setMobileShellTab: (t: "workspace" | "tools" | "sources") => void;
   mobileToolsDrawerOpen: boolean;
   setMobileToolsDrawerOpen: (open: boolean) => void;
-  /** True when viewport is at least 1024px (desktop console layout). */
+  /**
+   * True when the **effective** shell is the wide desktop console (3-column grid).
+   * False on narrow viewports or when the user forces Mobile Friendly View on a wide screen.
+   */
   isDesktopLayout: boolean;
+  /** Raw viewport: min-width 1024px (ignores manual view toggle). */
+  viewportIsDesktop: boolean;
 };
 
 const EssayEngineContext = createContext<EssayEngineController | null>(null);

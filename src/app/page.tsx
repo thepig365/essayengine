@@ -1,12 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EngineForm } from "@/components/EngineForm";
 import { UserGuide } from "@/components/UserGuide";
+import {
+  CONSOLE_VIEW_STORAGE_KEY,
+  DESKTOP_MIN,
+  type ConsoleViewPreference,
+} from "@/essay-engine/breakpoints";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { EngineResponse } from "@/types/engine";
 
 export default function HomePage() {
   const [result, setResult] = useState<EngineResponse | null>(null);
+  const [consoleViewPreference, setConsoleViewPreference] = useState<ConsoleViewPreference>("auto");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CONSOLE_VIEW_STORAGE_KEY);
+      if (raw === "desktop" || raw === "mobile" || raw === "auto") {
+        setConsoleViewPreference(raw);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setConsolePreference = useCallback((next: ConsoleViewPreference) => {
+    setConsoleViewPreference(next);
+    try {
+      localStorage.setItem(CONSOLE_VIEW_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const viewportIsDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
+  const effectiveIsMobileLayout =
+    !viewportIsDesktop || (viewportIsDesktop && consoleViewPreference === "mobile");
 
   return (
     <main className="page">
@@ -17,11 +48,20 @@ export default function HomePage() {
         </div>
         <div className="hero-actions">
           <span>Build essays from transcripts, notes, and ideas — refine, iterate, and finalize into text or audio.</span>
+          {viewportIsDesktop ? (
+            <button
+              type="button"
+              className="console-view-toggle"
+              onClick={() => setConsolePreference(effectiveIsMobileLayout ? "desktop" : "mobile")}
+            >
+              {effectiveIsMobileLayout ? "Desktop Console View" : "Mobile Friendly View"}
+            </button>
+          ) : null}
           <UserGuide />
         </div>
       </header>
 
-      <EngineForm result={result} onResult={setResult} />
+      <EngineForm result={result} onResult={setResult} consoleViewPreference={consoleViewPreference} />
 
       <style jsx>{`
         .page {
@@ -93,7 +133,9 @@ export default function HomePage() {
         }
         .hero-actions {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
+          justify-content: flex-end;
           gap: 14px;
         }
         .hero-actions span {
@@ -102,6 +144,23 @@ export default function HomePage() {
           font-size: 15px;
           line-height: 1.55;
           text-align: right;
+        }
+        .console-view-toggle {
+          flex-shrink: 0;
+          border: 1px solid var(--border-medium);
+          border-radius: 999px;
+          background: var(--bg-card-soft);
+          color: var(--text-primary);
+          padding: 10px 18px;
+          font: inherit;
+          font-size: 14px;
+          font-weight: 750;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .console-view-toggle:hover {
+          border-color: var(--accent-primary);
+          background: var(--accent-soft);
         }
         :global(body),
         :global(button),

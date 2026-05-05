@@ -60,7 +60,7 @@ import {
   YOUTUBE_RE,
 } from "@/essay-engine/constants";
 import { EssayEngineProvider } from "@/essay-engine/EssayEngineContext";
-import { DESKTOP_MIN } from "@/essay-engine/breakpoints";
+import { DESKTOP_MIN, type ConsoleViewPreference } from "@/essay-engine/breakpoints";
 import { MOBILE_WORKFLOW_STEPS, resolveMobileWorkflowPanelMode } from "@/essay-engine/mobileWorkflowSteps";
 type TimestampChapter = {
   id: string;
@@ -347,9 +347,10 @@ function countWords(text: string): number {
 type Props = {
   result: EngineResponse | null;
   onResult: (result: EngineResponse | null) => void;
+  consoleViewPreference: ConsoleViewPreference;
 };
 
-export function EngineForm({ result, onResult }: Props) {
+export function EngineForm({ result, onResult, consoleViewPreference }: Props) {
   const [task, setTask] = useState<EngineTask>("translate");
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"source" | "draft" | "result">("draft");
@@ -663,15 +664,18 @@ export function EngineForm({ result, onResult }: Props) {
   });
   setProjectStatusRef.current = setProjectStatus;
 
-  const isDesktopLayout = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
+  const viewportIsDesktop = useMediaQuery(`(min-width: ${DESKTOP_MIN}px)`, true);
+  const effectiveIsMobileLayout =
+    !viewportIsDesktop || (viewportIsDesktop && consoleViewPreference === "mobile");
+  const effectiveIsDesktopConsole = !effectiveIsMobileLayout;
 
   const mobileWorkflowStepId = MOBILE_WORKFLOW_STEPS[mobileWorkflowStepIndex]?.id;
 
   const mobileWorkflowPanelMode = useMemo(() => {
-    if (isDesktopLayout) return "full" as const;
+    if (effectiveIsDesktopConsole) return "support-rail" as const;
     if (mobileShellTab === "sources") return "slice-source" as const;
     return resolveMobileWorkflowPanelMode(false, mobileWorkflowStepId);
-  }, [isDesktopLayout, mobileShellTab, mobileWorkflowStepId]);
+  }, [effectiveIsDesktopConsole, mobileShellTab, mobileWorkflowStepId]);
 
   const essayEngineController = useMemo(
     () => ({
@@ -681,9 +685,16 @@ export function EngineForm({ result, onResult }: Props) {
       setMobileShellTab,
       mobileToolsDrawerOpen,
       setMobileToolsDrawerOpen,
-      isDesktopLayout,
+      isDesktopLayout: effectiveIsDesktopConsole,
+      viewportIsDesktop,
     }),
-    [isDesktopLayout, mobileShellTab, mobileToolsDrawerOpen, mobileWorkflowStepIndex],
+    [
+      effectiveIsDesktopConsole,
+      viewportIsDesktop,
+      mobileShellTab,
+      mobileToolsDrawerOpen,
+      mobileWorkflowStepIndex,
+    ],
   );
 
   function toggleProvider(p: LLMProvider) {
@@ -1783,8 +1794,8 @@ export function EngineForm({ result, onResult }: Props) {
   return (
     <EssayEngineProvider value={essayEngineController}>
     <div
-      className={`workspace${!isDesktopLayout ? ` ee-narrow ee-shell-${mobileShellTab}` : ""}`}
-      data-mobile-step={!isDesktopLayout && mobileWorkflowStepId ? mobileWorkflowStepId : undefined}
+      className={`workspace${effectiveIsMobileLayout ? ` ee-narrow ee-shell-${mobileShellTab}` : ""}`}
+      data-mobile-step={effectiveIsMobileLayout && mobileWorkflowStepId ? mobileWorkflowStepId : undefined}
     >
       <DesktopConsoleLayout>
       <aside id="ee-panel-engines" className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
@@ -2369,7 +2380,7 @@ export function EngineForm({ result, onResult }: Props) {
           </div>
         )}
 
-        <details className="ee-transcript-library-drawer" open={isDesktopLayout}>
+        <details className="ee-transcript-library-drawer" open={effectiveIsDesktopConsole}>
           <summary className="ee-transcript-library-summary">
             Transcript Library — folders, save transcript, load saved
           </summary>
@@ -2476,7 +2487,7 @@ export function EngineForm({ result, onResult }: Props) {
             </label>
             <div className="library-grid">
               <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
-                {isDesktopLayout ? "Save transcript to folder" : "Save transcript"}
+                {effectiveIsDesktopConsole ? "Save transcript to folder" : "Save transcript"}
               </button>
               <label className="field">
                 <span>Load transcript</span>
@@ -2573,7 +2584,8 @@ export function EngineForm({ result, onResult }: Props) {
           onRepurpose={mobileWorkflow.createRepurposeOutputs}
           onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
           mode={mobileWorkflowPanelMode}
-          compactLabels={!isDesktopLayout}
+          compactLabels={effectiveIsMobileLayout}
+          supportRailSourceSummary={sourceSummaryDetails}
         />
         </StructureBuilderPanel>
 
@@ -3225,7 +3237,7 @@ export function EngineForm({ result, onResult }: Props) {
           desktopMinWidth={DESKTOP_MIN}
         />
 
-        <details className="ee-mobile-classic-editor" open={isDesktopLayout}>
+        <details className="ee-mobile-classic-editor" open={effectiveIsDesktopConsole}>
           <summary className="ee-mobile-classic-summary">
             <span className="eyebrow">Classic Editor</span>
             <strong className="ee-mobile-classic-title">Source / Draft / Result</strong>
@@ -4705,28 +4717,28 @@ export function EngineForm({ result, onResult }: Props) {
         .mobile-player {
           display: none;
         }
-        @media (max-width: 1023px) {
-          .workspace {
-            grid-template-columns: minmax(0, 1fr);
-            gap: 14px;
-            padding-bottom: 190px;
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-          }
-          .control-column,
-          .transcript-column {
-            position: static;
-            max-height: none;
-            overflow: visible;
-            min-width: 0;
-            max-width: 100%;
-          }
-          .work-column {
-            position: static;
-            min-width: 0;
-            max-width: 100%;
-          }
+        .workspace.ee-narrow {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 14px;
+          padding-bottom: 190px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow-x: hidden;
+        }
+        .workspace.ee-narrow .control-column,
+        .workspace.ee-narrow .transcript-column {
+          position: static;
+          max-height: none;
+          overflow: visible;
+          min-width: 0;
+          max-width: 100%;
+        }
+        .workspace.ee-narrow .work-column {
+          position: static;
+          min-width: 0;
+          max-width: 100%;
+        }
 
           .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > aside,
           .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > section.transcript-column,
@@ -4830,18 +4842,18 @@ export function EngineForm({ result, onResult }: Props) {
             display: block !important;
           }
 
-          .mobile-first-workspace {
+          .workspace.ee-narrow > .mobile-first-workspace {
             display: grid;
             gap: 14px;
             order: -1;
             min-width: 0;
             max-width: 100%;
           }
-          .ee-transcript-library-drawer {
+          .workspace.ee-narrow .ee-transcript-library-drawer {
             min-width: 0;
             max-width: 100%;
           }
-          .ee-transcript-library-summary {
+          .workspace.ee-narrow .ee-transcript-library-summary {
             cursor: pointer;
             min-height: 48px;
             display: flex;
@@ -4855,14 +4867,14 @@ export function EngineForm({ result, onResult }: Props) {
             color: #22303f;
             list-style: none;
           }
-          .ee-transcript-library-summary::-webkit-details-marker {
+          .workspace.ee-narrow .ee-transcript-library-summary::-webkit-details-marker {
             display: none;
           }
-          .ee-mobile-classic-editor {
+          .workspace.ee-narrow .ee-mobile-classic-editor {
             min-width: 0;
             max-width: 100%;
           }
-          .ee-mobile-classic-summary {
+          .workspace.ee-narrow .ee-mobile-classic-summary {
             cursor: pointer;
             display: grid;
             gap: 4px;
@@ -4873,31 +4885,42 @@ export function EngineForm({ result, onResult }: Props) {
             min-height: 48px;
             list-style: none;
           }
-          .ee-mobile-classic-summary::-webkit-details-marker {
+          .workspace.ee-narrow .ee-mobile-classic-summary::-webkit-details-marker {
             display: none;
           }
-          .ee-mobile-classic-title {
+          .workspace.ee-narrow .ee-mobile-classic-title {
             color: #17202a;
             font-size: 17px;
             line-height: 1.2;
           }
-          .ee-mobile-classic-hint {
+          .workspace.ee-narrow .ee-mobile-classic-hint {
             color: #617080;
             font-size: 13px;
             font-weight: 650;
           }
-          .ee-mobile-classic-body {
+          .workspace.ee-narrow .ee-mobile-classic-body {
             margin-top: 12px;
             min-width: 0;
             max-width: 100%;
           }
-          .mobile-result-output {
+          .workspace.ee-narrow .mobile-result-output {
             user-select: text;
             -webkit-user-select: text;
             touch-action: manipulation;
             white-space: pre-wrap;
+            min-height: 360px;
+            max-height: 60vh;
+            overflow: auto;
+            overflow-wrap: anywhere;
+            border: 1px solid #e3e9ef;
+            border-radius: 12px;
+            background: #fbfcfe;
+            color: #15202b;
+            padding: 14px;
+            font-size: 15px;
+            line-height: 1.65;
           }
-          .mobile-classic-head {
+          .workspace.ee-narrow .mobile-classic-head {
             display: grid;
             gap: 4px;
             border: 1px solid #dfe5ec;
@@ -4906,20 +4929,20 @@ export function EngineForm({ result, onResult }: Props) {
             padding: 14px;
             box-shadow: 0 10px 26px rgba(31, 45, 61, 0.06);
           }
-          .mobile-classic-head h2,
-          .mobile-classic-head p {
+          .workspace.ee-narrow .mobile-classic-head h2,
+          .workspace.ee-narrow .mobile-classic-head p {
             margin: 0;
           }
-          .mobile-classic-head h2 {
+          .workspace.ee-narrow .mobile-classic-head h2 {
             color: #17202a;
             font-size: 18px;
           }
-          .mobile-classic-head p:not(.eyebrow) {
+          .workspace.ee-narrow .mobile-classic-head p:not(.eyebrow) {
             color: #617080;
             font-size: 13px;
             line-height: 1.45;
           }
-          .mobile-primary-tabs {
+          .workspace.ee-narrow .mobile-primary-tabs {
             position: sticky;
             top: 0;
             z-index: 22;
@@ -4933,7 +4956,7 @@ export function EngineForm({ result, onResult }: Props) {
             padding: 8px;
             box-shadow: 0 8px 24px rgba(31, 45, 61, 0.08);
           }
-          .mobile-primary-tabs button {
+          .workspace.ee-narrow .mobile-primary-tabs button {
             border: 1px solid #cfd8e3;
             border-radius: 999px;
             background: #f8fafc;
@@ -4943,12 +4966,12 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 13px;
             font-weight: 900;
           }
-          .mobile-primary-tabs button.active {
+          .workspace.ee-narrow .mobile-primary-tabs button.active {
             border-color: #1d5f63;
             background: #1d5f63;
             color: #ffffff;
           }
-          .mobile-panel {
+          .workspace.ee-narrow .mobile-panel {
             display: grid;
             gap: 12px;
             border: 1px solid #dfe5ec;
@@ -4957,37 +4980,37 @@ export function EngineForm({ result, onResult }: Props) {
             box-shadow: 0 14px 34px rgba(31, 45, 61, 0.07);
             padding: 14px;
           }
-          .mobile-panel-head {
+          .workspace.ee-narrow .mobile-panel-head {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
             gap: 10px;
           }
-          .mobile-panel-head strong {
+          .workspace.ee-narrow .mobile-panel-head strong {
             color: #17202a;
             font-size: 18px;
           }
-          .mobile-panel-head span {
+          .workspace.ee-narrow .mobile-panel-head span {
             color: #617080;
             font-size: 12px;
             font-weight: 800;
             text-align: right;
           }
-          .mobile-panel textarea {
+          .workspace.ee-narrow .mobile-panel textarea {
             min-height: 320px;
             font-family: inherit;
             font-size: 15px;
             line-height: 1.65;
           }
-          .mobile-draft-panel textarea {
+          .workspace.ee-narrow .mobile-draft-panel textarea {
             min-height: 420px;
           }
-          .mobile-metrics {
+          .workspace.ee-narrow .mobile-metrics {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
           }
-          .mobile-metrics span {
+          .workspace.ee-narrow .mobile-metrics span {
             border: 1px solid #e3e9ef;
             border-radius: 999px;
             background: #f8fafc;
@@ -4996,15 +5019,15 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 12px;
             font-weight: 850;
           }
-          .mobile-action-grid {
+          .workspace.ee-narrow .mobile-action-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
           }
-          .mobile-result-panel .mobile-action-grid {
+          .workspace.ee-narrow .mobile-result-panel .mobile-action-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
-          .mobile-action-grid button {
+          .workspace.ee-narrow .mobile-action-grid button {
             border: 1px solid #cfd8e3;
             border-radius: 10px;
             background: #f8fafc;
@@ -5015,29 +5038,15 @@ export function EngineForm({ result, onResult }: Props) {
             font-weight: 900;
             min-height: 44px;
           }
-          .mobile-action-grid button:first-child {
+          .workspace.ee-narrow .mobile-action-grid button:first-child {
             border-color: #1d5f63;
             background: #1d5f63;
             color: #ffffff;
           }
-          .mobile-action-grid button:disabled {
+          .workspace.ee-narrow .mobile-action-grid button:disabled {
             opacity: 0.55;
           }
-          .mobile-result-output {
-            min-height: 360px;
-            max-height: 60vh;
-            overflow: auto;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            border: 1px solid #e3e9ef;
-            border-radius: 12px;
-            background: #fbfcfe;
-            color: #15202b;
-            padding: 14px;
-            font-size: 15px;
-            line-height: 1.65;
-          }
-          .mobile-status {
+          .workspace.ee-narrow .mobile-status {
             border: 1px solid #cfe3e1;
             border-radius: 8px;
             background: #f1f8f7;
@@ -5046,16 +5055,16 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 13px;
             font-weight: 800;
           }
-          .source-layer {
+          .workspace.ee-narrow .source-layer {
             order: 1;
           }
-          :global(.result-layer) {
+          .workspace.ee-narrow :global(.result-layer) {
             order: 3;
           }
-          .mobile-tabs {
+          .workspace.ee-narrow .mobile-tabs {
             display: none;
           }
-          .mobile-tabs span {
+          .workspace.ee-narrow .mobile-tabs span {
             border-radius: 999px;
             background: #f1f8f7;
             color: #174447;
@@ -5064,10 +5073,10 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 12px;
             font-weight: 800;
           }
-          .mobile-task-toolbar {
+          .workspace.ee-narrow .mobile-task-toolbar {
             display: none;
           }
-          .mobile-task-toolbar button {
+          .workspace.ee-narrow .mobile-task-toolbar button {
             display: grid;
             place-items: center;
             gap: 3px;
@@ -5080,26 +5089,26 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 12px;
             font-weight: 850;
           }
-          .mobile-task-toolbar button.active {
+          .workspace.ee-narrow .mobile-task-toolbar button.active {
             border-color: #1d5f63;
             background: #1d5f63;
             color: #ffffff;
           }
-          .mobile-task-toolbar button:disabled {
+          .workspace.ee-narrow .mobile-task-toolbar button:disabled {
             opacity: 0.55;
           }
-          .mobile-task-toolbar span {
+          .workspace.ee-narrow .mobile-task-toolbar span {
             font-size: 17px;
             line-height: 1;
           }
-          .mobile-task-toolbar small {
+          .workspace.ee-narrow .mobile-task-toolbar small {
             font-size: 10px;
             font-weight: 850;
           }
-          .mobile-bottom-bar {
+          .workspace.ee-narrow .mobile-bottom-bar {
             display: none;
           }
-          .mobile-listening-panel {
+          .workspace.ee-narrow .mobile-listening-panel {
             display: grid;
             gap: 8px;
             border: 1px solid #cfe3e1;
@@ -5107,21 +5116,21 @@ export function EngineForm({ result, onResult }: Props) {
             background: #f8fcfb;
             padding: 12px;
           }
-          .mobile-listening-panel strong {
+          .workspace.ee-narrow .mobile-listening-panel strong {
             color: #174447;
             font-size: 13px;
           }
-          .mobile-listening-panel span {
+          .workspace.ee-narrow .mobile-listening-panel span {
             color: #617080;
             font-size: 12px;
             font-weight: 800;
           }
-          .mobile-listen-actions {
+          .workspace.ee-narrow .mobile-listen-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
           }
-          .mobile-listen-actions button {
+          .workspace.ee-narrow .mobile-listen-actions button {
             border: 1px solid #cfd8e3;
             border-radius: 8px;
             background: #ffffff;
@@ -5131,7 +5140,7 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 12px;
             font-weight: 800;
           }
-          .mobile-player {
+          .workspace.ee-narrow .mobile-player {
             position: fixed;
             left: 12px;
             right: 12px;
@@ -5146,26 +5155,26 @@ export function EngineForm({ result, onResult }: Props) {
             padding: 10px;
             padding-bottom: calc(10px + env(safe-area-inset-bottom));
           }
-          .mobile-player.state-idle {
+          .workspace.ee-narrow .mobile-player.state-idle {
             display: none;
           }
-          .mobile-player > div:first-child {
+          .workspace.ee-narrow .mobile-player > div:first-child {
             display: flex;
             justify-content: space-between;
             gap: 10px;
             color: #174447;
             font-size: 12px;
           }
-          .mobile-player span {
+          .workspace.ee-narrow .mobile-player span {
             color: #617080;
             font-weight: 800;
           }
-          .mobile-player-controls {
+          .workspace.ee-narrow .mobile-player-controls {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
           }
-          .mobile-player button {
+          .workspace.ee-narrow .mobile-player button {
             border: 1px solid #cfd8e3;
             border-radius: 10px;
             background: #f8fafc;
@@ -5176,12 +5185,12 @@ export function EngineForm({ result, onResult }: Props) {
             font-weight: 800;
             min-height: 42px;
           }
-          .mobile-player button:nth-child(2) {
+          .workspace.ee-narrow .mobile-player button:nth-child(2) {
             border-color: #1d5f63;
             background: #1d5f63;
             color: #ffffff;
           }
-          .mobile-bottom-bar button {
+          .workspace.ee-narrow .mobile-bottom-bar button {
             border: 1px solid #cfd8e3;
             border-radius: 10px;
             background: #f8fafc;
@@ -5191,12 +5200,11 @@ export function EngineForm({ result, onResult }: Props) {
             font-size: 12px;
             font-weight: 800;
           }
-          .mobile-bottom-bar button:last-child {
+          .workspace.ee-narrow .mobile-bottom-bar button:last-child {
             border-color: #1d5f63;
             background: #1d5f63;
             color: #ffffff;
           }
-        }
         @media (max-width: 640px) {
           .workspace {
             padding-bottom: 220px;

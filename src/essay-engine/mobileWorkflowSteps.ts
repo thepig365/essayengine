@@ -12,8 +12,9 @@ export const MOBILE_WORKFLOW_STEPS = [
 
 export type MobileWorkflowStepId = (typeof MOBILE_WORKFLOW_STEPS)[number]["id"];
 
-/** How much of the guided workflow strip to show on each mobile step (desktop always uses `full`). */
+/** How much of the workflow strip to show on each mobile step (desktop console uses `support-rail`). */
 export type MobileWorkflowPanelMode =
+  | "support-rail"
   | "full"
   | "slice-off"
   | "slice-source"
@@ -29,7 +30,7 @@ export function resolveMobileWorkflowPanelMode(
   isDesktop: boolean,
   stepId: MobileWorkflowStepId | undefined,
 ): MobileWorkflowPanelMode {
-  if (isDesktop || !stepId) return "full";
+  if (isDesktop || !stepId) return "slice-off";
   switch (stepId) {
     case "source":
       return "slice-source";
