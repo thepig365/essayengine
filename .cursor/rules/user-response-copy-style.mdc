@@ -14,6 +14,8 @@ Always output reports in a copy-friendly plain Markdown format:
 - Avoid UI-only formatting that is hard to copy.
 - Keep file paths, commands, and labels as plain text or inline code.
 
+After major UI-facing changes, especially when the user wants to see the UI, run verification, restart the local UI, commit, push to GitHub, and report Vercel redeploy status if deployment is expected.
+
 Examples:
 
 - `已完成...`

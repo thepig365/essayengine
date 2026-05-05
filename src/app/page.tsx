@@ -48,15 +48,15 @@ export default function HomePage() {
           --info: #7BA7D9;
           --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
           --font-size-body: 16px;
-          --font-size-body-mobile: 17px;
+          --font-size-body-mobile: 18px;
           --font-size-helper: 13.5px;
-          --font-size-helper-mobile: 14px;
+          --font-size-helper-mobile: 15.5px;
           --font-size-label: 14px;
-          --font-size-label-mobile: 15px;
+          --font-size-label-mobile: 16px;
           --font-size-button: 15px;
-          --font-size-button-mobile: 16px;
+          --font-size-button-mobile: 17px;
           --font-size-prose: 16px;
-          --font-size-prose-mobile: 17px;
+          --font-size-prose-mobile: 18px;
           min-height: 100vh;
           background:
             radial-gradient(circle at top left, rgba(63, 143, 138, 0.12), transparent 34rem),
@@ -732,15 +732,15 @@ export default function HomePage() {
             margin-bottom: 14px;
           }
           .hero h1 {
-            font-size: 28px;
+            font-size: 30px;
             line-height: 1.08;
           }
           .hero-actions {
             gap: 10px;
           }
           .hero-actions span {
-            font-size: 14px;
-            line-height: 1.55;
+            font-size: 16px;
+            line-height: 1.6;
           }
           :global(.workspace),
           :global(.layer),
@@ -763,8 +763,8 @@ export default function HomePage() {
           :global(.final-panel h2),
           :global(.essay-draft-workspace h2),
           :global(.workflow-timeline h2) {
-            font-size: 19px !important;
-            line-height: 1.25 !important;
+            font-size: 21px !important;
+            line-height: 1.22 !important;
           }
           :global(.layer-head p),
           :global(.panel-head p),
@@ -827,8 +827,8 @@ export default function HomePage() {
           :global(.workflow-step > span),
           :global(.guide-head p),
           :global(.link-material small) {
-            font-size: 13px !important;
-            letter-spacing: 0.04em !important;
+            font-size: 14px !important;
+            letter-spacing: 0.035em !important;
           }
         }
       `}</style>

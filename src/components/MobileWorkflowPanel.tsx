@@ -781,66 +781,101 @@ export function MobileWorkflowPanel({
         }
         @media (max-width: 760px) {
           .mobile-workflow-panel {
-            border-radius: 16px;
-            padding: 12px;
+            border-radius: 22px;
+            padding: 14px;
           }
           .panel-head {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
           }
           .panel-head p {
-            font-size: 12px;
+            font-size: 16px;
+            line-height: 1.55;
           }
           h2 {
-            font-size: 18px;
+            font-size: 24px;
+            line-height: 1.15;
           }
           h3 {
-            font-size: 15px;
+            font-size: 21px;
+            line-height: 1.2;
           }
           .workflow-grid {
             grid-template-columns: 1fr;
-            gap: 10px;
+            gap: 14px;
           }
           .workflow-step {
-            gap: 9px;
-            border-radius: 14px;
-            padding: 12px;
+            gap: 14px;
+            border-radius: 22px;
+            padding: 18px 14px;
           }
           .workflow-step > span {
-            font-size: 10px;
-            letter-spacing: 0.05em;
+            font-size: 14px;
+            letter-spacing: 0.035em;
           }
           .button-row {
             display: grid;
             grid-template-columns: 1fr;
+            gap: 10px;
           }
           .choice-list {
             display: grid;
             grid-template-columns: 1fr;
+            gap: 10px;
           }
           .choice {
-            min-height: 42px;
-            border-radius: 12px;
+            min-height: 56px;
+            border-color: transparent;
+            border-radius: 16px;
+            padding: 14px;
+            font-size: 17px;
+            line-height: 1.3;
           }
           input,
           textarea {
             font-size: 16px;
+            line-height: 1.6;
+            padding: 14px;
+          }
+          label {
+            gap: 8px;
+            font-size: 16px;
+          }
+          .helper,
+          .link-capture-box p,
+          .voice-capture-box p,
+          .voice-status {
+            font-size: 15.5px;
+            line-height: 1.55;
           }
           .link-capture-box,
-          .voice-capture-box,
+          .voice-capture-box {
+            border: 0;
+            border-radius: 20px;
+            padding: 14px;
+            background: rgba(27, 41, 53, 0.72);
+          }
           .link-material,
           .mini-card {
-            border-radius: 12px;
-            padding: 10px;
+            border-color: transparent;
+            border-radius: 20px;
+            padding: 14px;
           }
           .structure-list,
           .version-list,
           .paragraph-list {
-            gap: 10px;
+            gap: 12px;
           }
           .structure,
           .paragraph {
-            border-radius: 12px;
-            padding: 12px;
+            border-color: transparent;
+            border-radius: 18px;
+            padding: 16px;
+          }
+          .structure ol,
+          .diagnosis,
+          .notes-list {
+            font-size: 16px;
+            line-height: 1.6;
           }
           .diagnosis,
           .notes-list {
@@ -849,25 +884,32 @@ export function MobileWorkflowPanel({
             padding-right: 4px;
           }
           .mini-card p {
-            max-height: 280px;
-            font-size: 13px;
-            line-height: 1.58;
+            max-height: 320px;
+            font-size: 17px;
+            line-height: 1.65;
+          }
+          .mini-card small {
+            font-size: 15px;
+            line-height: 1.45;
           }
           button {
             text-align: center;
-            min-height: 44px;
+            min-height: 54px;
             width: 100%;
+            border-radius: 16px;
+            font-size: 17px;
+            line-height: 1.25;
           }
         }
         @media (max-width: 420px) {
           .mobile-workflow-panel {
-            padding: 10px;
+            padding: 12px;
           }
           .workflow-step {
-            padding: 10px;
+            padding: 16px 12px;
           }
           .mini-card p {
-            max-height: 340px;
+            max-height: 380px;
           }
         }
       `}</style>
