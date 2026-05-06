@@ -7,6 +7,8 @@ import type {
   TranscriptSegment,
 } from "@/types/engine";
 
+import type { PersistedGenericMaterialState, SourceMaterialPipelineTab } from "@/types/sourceMaterial";
+
 export const PROJECTS_KEY = "essayengine.projects";
 export const ACTIVE_PROJECT_KEY = "essayengine.activeProjectId";
 
@@ -160,6 +162,14 @@ export type SavedEssayEngineProjectState = {
   ttsSpeed: number;
   ttsStyle: string;
   mobileWorkflow?: MobileWorkflowState;
+  /** Universal source-material extractor workspace (optional for older saves). */
+  sourceMaterialPipeline?: SourceMaterialPipelineTab;
+  genericMaterialState?: PersistedGenericMaterialState | null;
+  materialUseFullExplicit?: boolean;
+  savedTopicMaterial?: string;
+  materialCustomPrompt?: string;
+  linkCaptureUrlDraft?: string;
+  pasteMaterialDraft?: string;
 };
 
 export type SavedEssayEngineProject = {
@@ -211,6 +221,13 @@ function defaultState(): SavedEssayEngineProjectState {
     ttsVoice: "echo",
     ttsSpeed: 1,
     ttsStyle: "Default",
+    sourceMaterialPipeline: "transcript",
+    genericMaterialState: null,
+    materialUseFullExplicit: false,
+    savedTopicMaterial: "",
+    materialCustomPrompt: "",
+    linkCaptureUrlDraft: "",
+    pasteMaterialDraft: "",
     mobileWorkflow: {
       captureIdea: "",
       voiceCapture: null,

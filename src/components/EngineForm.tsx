@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EssayDraftWorkspace } from "@/components/EssayDraftWorkspace";
 import { FinalPanel } from "@/components/FinalPanel";
 import { DesktopConsoleLayout } from "@/components/layout/DesktopConsoleLayout";
 import { MobileWorkflowLayout } from "@/components/layout/MobileWorkflowLayout";
+import { WorkflowStepChips } from "@/components/layout/WorkflowStepChips";
 import { MobileWorkflowPanel } from "@/components/MobileWorkflowPanel";
 import { OutputPanel } from "@/components/OutputPanel";
 import {
@@ -30,6 +31,17 @@ import {
   useTranscriptWorkspace,
 } from "@/hooks/useTranscriptWorkspace";
 import {
+  MATERIAL_ANALYSIS_BUTTONS,
+  MATERIAL_WRITING_SUPPLEMENT,
+  buildMaterialAnalysisInstruction,
+  detectMaterialKindFromUrl,
+  formatSecondsTimestamp,
+  labelForMaterialKind,
+  segmentsFromSrtContent,
+  segmentsFromVttContent,
+  splitPlainTextIntoParagraphBlocks,
+} from "@/lib/sourceMaterialUtils";
+import {
   type FinalResultSelection,
   type ResultStatus,
   type SavedEssayEngineProjectState,
@@ -42,6 +54,7 @@ import type {
   OutputMode,
   TranscriptSegment,
 } from "@/types/engine";
+import type { SourceMaterialPipelineTab, SourceMaterialType, SourceSegment } from "@/types/sourceMaterial";
 
 import {
   INSTRUCTION_PRESETS,
@@ -83,6 +96,71 @@ type TopicSectionMatch = {
   section: TranscriptWorkspaceSection;
   score: number;
 };
+
+type QuickRequestButtonDef = {
+  label: string;
+  task: EngineTask;
+  instruction: string;
+};
+
+const QUICK_REQUEST_BUTTONS: QuickRequestButtonDef[] = [
+  {
+    label: "Analyze",
+    task: "improve",
+    instruction:
+      "Analyze this source in depth: structure/main claims, evidence, gaps, tradeoffs, and what a thoughtful reader should take away.",
+  },
+  {
+    label: "Extract core idea",
+    task: "extract",
+    instruction: "Extract the single core idea or thesis as clearly and concretely as possible.",
+  },
+  { label: "Summarize", task: "summarize", instruction: "Summarize the essentials faithfully without adding new claims." },
+  {
+    label: "Write article",
+    task: "improve",
+    instruction: "Turn this into a clear, well-structured article suitable for reading online.",
+  },
+  {
+    label: "Write 500-word essay",
+    task: "improve",
+    instruction: "Write a polished essay of about 500 words based on this source. Keep a coherent arc.",
+  },
+  {
+    label: "Continue research",
+    task: "improve",
+    instruction:
+      "Continue research in writing: add depth, important caveats, counterpoints, and concrete examples grounded strictly in the source.",
+  },
+  {
+    label: "Turn into post",
+    task: "improve",
+    instruction: "Turn this into a concise, engaging social post with a sharp hook and a reflective close.",
+  },
+  {
+    label: "Turn into thought-leading article",
+    task: "improve",
+    instruction:
+      "Turn this into a long-form, thought-leading article: strong framing, nuanced argument, and actionable insight.",
+  },
+  {
+    label: "Turn into Mendbook chapter",
+    task: "improve",
+    instruction: "Turn this into a Mendbook-style chapter: reflective pacing, cohesive narrative, and integrated lessons.",
+  },
+  {
+    label: "Turn into audiobook script",
+    task: "improve",
+    instruction:
+      "Rewrite this as a spoken-word / audiobook script: short sentences, clear cadence, and explicit transitions for listening.",
+  },
+  { label: "Translate", task: "translate", instruction: "" },
+  {
+    label: "Create outline",
+    task: "improve",
+    instruction: "Create a detailed outline with headings and bullets only; do not write full prose paragraphs yet.",
+  },
+];
 
 function formatTimestamp(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -353,9 +431,12 @@ type Props = {
 export function EngineForm({ result, onResult, viewMode }: Props) {
   const [task, setTask] = useState<EngineTask>("translate");
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
-  const [mobileActiveTab, setMobileActiveTab] = useState<"source" | "draft" | "result">("draft");
+  const [mobileActiveTab, setMobileActiveTab] = useState<"draft" | "result">("draft");
   const [mobileWorkflowStepIndex, setMobileWorkflowStepIndex] = useState(0);
   const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
+  useEffect(() => {
+    setMobileWorkflowStepIndex((i) => (i < MOBILE_WORKFLOW_STEPS.length ? i : 0));
+  }, []);
   const [outputMode, setOutputMode] = useState<OutputMode>("auto");
   const [sourceLanguage, setSourceLanguage] = useState("");
   const [targetLanguage, setTargetLanguage] = useState("Chinese Simplified");
@@ -375,6 +456,25 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [essayDraftContent, setEssayDraftContent] = useState("");
   const [essayDraftUpdatedAt, setEssayDraftUpdatedAt] = useState<string | null>(null);
   const [essayDraftStatus, setEssayDraftStatus] = useState<string | null>(null);
+  const [sourceMaterialPipeline, setSourceMaterialPipeline] = useState<SourceMaterialPipelineTab>("transcript");
+  const [genericMaterialKind, setGenericMaterialKind] = useState<SourceMaterialType>("article");
+  const [genericMaterialTitle, setGenericMaterialTitle] = useState("");
+  const [genericMaterialUrl, setGenericMaterialUrl] = useState("");
+  const [genericAuthor, setGenericAuthor] = useState("");
+  const [genericRawContent, setGenericRawContent] = useState("");
+  const [genericSegments, setGenericSegments] = useState<SourceSegment[]>([]);
+  const [genericCheckedIds, setGenericCheckedIds] = useState<string[]>([]);
+  const [linkExtractUrl, setLinkExtractUrl] = useState("");
+  const [linkExtractLoading, setLinkExtractLoading] = useState(false);
+  const [linkExtractStatus, setLinkExtractStatus] = useState<string | null>(null);
+  const [pasteBlockInput, setPasteBlockInput] = useState("");
+  const [genericWorkspaceNotice, setGenericWorkspaceNotice] = useState<string | null>(null);
+  const [audioUploadLoading, setAudioUploadLoading] = useState(false);
+  const [materialUseFullExplicit, setMaterialUseFullExplicit] = useState(false);
+  const [savedTopicMaterial, setSavedTopicMaterial] = useState("");
+  const [materialCustomPrompt, setMaterialCustomPrompt] = useState("");
+  const [materialAnalysisStatus, setMaterialAnalysisStatus] = useState<string | null>(null);
+  const [materialAnalysisLoading, setMaterialAnalysisLoading] = useState(false);
   const generateSectionRef = useRef<HTMLElement | null>(null);
   const setProjectStatusRef = useRef<(message: string | null) => void>(() => {});
 
@@ -648,6 +748,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       ttsVoice,
       ttsSpeed,
       ttsStyle,
+      sourceMaterialPipeline,
+      genericMaterialKind,
+      genericMaterialTitle,
+      genericMaterialUrl,
+      genericAuthor,
+      genericRawContent,
+      genericSegments,
+      genericCheckedIds,
+      linkExtractUrl,
+      pasteBlockInput,
+      materialUseFullExplicit,
+      savedTopicMaterial,
+      materialCustomPrompt,
       mobileWorkflow.captureIdea,
       mobileWorkflow.coreValue,
       mobileWorkflow.clarifyIntent,
@@ -672,6 +785,96 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const effectiveIsDesktopConsole = !effectiveIsMobileLayout;
 
   const mobileWorkflowStepId = MOBILE_WORKFLOW_STEPS[mobileWorkflowStepIndex]?.id;
+
+  const workflowListenGuide = useMemo(() => {
+    switch (mobileWorkflowStepId) {
+      case "source":
+      case "request":
+        return {
+          asideHeadline: "Listen to Source",
+          asideBody:
+            "Preview the captured source as audio before you generate. Long text is read in parts; download a merged MP3 from the audio strip when ready.",
+          panelEyebrow: "Listen",
+          panelHeadline: "Listen to Source",
+          panelBody:
+            "Use the audio strip on Source or Request. Voice settings are in the left controls (or Read aloud settings on mobile).",
+          mobileToolbarListen: "Listen: source",
+        };
+      case "workpiece":
+        return {
+          asideHeadline: "Listen to Workpiece",
+          asideBody:
+            "Hear the latest generated Workpiece (engine output) before revising. Long text is split into parts automatically.",
+          panelEyebrow: "Listen",
+          panelHeadline: "Listen to Workpiece",
+          panelBody:
+            "Playback uses the result or draft you select. Voice settings are in the left controls (or Read aloud settings on mobile).",
+          mobileToolbarListen: "Listen: workpiece",
+        };
+      case "refine":
+        return {
+          asideHeadline: "Listen to Current Version",
+          asideBody:
+            "Listen to the version you are refining so ear and eye stay aligned while you mark, rewrite, or assemble.",
+          panelEyebrow: "Listen",
+          panelHeadline: "Listen to Current Version",
+          panelBody:
+            "Follow the text you last sent to the player. Voice settings are in the left controls (or Read aloud settings on mobile).",
+          mobileToolbarListen: "Listen: current",
+        };
+      case "publish":
+        return {
+          asideHeadline: "Generate Audiobook / Download Audio",
+          asideBody:
+            "In Publish / Repurpose, export the merged audiobook MP3 and reuse the text as shipping content.",
+          panelEyebrow: "Audio",
+          panelHeadline: "Generate Audiobook / Download Audio",
+          panelBody:
+            "Use assembly and export actions for audiobook MP3. Voice settings are in the left controls (or Read aloud settings on mobile).",
+          mobileToolbarListen: "Audiobook / DL",
+        };
+      default:
+        return {
+          asideHeadline: "Read aloud",
+          asideBody:
+            "Listen to the source or generated results before deciding what to use. Long text will be read in parts automatically.",
+          panelEyebrow: "Listen",
+          panelHeadline: "Audio",
+          panelBody:
+            "Listen after selecting source, Workpiece, or publish output. Voice settings are in the left controls (or Read aloud settings on mobile).",
+          mobileToolbarListen: "Listen",
+        };
+    }
+  }, [mobileWorkflowStepId]);
+
+  const applyQuickRequest = useCallback((def: QuickRequestButtonDef) => {
+    setTask(def.task);
+    setInstructionPreset("");
+    setCustomInstruction(def.instruction);
+  }, []);
+
+  const selectWorkflowStep = useCallback(
+    (index: number) => {
+      setMobileWorkflowStepIndex(index);
+      requestAnimationFrame(() => {
+        const stepId = MOBILE_WORKFLOW_STEPS[index]?.id;
+        if (effectiveIsMobileLayout) {
+          document.getElementById("ee-active-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (stepId === "request") {
+          document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (stepId === "source") {
+          document.getElementById("ee-panel-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        document.getElementById("ee-panel-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    },
+    [effectiveIsMobileLayout],
+  );
 
   const mobileWorkflowPanelMode = useMemo(() => {
     if (effectiveIsDesktopConsole) return "support-rail" as const;
@@ -698,7 +901,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   function combinedInstruction(): string | undefined {
     const parts = [instructionPreset, customInstruction.trim(), mobileWorkflow.workflowInstruction].filter(Boolean);
-    return parts.length ? parts.join(". ") : undefined;
+    if (savedTopicMaterial.trim()) {
+      parts.push(`Saved topic material (已存题材):\n${savedTopicMaterial.trim()}`);
+    }
+    const base = parts.length ? parts.join(". ") : undefined;
+    return [base, MATERIAL_WRITING_SUPPLEMENT].filter(Boolean).join("\n\n");
   }
 
   function checkedFullTranscriptSections(): TranscriptWorkspaceSection[] {
@@ -796,6 +1003,21 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       ttsVoice,
       ttsSpeed,
       ttsStyle,
+      sourceMaterialPipeline,
+      genericMaterialState: {
+        kind: genericMaterialKind,
+        title: genericMaterialTitle,
+        url: genericMaterialUrl,
+        author: genericAuthor,
+        rawContent: genericRawContent,
+        segments: genericSegments,
+        checkedSegmentIds: genericCheckedIds,
+      },
+      materialUseFullExplicit,
+      savedTopicMaterial,
+      materialCustomPrompt,
+      linkCaptureUrlDraft: linkExtractUrl,
+      pasteMaterialDraft: pasteBlockInput,
       mobileWorkflow: mobileWorkflow.workflowState(),
     };
   }
@@ -819,6 +1041,33 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setTtsVoice(state.ttsVoice ?? "echo");
     setTtsSpeed(state.ttsSpeed ?? 1);
     setTtsStyle(state.ttsStyle ?? "Default");
+    setSourceMaterialPipeline(state.sourceMaterialPipeline ?? "transcript");
+    const g = state.genericMaterialState;
+    if (g) {
+      setGenericMaterialKind(g.kind);
+      setGenericMaterialTitle(g.title ?? "");
+      setGenericMaterialUrl(g.url ?? "");
+      setGenericAuthor(g.author ?? "");
+      setGenericRawContent(g.rawContent ?? "");
+      setGenericSegments(g.segments ?? []);
+      setGenericCheckedIds(g.checkedSegmentIds ?? []);
+    } else {
+      setGenericMaterialKind("article");
+      setGenericMaterialTitle("");
+      setGenericMaterialUrl("");
+      setGenericAuthor("");
+      setGenericRawContent("");
+      setGenericSegments([]);
+      setGenericCheckedIds([]);
+    }
+    setMaterialUseFullExplicit(state.materialUseFullExplicit ?? false);
+    setSavedTopicMaterial(state.savedTopicMaterial ?? "");
+    setMaterialCustomPrompt(state.materialCustomPrompt ?? "");
+    setLinkExtractUrl(state.linkCaptureUrlDraft ?? "");
+    setPasteBlockInput(state.pasteMaterialDraft ?? "");
+    setLinkExtractStatus(null);
+    setGenericWorkspaceNotice(null);
+    setMaterialAnalysisStatus(null);
     mobileWorkflow.applyWorkflowState(state.mobileWorkflow);
     onResult(state.result ?? null);
     stopCurrentAudio();
@@ -834,6 +1083,25 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setInstructionPreset("");
     setCustomInstruction("");
     setProviders(["openai"]);
+    setSourceMaterialPipeline("transcript");
+    setGenericMaterialKind("article");
+    setGenericMaterialTitle("");
+    setGenericMaterialUrl("");
+    setGenericAuthor("");
+    setGenericRawContent("");
+    setGenericSegments([]);
+    setGenericCheckedIds([]);
+    setLinkExtractUrl("");
+    setPasteBlockInput("");
+    setLinkExtractStatus(null);
+    setGenericWorkspaceNotice(null);
+    setLinkExtractLoading(false);
+    setAudioUploadLoading(false);
+    setMaterialUseFullExplicit(false);
+    setSavedTopicMaterial("");
+    setMaterialCustomPrompt("");
+    setMaterialAnalysisStatus(null);
+    setMaterialAnalysisLoading(false);
     mobileWorkflow.resetWorkflow();
     setFinalResult(null);
     setEssayDraftStatus(null);
@@ -946,7 +1214,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         setChapterStatus(null);
         setRangeStatus(null);
         setTopicStatus(null);
-        setTranscriptStatus("Transcript fetched. Choose how to use it.");
+        setSourceMaterialPipeline("transcript");
+        setMaterialUseFullExplicit(false);
+        setTranscriptStatus("素材已提取。请勾选章节或片段后再写入 Source。");
       } else {
         setTranscriptText("");
         setTranscriptSegments([]);
@@ -961,7 +1231,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         setChapterStatus(null);
         setRangeStatus(null);
         setTopicStatus(null);
-        setTranscriptStatus(data.warnings?.[0] ?? "Transcript unavailable.");
+        setTranscriptStatus(data.warnings?.[0] ?? "暂不可用该链接的字幕/转录。");
       }
     } catch (err) {
       setTranscriptStatus(err instanceof Error ? err.message : "Unknown error.");
@@ -1122,6 +1392,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       return;
     }
     resetPipelineSourceWorkspace();
+    setSourceMaterialPipeline("transcript");
+    setGenericMaterialKind("article");
+    setGenericMaterialTitle("");
+    setGenericMaterialUrl("");
+    setGenericAuthor("");
+    setGenericRawContent("");
+    setGenericSegments([]);
+    setGenericCheckedIds([]);
+    setLinkExtractUrl("");
+    setPasteBlockInput("");
+    setLinkExtractStatus(null);
+    setGenericWorkspaceNotice(null);
+    setMaterialUseFullExplicit(false);
+    setSavedTopicMaterial("");
+    setMaterialCustomPrompt("");
+    setMaterialAnalysisStatus(null);
+    setMaterialAnalysisLoading(false);
     setFinalResult(null);
     setResultStatus("Draft");
     onResult(null);
@@ -1164,7 +1451,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   function useFullTranscriptAsSource() {
     if (!transcriptText.trim()) {
-      setTranscriptStatus("Transcript preview is empty. Fetch a transcript first.");
+      setTranscriptStatus("暂无转录预览。请先提取素材。");
       return;
     }
     const content = formatTranscriptText(transcriptText);
@@ -1172,13 +1459,15 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setSourceType("youtube_transcript_full");
     setSourceFrom(transcriptOrigin === "saved transcript" ? "saved transcript" : "fetched transcript");
     setSourceSelectionCount(fullTranscriptSections.length || 1);
+    setSourceMaterialPipeline("transcript");
+    setMaterialUseFullExplicit(true);
     createSourceVersion({
       content,
       origin: "transcript_selection",
-      label: "Full transcript",
+      label: "使用完整素材（转录全文）",
       parentVersionId: currentSourceVersionId ?? undefined,
     });
-    setTranscriptStatus("Full transcript is now used as source.");
+    setTranscriptStatus("已使用完整素材替换 Source Capture（显式）。");
     setRangeStatus(null);
   }
 
@@ -1583,6 +1872,321 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     );
   }
 
+  function toggleGenericSegment(id: string) {
+    setGenericCheckedIds((ids) => (ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]));
+  }
+
+  function transcriptSelectedMaterialText(): { text: string; summary: string } | null {
+    if (!transcriptText.trim()) return null;
+    if (materialUseFullExplicit) {
+      return {
+        text: formatTranscriptText(transcriptText),
+        summary: "使用完整素材（字幕 / 转录全文）",
+      };
+    }
+    const ch = checkedWorkspaceSections();
+    if (ch.length > 0) {
+      return {
+        text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
+        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+      };
+    }
+    const full = checkedFullTranscriptSections();
+    if (full.length > 0) {
+      return {
+        text: cleanSectionsText(full, true, includeTranscriptTimestamps),
+        summary: `粗分段 · 已选 ${full.length} 段`,
+      };
+    }
+    const topic = checkedTopicSections();
+    if (topic.length > 0) {
+      return {
+        text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
+        summary: `主题筛选 · 已选 ${topic.length} 段`,
+      };
+    }
+    const manual = manualRangeBlocks();
+    if (manual && manual.length > 0) {
+      return {
+        text: formatManualRangesForSource(manual),
+        summary: `手动时间范围 · ${manual.length} 段`,
+      };
+    }
+    return null;
+  }
+
+  function genericSelectedMaterialText(): { text: string; summary: string } | null {
+    if (!genericRawContent.trim() && genericSegments.length === 0) return null;
+    if (materialUseFullExplicit) {
+      return {
+        text: genericRawContent.trim(),
+        summary: "使用完整素材（全文）",
+      };
+    }
+    const picked = genericSegments.filter((s) => genericCheckedIds.includes(s.id));
+    if (picked.length === 0) return null;
+    const hasTs = picked.some((s) => s.startTime !== undefined);
+    const body = picked
+      .map((s) => {
+        if (hasTs && s.startTime !== undefined) {
+          const a = formatSecondsTimestamp(s.startTime);
+          const b = s.endTime !== undefined ? formatSecondsTimestamp(s.endTime) : "";
+          return b ? `[${a}-${b}]\n${s.text}` : `[${a}]\n${s.text}`;
+        }
+        return s.text;
+      })
+      .join("\n\n");
+    return {
+      text: body,
+      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+    };
+  }
+
+  function computeSelectedSourceMaterial(): {
+    text: string;
+    summary: string;
+    analysisSourceType: SourceMaterialType;
+  } | null {
+    if (sourceMaterialPipeline === "transcript") {
+      const t = transcriptSelectedMaterialText();
+      if (!t) return null;
+      return { ...t, analysisSourceType: "youtube" };
+    }
+    const g = genericSelectedMaterialText();
+    if (!g) return null;
+    return { ...g, analysisSourceType: genericMaterialKind };
+  }
+
+  function buildSourceMetadataForAnalysis(): string {
+    const lines: string[] = [];
+    if (sourceMaterialPipeline === "transcript") {
+      if (youtubeSourceUrl) lines.push(`URL: ${youtubeSourceUrl}`);
+      if (transcriptLibraryTitle) lines.push(`Title: ${transcriptLibraryTitle}`);
+      lines.push(`Origin: ${transcriptOrigin}`);
+    } else {
+      if (genericMaterialTitle) lines.push(`Title: ${genericMaterialTitle}`);
+      if (genericMaterialUrl) lines.push(`URL: ${genericMaterialUrl}`);
+      if (genericAuthor) lines.push(`Author/site: ${genericAuthor}`);
+    }
+    return lines.join("\n") || "(none)";
+  }
+
+  async function runMaterialAnalysisTask(userTask: string) {
+    const sel = computeSelectedSourceMaterial();
+    if (!sel) {
+      setMaterialAnalysisStatus("请先勾选素材块、章节，或勾选「使用完整素材」后再分析。");
+      return;
+    }
+    setMaterialAnalysisLoading(true);
+    setMaterialAnalysisStatus(null);
+    setError(null);
+    try {
+      const userInstruction = buildMaterialAnalysisInstruction({
+        sourceType: `${labelForMaterialKind(sel.analysisSourceType, "zh")} (${sel.analysisSourceType})`,
+        sourceMetadata: buildSourceMetadataForAnalysis(),
+        selectedMaterial: sel.text,
+        task: userTask,
+      });
+      const req: EngineRequest = {
+        input: sel.text,
+        task: "extract",
+        outputMode: "content_only",
+        sourceLanguage: sourceLanguage || undefined,
+        targetLanguage: targetLanguage || undefined,
+        tone: tone || undefined,
+        userInstruction,
+        providers: providers.length > 0 ? providers : undefined,
+      };
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMaterialAnalysisStatus(data.error ?? `分析失败（${res.status}）`);
+        return;
+      }
+      onResult(data as EngineResponse);
+      setResultStatus("Draft");
+      setMaterialAnalysisStatus("分析完成，结果已显示在 Workpiece。");
+    } catch (err) {
+      setMaterialAnalysisStatus(err instanceof Error ? err.message : "分析失败");
+    } finally {
+      setMaterialAnalysisLoading(false);
+    }
+  }
+
+  async function runLinkMaterialExtract() {
+    const url = linkExtractUrl.trim();
+    if (!url) {
+      setLinkExtractStatus("请输入链接。");
+      return;
+    }
+    const kind = detectMaterialKindFromUrl(url);
+    if (kind === "youtube") {
+      setLinkExtractStatus("YouTube 请使用「转录 / 字幕」页签获取带时间戳字幕。");
+      return;
+    }
+    setLinkExtractLoading(true);
+    setLinkExtractStatus(null);
+    setGenericWorkspaceNotice(null);
+    try {
+      const res = await fetch("/api/extract-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = (await res.json()) as { text?: string; title?: string; error?: string; siteName?: string };
+      if (!res.ok) {
+        setLinkExtractStatus(data.error ?? `提取失败（${res.status}）`);
+        return;
+      }
+      const raw = (data.text ?? "").trim();
+      if (!raw) {
+        setLinkExtractStatus("未能从页面提取正文，可改用手动粘贴。");
+        return;
+      }
+      setSourceMaterialPipeline("link");
+      setGenericMaterialKind(kind);
+      setGenericMaterialUrl(url);
+      let hostname = "";
+      try {
+        hostname = new URL(url).hostname;
+      } catch {
+        hostname = "";
+      }
+      setGenericMaterialTitle(data.title?.trim() || hostname || "链接内容");
+      setGenericAuthor(data.siteName?.trim() ?? "");
+      setGenericRawContent(raw);
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "段落"));
+      setGenericCheckedIds([]);
+      setMaterialUseFullExplicit(false);
+      setGenericWorkspaceNotice("正文已拆分为可选段落。请勾选需要的块。");
+    } catch (err) {
+      setLinkExtractStatus(err instanceof Error ? err.message : "提取失败");
+    } finally {
+      setLinkExtractLoading(false);
+    }
+  }
+
+  function applyPasteMaterialBlocks() {
+    const raw = pasteBlockInput.trim();
+    if (!raw) {
+      setGenericWorkspaceNotice("请先粘贴长文。");
+      return;
+    }
+    setSourceMaterialPipeline("paste");
+    setGenericMaterialKind("text");
+    setGenericMaterialUrl("");
+    setGenericMaterialTitle("粘贴长文");
+    setGenericAuthor("");
+    setGenericRawContent(raw);
+    setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "段落"));
+    setGenericCheckedIds([]);
+    setMaterialUseFullExplicit(false);
+    setGenericWorkspaceNotice("已拆分为段落块，请勾选需要的部分。");
+  }
+
+  async function transcribeAudioFile(file: File) {
+    if (!file.size) {
+      setGenericWorkspaceNotice("音频文件为空。");
+      return;
+    }
+    setAudioUploadLoading(true);
+    setGenericWorkspaceNotice(null);
+    try {
+      const fd = new FormData();
+      fd.set("audio", file);
+      fd.set("mimeType", file.type || "audio/webm");
+      fd.set("filename", file.name);
+      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok) {
+        setGenericWorkspaceNotice(data.error ?? "转写失败");
+        return;
+      }
+      const raw = (data.text ?? "").trim();
+      if (!raw) {
+        setGenericWorkspaceNotice("转写结果为空。");
+        return;
+      }
+      setSourceMaterialPipeline("audio");
+      setGenericMaterialKind("audio");
+      setGenericMaterialUrl("");
+      setGenericMaterialTitle(file.name);
+      setGenericAuthor("");
+      setGenericRawContent(raw);
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "转录段落"));
+      setGenericCheckedIds([]);
+      setMaterialUseFullExplicit(false);
+      setGenericWorkspaceNotice("转写完成。按段落勾选后再分析或写入 Source。");
+    } catch (err) {
+      setGenericWorkspaceNotice(err instanceof Error ? err.message : "转写失败");
+    } finally {
+      setAudioUploadLoading(false);
+    }
+  }
+
+  async function ingestDocumentFile(file: File) {
+    const name = file.name.toLowerCase();
+    let raw = "";
+    try {
+      raw = await file.text();
+    } catch {
+      setGenericWorkspaceNotice("无法读取该文件。");
+      return;
+    }
+    let segments: SourceSegment[] = [];
+    if (name.endsWith(".srt")) {
+      segments = segmentsFromSrtContent(raw);
+    } else if (name.endsWith(".vtt")) {
+      segments = segmentsFromVttContent(raw);
+    }
+    if (!segments.length) {
+      segments = splitPlainTextIntoParagraphBlocks(raw, "段落");
+    }
+    setSourceMaterialPipeline("document");
+    setGenericMaterialKind("document");
+    setGenericMaterialUrl("");
+    setGenericMaterialTitle(file.name);
+    setGenericAuthor("");
+    setGenericRawContent(raw);
+    setGenericSegments(segments);
+    setGenericCheckedIds([]);
+    setMaterialUseFullExplicit(false);
+    setGenericWorkspaceNotice(
+      segments.some((s) => s.startTime !== undefined)
+        ? "已识别时间轴字幕块。"
+        : "已按段落拆分，请勾选需要的部分。",
+    );
+  }
+
+  function appendTopicMaterialFromSelection() {
+    const sel = computeSelectedSourceMaterial();
+    if (!sel) {
+      setMaterialAnalysisStatus("没有可保存的已选素材。");
+      return;
+    }
+    setSavedTopicMaterial((prev) => (prev.trim() ? `${prev.trim()}\n\n---\n\n${sel.text}` : sel.text));
+    setMaterialAnalysisStatus("已追加到「已存题材」。");
+  }
+
+  function replaceSourceCaptureFromMaterialSelection() {
+    const sel = computeSelectedSourceMaterial();
+    if (!sel) {
+      setMaterialAnalysisStatus("请先选择素材。");
+      return;
+    }
+    replaceSource(
+      sel.text,
+      "mixed_source_content",
+      "已用所选素材替换 Source Capture。",
+      setMaterialAnalysisStatus,
+      1,
+    );
+  }
+
   function toggleTimestampChapter(id: string) {
     setCheckedChapterIds((ids) => (ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]));
   }
@@ -1788,8 +2392,17 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     <EssayEngineProvider value={essayEngineController}>
     <div
       className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}`}
-      data-mobile-step={effectiveIsMobileLayout && mobileWorkflowStepId ? mobileWorkflowStepId : undefined}
+      data-workflow-step={mobileWorkflowStepId}
     >
+      {effectiveIsDesktopConsole ? (
+        <div className="ee-desktop-workflow-nav">
+          <WorkflowStepChips
+            variant="desktop"
+            activeStepIndex={mobileWorkflowStepIndex}
+            onStepIndexChange={selectWorkflowStep}
+          />
+        </div>
+      ) : null}
       <DesktopConsoleLayout>
       <aside id="ee-panel-engines" className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
         <EngineSelectionPanel>
@@ -1805,6 +2418,30 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </button>
           {!controlsCollapsed && <span>Control Console</span>}
         </div>
+        <section className="layer request-layer">
+          <div className="layer-head">
+            <p className="eyebrow">Request</p>
+            <h2>What to create from this source</h2>
+            <p>Use this source and write, analyze, or transform it into the shape you need. Pick a quick request or describe your own.</p>
+          </div>
+          <label className="field">
+            <span>Your request (instruction)</span>
+            <textarea
+              className="instruction"
+              value={customInstruction}
+              onChange={(e) => setCustomInstruction(e.target.value)}
+              rows={4}
+              placeholder="Example: Use this transcript and write a 900-word essay that argues X, with a clearer structure and stronger transitions."
+            />
+          </label>
+          <div className="request-quick-picks" aria-label="Quick requests">
+            {QUICK_REQUEST_BUTTONS.map((def) => (
+              <button key={def.label} type="button" onClick={() => applyQuickRequest(def)} title={def.label}>
+                {def.label}
+              </button>
+            ))}
+          </div>
+        </section>
         <section className="layer">
           <div className="layer-head">
             <p className="eyebrow">2. Engine Selection Layer</p>
@@ -1957,16 +2594,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               </select>
             </label>
           </div>
-          <label className="field">
-            <span>Custom Instruction</span>
-            <textarea
-              className="instruction"
-              value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
-              rows={4}
-              placeholder="Add extra control if needed, e.g. preserve HTML classes, do not change links, keep JSX logic untouched."
-            />
-          </label>
+          <div className="writing-hint">
+            Custom requests and quick picks live in the Request block above. Use tone and presets here for voice-level shaping.
+          </div>
           <div className="writing-hint">
             For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any specific writer.
           </div>
@@ -2020,11 +2650,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <section className="layer read-layer">
           <div className="layer-head">
             <p className="eyebrow">9. Read Aloud Layer</p>
-            <h2>Read aloud</h2>
-            <p>
-              Listen to the source or generated results before deciding what to use. Long text will be read in parts
-              automatically. You can download parts or one merged MP3.
-            </p>
+            <h2>{workflowListenGuide.asideHeadline}</h2>
+            <p>{workflowListenGuide.asideBody}</p>
           </div>
           <div className="field-grid">
             <label className="field">
@@ -2108,29 +2735,280 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       <section id="ee-panel-transcript" className="layer transcript-column">
         <TranscriptWorkspacePanel className="ee-narrow-step-transcript">
         <div className="layer-head">
-          <p className="eyebrow">Transcript Workspace</p>
-          <h2>Transcript Workspace</h2>
-          <p>Select, filter, and prepare transcript content before sending to Source.</p>
+          <p className="eyebrow">Source Material Extractor / 素材提取器</p>
+          <h2>Content Source Analyzer / 内容素材分析器</h2>
+          <p>所有来源都先变成「可选的文本块」，再分析与写入；默认不使用全文。</p>
         </div>
 
-        {!transcriptText && (
+        <div className="range-actions cta-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
+          {(
+            [
+              { id: "transcript" as const, label: "转录 / 字幕" },
+              { id: "link" as const, label: "链接抓取" },
+              { id: "paste" as const, label: "粘贴长文" },
+              { id: "audio" as const, label: "上传音频" },
+              { id: "document" as const, label: "文本 / 字幕稿" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={sourceMaterialPipeline === tab.id ? "primary" : "secondary"}
+              onClick={() => {
+                setSourceMaterialPipeline(tab.id);
+                setMaterialAnalysisStatus(null);
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="organize-option" style={{ marginTop: "0.75rem" }}>
+          <input
+            type="checkbox"
+            checked={materialUseFullExplicit}
+            onChange={(e) => setMaterialUseFullExplicit(e.target.checked)}
+          />
+          <span>使用完整素材（仅显式勾选时启用全文）</span>
+        </label>
+        <p className="transcript-note">
+          未勾选时：分析、自定义提取与「已选题材」仅使用你勾选的章节/段落块。口头摘要整段视频/全文需要先勾选此项或使用下方「使用完整素材替换 Source」。
+        </p>
+
+        {sourceMaterialPipeline === "link" && (
+          <div className="topic-filter" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>链接抓取（LinkedIn / 社媒 / 论坛 / 播客页等）</strong>
+              <p>抓取可读的页面正文并拆成段落。YouTube 请用「转录 / 字幕」页签。</p>
+            </div>
+            <label className="field">
+              <span>页面 URL</span>
+              <input
+                value={linkExtractUrl}
+                onChange={(e) => setLinkExtractUrl(e.target.value)}
+                placeholder="https://"
+              />
+            </label>
+            <div className="range-actions cta-row">
+              <button type="button" className="primary" disabled={linkExtractLoading} onClick={runLinkMaterialExtract}>
+                {linkExtractLoading ? "提取中…" : "提取素材"}
+              </button>
+            </div>
+            {linkExtractStatus && <span className="range-status">{linkExtractStatus}</span>}
+          </div>
+        )}
+
+        {sourceMaterialPipeline === "paste" && (
+          <div className="topic-filter" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>粘贴文章或长文</strong>
+              <p>按空行拆成段落块，再勾选需要的部分。</p>
+            </div>
+            <label className="field">
+              <span>长文本</span>
+              <textarea
+                rows={8}
+                value={pasteBlockInput}
+                onChange={(e) => setPasteBlockInput(e.target.value)}
+                placeholder="粘贴公众号文章、笔记、Thread 全文等…"
+              />
+            </label>
+            <div className="range-actions cta-row">
+              <button type="button" className="primary" onClick={applyPasteMaterialBlocks}>
+                拆分段落
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sourceMaterialPipeline === "audio" && (
+          <div className="topic-filter" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>上传音频转写</strong>
+              <p>服务器端转写为文本后再拆段（需要配置 OPENAI_API_KEY）。</p>
+            </div>
+            <label className="field">
+              <span>音频文件</span>
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void transcribeAudioFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {audioUploadLoading && <span className="range-status">正在转写…</span>}
+          </div>
+        )}
+
+        {sourceMaterialPipeline === "document" && (
+          <div className="topic-filter" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>上传文本 / 字幕稿</strong>
+              <p>支持 .txt / .md / .srt / .vtt；带时间轴的文件会显示为时间块。</p>
+            </div>
+            <label className="field">
+              <span>文件</span>
+              <input
+                type="file"
+                accept=".txt,.md,.srt,.vtt,text/plain"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void ingestDocumentFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+        )}
+
+        {genericWorkspaceNotice && <p className="range-status">{genericWorkspaceNotice}</p>}
+
+        {genericSegments.length > 0 && sourceMaterialPipeline !== "transcript" && (
+          <div className="section-workspace" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>
+                {labelForMaterialKind(genericMaterialKind, "zh")}
+                {genericMaterialTitle ? ` · ${genericMaterialTitle}` : ""}
+              </strong>
+              <p>勾选要参与分析与写入的块（论坛/帖子会尽量保持段落结构）。</p>
+            </div>
+            <div className="chapter-list compact">
+              {genericSegments.map((seg, idx) => (
+                <label className="chapter-row" key={seg.id}>
+                  <input
+                    type="checkbox"
+                    checked={genericCheckedIds.includes(seg.id)}
+                    onChange={() => toggleGenericSegment(seg.id)}
+                  />
+                  <span>
+                    <strong>
+                      {seg.startTime !== undefined
+                        ? `[${formatSecondsTimestamp(seg.startTime)}${
+                            seg.endTime !== undefined ? `–${formatSecondsTimestamp(seg.endTime)}` : ""
+                          }] `
+                        : `段落 ${idx + 1} `}
+                    </strong>
+                    {seg.label ? `${seg.label} · ` : ""}
+                    {seg.text.length > 220 ? `${seg.text.slice(0, 220)}…` : seg.text}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <details open className="priority-section" style={{ marginTop: "1rem" }}>
+          <summary>已选题材 / Selected Material</summary>
+          <div className="timestamp-chapters">
+            <p className="transcript-note">
+              当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材"}</strong> · 类型：
+              <strong>
+                {" "}
+                {sourceMaterialPipeline === "transcript"
+                  ? labelForMaterialKind("youtube", "zh")
+                  : labelForMaterialKind(genericMaterialKind, "zh")}
+              </strong>
+            </p>
+            {computeSelectedSourceMaterial() ? (
+              <>
+                <p>
+                  <strong>范围：</strong> {computeSelectedSourceMaterial()?.summary}
+                </p>
+                <textarea className="transcript-preview" readOnly rows={6} value={computeSelectedSourceMaterial()?.text ?? ""} />
+              </>
+            ) : (
+              <p className="transcript-note">尚未选择可用素材。请勾选章节/段落，或勾选「使用完整素材」。</p>
+            )}
+            <div className="range-actions cta-row">
+              <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
+                保存为题材（追加）
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={replaceSourceCaptureFromMaterialSelection}
+                disabled={!computeSelectedSourceMaterial()}
+              >
+                用所选替换 Source Capture
+              </button>
+              <button type="button" className="secondary" onClick={useFullTranscriptAsSource} disabled={!transcriptText.trim()}>
+                使用完整素材替换 Source（仅转录）
+              </button>
+            </div>
+            {savedTopicMaterial.trim() ? (
+              <label className="field">
+                <span>已存题材（将带入生成指令）</span>
+                <textarea className="transcript-preview" readOnly rows={4} value={savedTopicMaterial} />
+                <button type="button" className="copy-action" onClick={() => setSavedTopicMaterial("")}>
+                  清空已存题材
+                </button>
+              </label>
+            ) : null}
+          </div>
+        </details>
+
+        <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
+          <summary>分析素材 / Analyze Source（仅已选）</summary>
+          <div className="timestamp-chapters">
+            <p className="transcript-note">以下按钮只对「已选题材」中的文本生效，不会默认使用全文。</p>
+            <div className="range-actions cta-row" style={{ flexWrap: "wrap" }}>
+              {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
+                <button
+                  key={b.label}
+                  type="button"
+                  className="secondary"
+                  disabled={materialAnalysisLoading || !computeSelectedSourceMaterial()}
+                  onClick={() => runMaterialAnalysisTask(b.task)}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+            <label className="field">
+              <span>你想从这段素材里提取什么？</span>
+              <textarea
+                rows={3}
+                value={materialCustomPrompt}
+                onChange={(e) => setMaterialCustomPrompt(e.target.value)}
+                placeholder="例如：帮我找出里面最适合写疗愈文章的部分；从这段 podcast 转录提取主要观点…"
+              />
+            </label>
+            <div className="range-actions cta-row">
+              <button
+                type="button"
+                className="primary"
+                disabled={materialAnalysisLoading || !materialCustomPrompt.trim() || !computeSelectedSourceMaterial()}
+                onClick={() => runMaterialAnalysisTask(materialCustomPrompt.trim())}
+              >
+                {materialAnalysisLoading ? "分析中…" : "开始分析"}
+              </button>
+            </div>
+            {materialAnalysisStatus && <span className="range-status">{materialAnalysisStatus}</span>}
+          </div>
+        </details>
+
+        {sourceMaterialPipeline === "transcript" && !transcriptText && (
           <div className="transcript-empty">
-            <strong>{isYouTubeUrl ? "YouTube source detected" : "No transcript loaded"}</strong>
+            <strong>{isYouTubeUrl ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
             <p>
               {isYouTubeUrl
-                ? "Fetch the transcript, then curate chapters, topics, or ranges before replacing Source."
-                : "Paste a YouTube URL in Source, then fetch a transcript to use this workspace."}
+                ? "点击提取素材，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
+                : "在 Source 粘贴 YouTube 链接并切回本页签，或使用「链接抓取 / 粘贴 / 音频」处理其他来源。"}
             </p>
             {isYouTubeUrl && (
               <button type="button" className="primary transcript-fetch" onClick={getTranscript} disabled={transcriptLoading}>
-                {transcriptLoading ? "Fetching..." : "Get Transcript"}
+                {transcriptLoading ? "提取中…" : "提取素材"}
               </button>
             )}
             {transcriptStatus && <span className="range-status">{transcriptStatus}</span>}
           </div>
         )}
 
-        {transcriptText && (
+        {sourceMaterialPipeline === "transcript" && transcriptText && (
           <div className="transcript-tools">
             <details open className="priority-section">
               <summary>1. Timestamp Chapters</summary>
@@ -2510,8 +3388,77 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       </section>
 
       <div id="ee-panel-workspace" className="work-column">
+        <section
+          className="layer ee-request-workspace-desktop"
+          aria-label="Request workspace overview"
+        >
+          <div className="layer-head">
+            <p className="eyebrow">Request</p>
+            <h2>Request workspace</h2>
+            <p>
+              Tell the engine what to create from your source: use the <strong>Control Console</strong> (left) for your
+              custom request, quick request buttons, engines, task, languages, output behavior, and tone. Then run{" "}
+              <strong>Generate</strong> to produce your Workpiece.
+            </p>
+          </div>
+          <div className="request-workspace-summary">
+            <strong>Current setup (read-only)</strong>
+            <dl>
+              <div>
+                <dt>Task</dt>
+                <dd>{activeTask.label}</dd>
+              </div>
+              <div>
+                <dt>Engines</dt>
+                <dd>
+                  {providers.length === 0
+                    ? "None selected"
+                    : providers
+                        .map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p)
+                        .join(", ")}
+                </dd>
+              </div>
+              <div>
+                <dt>Target language</dt>
+                <dd>{targetLanguage}</dd>
+              </div>
+              <div>
+                <dt>Output behavior</dt>
+                <dd>{activeMode.label}</dd>
+              </div>
+              <div>
+                <dt>Tone</dt>
+                <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
+              </div>
+              <div>
+                <dt>Custom request</dt>
+                <dd>
+                  {customInstruction.trim()
+                    ? customInstruction.trim().length > 220
+                      ? `${customInstruction.trim().slice(0, 220)}…`
+                      : customInstruction.trim()
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="request-workspace-actions">
+            <button
+              type="button"
+              onClick={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              Open Control Console
+            </button>
+            <button
+              type="button"
+              onClick={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              Jump to Generate
+            </button>
+          </div>
+        </section>
         {effectiveIsDesktopConsole ? (
-          <SourceMaterialPanel>
+          <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-step-publish">
             <WorkflowTimeline
               versions={sourceVersions}
               currentSourceVersionId={currentSourceVersionId}
@@ -2525,7 +3472,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </SourceMaterialPanel>
         ) : null}
 
-        <StructureBuilderPanel className="ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble">
+        <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
         <MobileWorkflowPanel
           captureIdea={mobileWorkflow.captureIdea}
           voiceCapture={mobileWorkflow.voiceCapture}
@@ -2596,9 +3543,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         ) : null}
         <section className="layer source-layer">
           <div className="layer-head">
-            <p className="eyebrow">Source → Generate</p>
-            <h2>Source (Engine Input)</h2>
-            <p>Only this source content feeds Generate. Transcript Workspace never generates directly.</p>
+            <p className="eyebrow">Source</p>
+            <h2>Source material</h2>
+            <p>
+              Capture or prepare material here only. Set your Request next, then create a Workpiece — draft assembly and publishing happen in later steps.
+            </p>
           </div>
           <div className="source-purpose source-summary-card">
             <strong>Source summary:</strong>
@@ -2653,16 +3602,24 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <button
               type="button"
               className="secondary"
-              onClick={() => appendToEssayDraft(input, "Current Source added to Essay Draft.")}
+              onClick={() => replaceSource(input, sourceType, "Source saved as current source version.")}
               disabled={!input.trim()}
             >
-              Add source to Essay Draft
+              Save Source
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+              disabled={!input.trim() || ttsLoading}
+            >
+              Listen to Source
             </button>
             <button type="button" className="copy-action source-clear" onClick={clearSourceOnly} disabled={!input.trim()}>
               Clear source
             </button>
           </div>
-          <div className="input-label">Engine input — this text will be processed.</div>
+          <div className="input-label">Source text — what you capture here becomes the engine&apos;s material after you confirm it in Source.</div>
 
           <textarea
             value={input}
@@ -2674,360 +3631,26 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           {isYouTubeUrl && !transcriptText && (
             <div className="transcript-box source-fetch">
               <div>
-                <strong>YouTube source detected</strong>
-                <p>Fetch the transcript, then curate it in the center workspace before replacing Source.</p>
+                <strong>YouTube / podcast URL</strong>
+                <ol className="source-fetch-flow">
+                  <li>Paste the YouTube or podcast page URL in your Source text above.</li>
+                  <li>Fetch the transcript.</li>
+                  <li>Review it in Transcript Workspace — select what to keep.</li>
+                  <li>Replace or add checked sections into this Source.</li>
+                  <li>Optional: use Listen to Source when your audio tools are open (Refine step or audio panel).</li>
+                </ol>
+                <p className="source-fetch-note">
+                  Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
+                </p>
               </div>
               <button type="button" className="secondary" onClick={getTranscript} disabled={transcriptLoading}>
-                {transcriptLoading ? "Fetching..." : "Get Transcript"}
+                {transcriptLoading ? "Fetching…" : "Fetch transcript"}
               </button>
               {transcriptStatus && <span className="status">{transcriptStatus}</span>}
             </div>
           )}
 
-          {false && (isYouTubeUrl || transcriptText) && (
-            <div className="transcript-box">
-              <div>
-                <strong>{transcriptText ? "Transcript Workspace" : "YouTube source detected"}</strong>
-                <p>
-                  {transcriptText
-                    ? "Review, copy, or select transcript sections before sending them into Source Capture."
-                    : "Fetch transcript to use it as source material."}
-                </p>
-              </div>
-              {isYouTubeUrl && !transcriptText ? (
-                <button type="button" className="secondary" onClick={getTranscript} disabled={transcriptLoading}>
-                  {transcriptLoading ? "Fetching..." : "Get Transcript"}
-                </button>
-              ) : null}
-              {transcriptStatus && <span className="status">{transcriptStatus}</span>}
-              {transcriptText && (
-                <div className="transcript-tools">
-                  <details open>
-                    <summary>1. Full Transcript Sections</summary>
-                    <div className="section-workspace">
-                      <div className="range-head">
-                        <strong>Full Transcript Sections</strong>
-                        <p>Browse the full transcript organized into readable sections with headings.</p>
-                      </div>
-                      <label className="organize-option">
-                        <input
-                          type="checkbox"
-                          checked={includeTranscriptTimestamps}
-                          onChange={(e) => setIncludeTranscriptTimestamps(e.target.checked)}
-                        />
-                        <span>Include timestamps in copied headings</span>
-                      </label>
-                      <div className="range-actions">
-                        <button type="button" className="secondary" onClick={copyFullTranscriptSections}>
-                          Copy all clean sections
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={addFullTranscriptSectionsToSource}>
-                          Add all sections to source
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={replaceSourceWithFullTranscriptSections}>
-                          Replace source with all sections
-                        </button>
-                        <button type="button" className="secondary" onClick={copyCheckedFullTranscriptSections}>
-                          Copy checked sections
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={addCheckedFullTranscriptSectionsToSource}>
-                          Add checked sections to source
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={replaceSourceWithCheckedFullTranscriptSections}>
-                          Replace source with checked sections
-                        </button>
-                        <button type="button" className="secondary quiet" onClick={clearCheckedFullTranscriptSections}>
-                          Clear checked sections
-                        </button>
-                      </div>
-                      <div className="workspace-section-list">
-                        {fullTranscriptSections.map((section) => (
-                          <article className="workspace-section" key={section.id}>
-                            <label className="workspace-section-head">
-                              <input
-                                type="checkbox"
-                                checked={checkedFullSectionIds.includes(section.id)}
-                                onChange={() => toggleFullTranscriptSection(section.id)}
-                              />
-                              <span>
-                                <strong>
-                                  {formatTimestamp(section.start)}-{formatTimestamp(section.end)}
-                                  {" — "}
-                                  {section.title}
-                                </strong>
-                                <em>Approximate transcript section</em>
-                              </span>
-                            </label>
-                            <div className="workspace-section-text">{cleanSectionText(section)}</div>
-                            <div className="section-actions">
-                              <button
-                                type="button"
-                                className="secondary"
-                                onClick={() =>
-                                  copyTranscriptText(cleanSectionText(section), "Section clean text copied.", setFullSectionStatus)
-                                }
-                              >
-                                Copy clean text
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary transfer"
-                                onClick={() => addFullTranscriptSectionToSource(section)}
-                              >
-                                Add section to source
-                              </button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                      {fullSectionStatus && <span className="range-status">{fullSectionStatus}</span>}
-                    </div>
-                  </details>
-
-                  <details open>
-                    <summary>2. Timestamp Chapters</summary>
-                    <div className="timestamp-chapters">
-                      <div className="range-head">
-                        <strong>Timestamp Chapters</strong>
-                        <p>Paste real YouTube timestamp chapters, then select precise transcript sections.</p>
-                      </div>
-                      <label className="field">
-                        <span>Timestamp list</span>
-                        <textarea
-                          className="chapter-input"
-                          value={timestampChapterInput}
-                          onChange={(e) => {
-                            setTimestampChapterInput(e.target.value);
-                            setChapterStatus(null);
-                          }}
-                          rows={7}
-                          placeholder={`00:00 The hook — why I built this
-01:30 The problem
-02:15 Planning the rebuild
-04:00 The build begins
-08:15 Everything breaks
-15:25 The honest verdict`}
-                        />
-                      </label>
-                      <div className="range-actions">
-                        <button type="button" className="secondary" onClick={applyTimestampChapters}>
-                          Apply timestamp chapters
-                        </button>
-                        <button type="button" className="secondary" onClick={generateRoughChapterSuggestions}>
-                          Generate rough chapter suggestions
-                        </button>
-                      </div>
-                      {chapterStatus === "Rough suggestions generated — edit titles before using." && (
-                        <div className="rough-note">Rough suggestions — edit titles before using.</div>
-                      )}
-                      <div className="range-actions">
-                        <button type="button" className="secondary" onClick={copyCheckedSectionsCleanText}>
-                          Copy checked sections
-                        </button>
-                        <button type="button" className="secondary" onClick={copyCheckedSectionsWithHeadings}>
-                          Copy checked sections with headings
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={addCheckedSectionsToSource}>
-                          Add checked sections to source
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={replaceSourceWithCheckedSections}>
-                          Replace source with checked sections
-                        </button>
-                        <button type="button" className="secondary quiet" onClick={clearCheckedChapters}>
-                          Clear checked chapters
-                        </button>
-                      </div>
-                      <div className="workspace-section-list">
-                        {timestampChapterSections.map((section) => (
-                          <article className="workspace-section" key={section.id}>
-                            <label className="workspace-section-head">
-                              <input
-                                type="checkbox"
-                                checked={checkedChapterIds.includes(section.id)}
-                                onChange={() => toggleTimestampChapter(section.id)}
-                              />
-                              <span>
-                                <strong>
-                                  {formatTimestamp(section.start)}-{formatTimestamp(section.end)}
-                                  {" — "}
-                                  {section.title}
-                                </strong>
-                              </span>
-                            </label>
-                            <div className="workspace-section-text">{cleanSectionText(section)}</div>
-                            <div className="section-actions">
-                              <button type="button" className="secondary" onClick={() => copySectionCleanText(section)}>
-                                Copy clean text
-                              </button>
-                              <button type="button" className="secondary transfer" onClick={() => addSectionToSource(section)}>
-                                Add section to source
-                              </button>
-                            <button type="button" className="secondary transfer" onClick={() => addSectionToDraft(section)}>
-                              Add to Essay Draft
-                            </button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                      {timestampChapterSections.length === 0 && (
-                        <p className="transcript-note">Apply timestamp chapters to create precise chapter sections.</p>
-                      )}
-                      {chapterStatus && <span className="range-status">{chapterStatus}</span>}
-                    </div>
-                  </details>
-
-                  <details open>
-                    <summary>3. Manual Time Ranges</summary>
-                    <div className="range-selector">
-                      <div className="range-head">
-                        <strong>Manual Time Ranges</strong>
-                        <p>Add one or more non-continuous timestamp ranges and combine them as source.</p>
-                      </div>
-                      <label className="organize-option">
-                        <input
-                          type="checkbox"
-                          checked={organizeTranscriptSections}
-                          onChange={(e) => setOrganizeTranscriptSections(e.target.checked)}
-                        />
-                        <span>Organize range transfers into sections</span>
-                      </label>
-                      <div className="manual-ranges">
-                        {manualRanges.map((range, index) => (
-                          <div className="manual-range-row" key={range.id}>
-                            <label className="field">
-                              <span>Start time</span>
-                              <input
-                                type="text"
-                                value={range.start}
-                                onChange={(e) => updateManualRange(range.id, "start", e.target.value)}
-                                placeholder={index === 0 ? "49:47" : "1:08:23"}
-                              />
-                            </label>
-                            <label className="field">
-                              <span>End time</span>
-                              <input
-                                type="text"
-                                value={range.end}
-                                onChange={(e) => updateManualRange(range.id, "end", e.target.value)}
-                                placeholder={index === 0 ? "54:06" : "1:15:00"}
-                              />
-                            </label>
-                            <button type="button" className="secondary quiet" onClick={() => removeManualRange(range.id)}>
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="range-actions">
-                        <button type="button" className="secondary" onClick={addManualRange}>
-                          Add range
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={useManualRangesAsSource}>
-                          Use selected ranges as source
-                        </button>
-                        <button type="button" className="secondary quiet" onClick={clearManualRanges}>
-                          Clear ranges
-                        </button>
-                      </div>
-                      {rangeStatus && <span className="range-status">{rangeStatus}</span>}
-                    </div>
-                  </details>
-
-                  <details open>
-                    <summary>4. Topic Filter</summary>
-                    <div className="topic-filter">
-                      <div className="range-head">
-                        <strong>Topic Filter</strong>
-                        <p>Find matching full transcript sections using local keyword or phrase matching only.</p>
-                      </div>
-                      <label className="field">
-                        <span>Topic keywords or phrases</span>
-                        <input
-                          value={topicInput}
-                          onChange={(e) => setTopicInput(e.target.value)}
-                          placeholder="anxiety, depression, social contagion, ADHD, body budget"
-                        />
-                      </label>
-                      <div className="range-actions">
-                        <button type="button" className="secondary" onClick={findTopicSections}>
-                          Find topic sections
-                        </button>
-                        <button type="button" className="secondary quiet" onClick={clearTopicMatches}>
-                          Clear topic matches
-                        </button>
-                        <button type="button" className="secondary" onClick={copyMatchedSections}>
-                          Copy matched clean text
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={addMatchedSectionsToSource}>
-                          Add matched sections to source
-                        </button>
-                        <button type="button" className="secondary transfer" onClick={replaceSourceWithMatchedSections}>
-                          Replace source with matched sections
-                        </button>
-                      </div>
-                      <div className="workspace-section-list">
-                        {topicMatches.map((match) => (
-                          <article className="workspace-section" key={match.section.id}>
-                            <label className="workspace-section-head">
-                              <input
-                                type="checkbox"
-                                checked={checkedTopicSectionIds.includes(match.section.id)}
-                                onChange={() => toggleTopicSection(match.section.id)}
-                              />
-                              <span>
-                                <strong>
-                                  {formatTimestamp(match.section.start)}-{formatTimestamp(match.section.end)}
-                                  {" — "}
-                                  {match.section.title}
-                                </strong>
-                                <em>Keyword score: {match.score}</em>
-                              </span>
-                            </label>
-                            <div className="workspace-section-text">{cleanSectionText(match.section)}</div>
-                            <div className="section-actions">
-                              <button
-                                type="button"
-                                className="secondary"
-                                onClick={() =>
-                                  copyTranscriptText(cleanSectionText(match.section), "Matched section copied.", setTopicStatus)
-                                }
-                              >
-                                Copy clean text
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary transfer"
-                                onClick={() => {
-                                  appendToSource(
-                                    formatSectionsForSource([match.section], "## Topic Matched Transcript Sections"),
-                                    "youtube_transcript_selected_sections",
-                                    "Matched section added to Source Capture.",
-                                  );
-                                  setTopicStatus("Matched section added to Source Capture.");
-                                }}
-                              >
-                                Add section to source
-                              </button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                      {topicMatchedSectionIds.length > 0 && topicMatches.length === 0 && (
-                        <p className="transcript-note">Matched sections are no longer available for the current transcript.</p>
-                      )}
-                      {topicStatus && <span className="range-status">{topicStatus}</span>}
-                    </div>
-                  </details>
-
-                  <details>
-                    <summary>Raw Transcript Preview</summary>
-                    <p className="transcript-note">Preview only. Source Capture is not updated unless you use add, replace, or use-as-source actions.</p>
-                    <textarea className="transcript-preview" value={transcriptText} readOnly rows={8} />
-                  </details>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Full transcript sectioning (chapters, ranges, topic filter) lives in `TranscriptWorkspacePanel` in the center column — not duplicated here. */}
 
           <div className="source-footer">
             <span>{input.trim().length.toLocaleString()} characters captured</span>
@@ -3052,7 +3675,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         />
         </ResultValidationPanel>
 
-        <DraftGeneratorPanel className="ee-narrow-step-assemble">
+        <DraftGeneratorPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
         <EssayDraftWorkspace
           title={essayDraftTitle}
           content={essayDraftContent}
@@ -3086,11 +3709,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <section className="layer read-layer ee-mobile-read-layer-duplicate">
               <div className="layer-head">
                 <p className="eyebrow">9. Read Aloud Layer</p>
-                <h2>Read aloud</h2>
-                <p>
-                  Listen to the source or generated results before deciding what to use. Long text will be read in parts
-                  automatically. You can download parts or one merged MP3.
-                </p>
+                <h2>{workflowListenGuide.asideHeadline}</h2>
+                <p>{workflowListenGuide.asideBody}</p>
               </div>
               <div className="field-grid">
                 <label className="field">
@@ -3129,11 +3749,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         ) : null}
         <section className="layer audio-panel">
           <div className="layer-head">
-            <p className="eyebrow">Listen</p>
-            <h2>Audio</h2>
+            <p className="eyebrow">{workflowListenGuide.panelEyebrow}</p>
+            <h2>{workflowListenGuide.panelHeadline}</h2>
             <p>
-              Listen after selecting source, result, or final output.
-              {effectiveIsMobileLayout ? " Voice settings are in Read aloud settings above." : " Voice settings live in the left controls."}
+              {workflowListenGuide.panelBody}
             </p>
           </div>
           <div className={`media-player state-${audioPlayer.state}`}>
@@ -3265,7 +3884,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </section>
         </ListenAndMarkPanel>
 
-        <EssayAssemblyPanel className="ee-narrow-step-assemble">
+        <EssayAssemblyPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
         {effectiveIsMobileLayout ? (
           <section className="layer project-layer ee-mobile-project-assemble">
             <div className="layer-head">
@@ -3326,144 +3945,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       <section className="mobile-first-workspace" aria-label="Mobile Essay Engine workspace">
         <MobileWorkflowLayout
           activeStepIndex={mobileWorkflowStepIndex}
-          onActiveStepIndexChange={setMobileWorkflowStepIndex}
+          onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
           primaryWorkspaceDisabled={loading || !input.trim() || generateBlocked}
-          primaryWorkspaceLabel={loading ? "Generating…" : runLabel}
-          desktopMinWidth={DESKTOP_MIN}
+          primaryWorkspaceLabel={loading ? "Generating…" : "Generate Workpiece"}
         />
 
-        <details className="ee-mobile-classic-editor" open={effectiveIsDesktopConsole}>
-          <summary className="ee-mobile-classic-summary">
-            <span className="eyebrow">Classic Editor</span>
-            <strong className="ee-mobile-classic-title">Source / Draft / Result</strong>
-            <span className="ee-mobile-classic-hint">Optional quick edit — expand for tabs</span>
-          </summary>
-          <div className="ee-mobile-classic-body">
-        <nav className="mobile-primary-tabs" aria-label="Mobile workflow tabs">
-          {[
-            { id: "source", label: "Source" },
-            { id: "draft", label: "Draft" },
-            { id: "result", label: "Result" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={mobileActiveTab === tab.id ? "active" : ""}
-              onClick={() => setMobileActiveTab(tab.id as "source" | "draft" | "result")}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {mobileActiveTab === "source" && (
-          <section className="mobile-panel mobile-source-panel">
-            <div className="mobile-panel-head">
-              <strong>Source</strong>
-              <span>Current engine input</span>
-            </div>
-            <textarea
-              value={input}
-              onChange={(e) => updateInput(e.target.value)}
-              rows={14}
-              placeholder="Paste or edit source text here."
-            />
-            <div className="mobile-metrics">
-              <span>{sourceWordCount.toLocaleString()} words</span>
-              <span>{input.length.toLocaleString()} characters</span>
-            </div>
-            <div className="mobile-action-grid">
-              <button type="button" onClick={() => replaceSource(input, sourceType, "Source saved as current source version.")} disabled={!input.trim()}>
-                Replace
-              </button>
-              <button type="button" onClick={() => appendToEssayDraft(input, "Source added to Essay Draft.")} disabled={!input.trim()}>
-                Add to Draft
-              </button>
-              <button type="button" onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")} disabled={!input.trim() || ttsLoading}>
-                Read aloud
-              </button>
-            </div>
-          </section>
-        )}
-
-        {mobileActiveTab === "draft" && (
-          <section className="mobile-panel mobile-draft-panel">
-            <div className="mobile-panel-head">
-              <strong>Draft</strong>
-              <span>Human writing and assembly space</span>
-            </div>
-            <input
-              value={essayDraftTitle}
-              onChange={(e) => {
-                setEssayDraftTitle(e.target.value);
-                setEssayDraftUpdatedAt(new Date().toISOString());
-              }}
-              placeholder="Draft title"
-            />
-            <textarea
-              value={essayDraftContent}
-              onChange={(e) => {
-                setEssayDraftContent(e.target.value);
-                setEssayDraftUpdatedAt(new Date().toISOString());
-              }}
-              rows={18}
-              placeholder="Assemble and edit your essay draft here."
-            />
-            <div className="mobile-metrics">
-              <span>{countWords(essayDraftContent).toLocaleString()} words</span>
-              <span>{essayDraftContent.length.toLocaleString()} characters</span>
-            </div>
-            <div className="mobile-action-grid">
-              <button type="button" onClick={useEssayDraftAsSource} disabled={!essayDraftContent.trim()}>
-                Use draft as source
-              </button>
-              <button type="button" onClick={markEssayDraftAsFinal} disabled={!essayDraftContent.trim()}>
-                Mark as final
-              </button>
-              <button type="button" onClick={() => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")} disabled={!essayDraftContent.trim() || ttsLoading}>
-                Read aloud
-              </button>
-            </div>
-            {essayDraftStatus && <div className="mobile-status">{essayDraftStatus}</div>}
-          </section>
-        )}
-
-        {mobileActiveTab === "result" && (
-          <section className="mobile-panel mobile-result-panel">
-            <div className="mobile-panel-head">
-              <strong>Result</strong>
-              <span>Latest generated output</span>
-            </div>
-            <div className="mobile-result-output" data-selectable-output="true">{primaryResultOutput || "No result yet. Generate from Source first."}</div>
-            <div className="mobile-action-grid">
-              <button type="button" onClick={() => appendToEssayDraft(primaryResultOutput, "Result added to Essay Draft.")} disabled={!primaryResultOutput}>
-                Add to Draft
-              </button>
-              <button type="button" onClick={() => continueFromResult(primaryResultOutput, "rewrite")} disabled={!primaryResultOutput}>
-                Rewrite
-              </button>
-              <button type="button" onClick={() => continueFromResult(primaryResultOutput, "translate")} disabled={!primaryResultOutput}>
-                Translate
-              </button>
-              <button type="button" onClick={() => continueFromResult(primaryResultOutput, "paraphrase")} disabled={!primaryResultOutput}>
-                Paraphrase
-              </button>
-            </div>
-          </section>
-        )}
-          </div>
-        </details>
-
+        <div id="ee-active-workspace" className="ee-active-workspace-anchor" aria-hidden="true" />
       </section>
-
-      <nav className="mobile-tabs legacy-mobile-tabs" aria-label="Mobile workflow tabs">
-        <span>Transcript</span>
-        <span>Source</span>
-        <span>Results</span>
-        <span>Listen</span>
-        <span>Final</span>
-      </nav>
 
       <div className="mobile-task-toolbar" aria-label="Mobile task toolbar">
         {(["rewrite", "paraphrase", "translate"] as EngineTask[]).map((mobileTask) => {
@@ -3489,11 +3978,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             runTtsAction("play", textToRead, "essayengine-listen", "essayengine-listen.mp3");
           }}
           disabled={!finalVersion?.content && !essayDraftContent.trim() && !primaryResultOutput && !input.trim()}
-          aria-label="Listen"
-          title="Listen"
+          aria-label={workflowListenGuide.panelHeadline}
+          title={workflowListenGuide.panelHeadline}
         >
           <span aria-hidden="true">🎧</span>
-          <small>Listen</small>
+          <small>{workflowListenGuide.mobileToolbarListen}</small>
         </button>
       </div>
 
@@ -3508,10 +3997,18 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <button type="button" onClick={() => setResultStatus("Needs Rewrite")}>
               Mark this version Needs Rewrite
             </button>
-            <button type="button" onClick={() => currentSourceVersion && useSourceVersionAsCurrent(currentSourceVersion)}>
+            <button
+              type="button"
+              disabled={!currentSourceVersion}
+              onClick={() => currentSourceVersion && useSourceVersionAsCurrent(currentSourceVersion)}
+            >
               Promote to Source
             </button>
-            <button type="button" onClick={() => currentSourceVersion && markSourceVersionAsFinal(currentSourceVersion)}>
+            <button
+              type="button"
+              disabled={!currentSourceVersion}
+              onClick={() => currentSourceVersion && markSourceVersionAsFinal(currentSourceVersion)}
+            >
               Mark as Final
             </button>
           </div>
@@ -3561,6 +4058,109 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </button>
         </div>
       </div>
+
+      <details className="ee-mobile-classic-editor">
+        <summary className="ee-mobile-classic-summary">
+          <span className="eyebrow">Optional</span>
+          <strong className="ee-mobile-classic-title">Advanced / Legacy Editor</strong>
+          <span className="ee-mobile-classic-hint">Draft / Workpiece shortcuts — optional; main flow uses the five steps above.</span>
+        </summary>
+        <div className="ee-mobile-classic-body">
+          <nav className="mobile-primary-tabs" aria-label="Legacy editor panels">
+            {(
+              [
+                { id: "draft" as const, label: "Draft" },
+                { id: "result" as const, label: "Workpiece" },
+              ]
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={mobileActiveTab === tab.id ? "active" : ""}
+                onClick={() => setMobileActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {mobileActiveTab === "draft" && (
+            <section className="mobile-panel mobile-draft-panel">
+              <div className="mobile-panel-head">
+                <strong>Draft</strong>
+                <span>For Refine / Publish — not part of the Source step</span>
+              </div>
+              <input
+                value={essayDraftTitle}
+                onChange={(e) => {
+                  setEssayDraftTitle(e.target.value);
+                  setEssayDraftUpdatedAt(new Date().toISOString());
+                }}
+                placeholder="Draft title"
+              />
+              <textarea
+                value={essayDraftContent}
+                onChange={(e) => {
+                  setEssayDraftContent(e.target.value);
+                  setEssayDraftUpdatedAt(new Date().toISOString());
+                }}
+                rows={18}
+                placeholder="Assemble and edit your essay draft here."
+              />
+              <div className="mobile-metrics">
+                <span>{countWords(essayDraftContent).toLocaleString()} words</span>
+                <span>{essayDraftContent.length.toLocaleString()} characters</span>
+              </div>
+              <div className="mobile-action-grid">
+                <button type="button" onClick={useEssayDraftAsSource} disabled={!essayDraftContent.trim()}>
+                  Use draft as source
+                </button>
+                <button type="button" onClick={markEssayDraftAsFinal} disabled={!essayDraftContent.trim()}>
+                  Mark as final
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
+                  disabled={!essayDraftContent.trim() || ttsLoading}
+                >
+                  Listen to draft
+                </button>
+              </div>
+              {essayDraftStatus && <div className="mobile-status">{essayDraftStatus}</div>}
+            </section>
+          )}
+
+          {mobileActiveTab === "result" && (
+            <section className="mobile-panel mobile-result-panel">
+              <div className="mobile-panel-head">
+                <strong>Workpiece</strong>
+                <span>Latest generated output</span>
+              </div>
+              <div className="mobile-result-output" data-selectable-output="true">
+                {primaryResultOutput || "No Workpiece yet. Set your Request and generate from Source."}
+              </div>
+              <div className="mobile-action-grid">
+                <button
+                  type="button"
+                  onClick={() => appendToEssayDraft(primaryResultOutput, "Result added to Essay Draft.")}
+                  disabled={!primaryResultOutput}
+                >
+                  Add Workpiece to draft
+                </button>
+                <button type="button" onClick={() => continueFromResult(primaryResultOutput, "rewrite")} disabled={!primaryResultOutput}>
+                  Rewrite
+                </button>
+                <button type="button" onClick={() => continueFromResult(primaryResultOutput, "translate")} disabled={!primaryResultOutput}>
+                  Translate
+                </button>
+                <button type="button" onClick={() => continueFromResult(primaryResultOutput, "paraphrase")} disabled={!primaryResultOutput}>
+                  Paraphrase
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      </details>
 
       <style jsx>{`
         .workspace {
@@ -3632,6 +4232,102 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           overflow: auto;
           position: sticky;
           top: 18px;
+        }
+        .ee-desktop-workflow-nav {
+          display: none;
+          grid-column: 1 / -1;
+          min-width: 0;
+        }
+        .workspace:not(.ee-narrow) .ee-desktop-workflow-nav {
+          display: block;
+        }
+        .ee-active-workspace-anchor {
+          height: 1px;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          scroll-margin-top: 10px;
+        }
+        .workspace:not(.ee-narrow) .desktop-console-layout > section.transcript-column {
+          display: none !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > section.transcript-column {
+          display: flex !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > section.transcript-column {
+          display: none !important;
+        }
+        .workspace:not(.ee-narrow) .desktop-console-layout > .work-column {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .workspace:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-work-support {
+          grid-column: 2;
+        }
+        .workspace:not(.ee-narrow) .desktop-console-layout > .work-column > :not(.ee-work-support) {
+          grid-column: 1;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step] .desktop-console-layout > .work-column > * {
+          display: none !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > .work-column > .ee-narrow-step-source {
+          display: block !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > .work-column > .ee-narrow-step-structure,
+        .workspace:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > .work-column > .ee-narrow-step-draft {
+          display: block !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-mark,
+        .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-revise,
+        .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-validate {
+          display: block !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-request-workspace-desktop,
+        .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-work-support {
+          display: block !important;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions button {
+          border: 1px solid #2f6f73;
+          border-radius: 10px;
+          background: #f1f8f7;
+          color: #174447;
+          padding: 10px 14px;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary {
+          margin-top: 12px;
+          border: 1px solid #d8e8e6;
+          border-radius: 10px;
+          background: #f3faf9;
+          padding: 12px 14px;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dl {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 6px 14px;
+          margin: 10px 0 0;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dt {
+          margin: 0;
+          color: #526171;
+          font-weight: 800;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dd {
+          margin: 0;
+          color: #17202a;
         }
         .layer {
           border: 1px solid #dfe5ec;
@@ -3959,6 +4655,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         }
         .segmented button,
         .quick-picks button,
+        .request-quick-picks button,
         .primary,
         .secondary,
         .copy-action {
@@ -4022,6 +4719,18 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           padding: 7px 10px;
           font-size: 12px;
           font-weight: 750;
+        }
+        .request-quick-picks {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 12px;
+        }
+        .request-quick-picks button {
+          padding: 8px 11px;
+          font-size: 12px;
+          font-weight: 750;
+          line-height: 1.25;
         }
         .source-footer {
           display: flex;
@@ -4099,6 +4808,22 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           margin: 2px 0 0;
           color: #617080;
           font-size: 13px;
+        }
+        .source-fetch-flow {
+          margin: 8px 0 0;
+          padding-left: 1.25rem;
+          color: #475569;
+          font-size: 13px;
+          line-height: 1.55;
+        }
+        .source-fetch-flow li {
+          margin: 4px 0;
+        }
+        .source-fetch-note {
+          margin: 10px 0 0;
+          font-size: 12px;
+          color: #617080;
+          line-height: 1.45;
         }
         .transcript-primary-actions {
           justify-self: end;
@@ -4805,7 +5530,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           padding: 9px 10px;
           font-size: 13px;
         }
-        .mobile-tabs,
         .mobile-first-workspace,
         .mobile-task-toolbar,
         .mobile-bottom-bar,
@@ -4836,7 +5560,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           max-width: 100%;
         }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="engines"] .control-column .run-layer,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="request"] .control-column .run-layer,
           .workspace.ee-narrow.ee-shell-workspace .control-column .read-layer,
           .workspace.ee-narrow.ee-shell-workspace .control-column .project-layer {
             display: none !important;
@@ -4852,69 +5576,70 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             display: none !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="engines"] .desktop-console-layout > aside {
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="request"] .desktop-console-layout > aside {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="transcript"]
-            .desktop-console-layout
-            > section.transcript-column {
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="source"] .desktop-console-layout > aside {
+            display: none !important;
+          }
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="source"] .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="source"] .desktop-console-layout > .work-column {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="source"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="structure"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="draft"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="mark"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="revise"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="validate"] .desktop-console-layout > .work-column,
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="assemble"] .desktop-console-layout > .work-column {
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="workpiece"] .desktop-console-layout > aside,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="workpiece"] .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"] .desktop-console-layout > aside,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"] .desktop-console-layout > section.transcript-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"] .desktop-console-layout > aside,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"] .desktop-console-layout > section.transcript-column {
+            display: none !important;
+          }
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="workpiece"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"] .desktop-console-layout > .work-column,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"] .desktop-console-layout > .work-column {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="source"]
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="source"]
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-source {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="structure"]
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="workpiece"]
             .desktop-console-layout
             > .work-column
-            > .ee-narrow-step-structure {
-            display: block !important;
-          }
-
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="draft"]
+            > .ee-narrow-step-structure,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="workpiece"]
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-draft {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="mark"]
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"]
             .desktop-console-layout
             > .work-column
-            > .ee-narrow-step-mark {
-            display: block !important;
-          }
-
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="revise"]
+            > .ee-narrow-step-mark,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"]
             .desktop-console-layout
             > .work-column
-            > .ee-narrow-step-revise {
-            display: block !important;
-          }
-
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="validate"]
+            > .ee-narrow-step-revise,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"]
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-validate {
             display: block !important;
           }
 
-          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="assemble"]
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-publish,
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"]
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-assemble {
@@ -4952,6 +5677,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           .workspace.ee-narrow .ee-mobile-classic-editor {
             min-width: 0;
             max-width: 100%;
+            grid-column: 1 / -1;
+            order: 100;
+            margin-top: 8px;
           }
           .workspace.ee-narrow .ee-mobile-classic-summary {
             cursor: pointer;
@@ -5026,7 +5754,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             top: 0;
             z-index: 22;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
             border: 1px solid #dfe5ec;
             border-radius: 14px;
@@ -5139,18 +5867,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           }
           .workspace.ee-narrow :global(.result-layer) {
             order: 3;
-          }
-          .workspace.ee-narrow .mobile-tabs {
-            display: none;
-          }
-          .workspace.ee-narrow .mobile-tabs span {
-            border-radius: 999px;
-            background: #f1f8f7;
-            color: #174447;
-            padding: 8px 6px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 800;
           }
           .workspace.ee-narrow .mobile-task-toolbar {
             display: none;
@@ -5313,9 +6029,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           }
           .mobile-player {
             bottom: max(12px, env(safe-area-inset-bottom));
-          }
-          .mobile-tabs {
-            display: none;
           }
           .transcript-source {
             justify-self: start;
