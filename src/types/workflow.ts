@@ -1,9 +1,9 @@
 /**
  * Canonical 5-stage workflow domain model.
  *
- * Material → Extraction → Topic → Processing → Review/Product
+ * Source → Extraction → Topic → Processing → Review/Product
  *
- *   Material      raw inputs (text, URLs, files, transcripts, screenshots)
+ *   Source        raw inputs (text, URLs, files, transcripts, screenshots)
  *   Extraction    raw inputs broken into selectable segments
  *   Topic         user-selected segments saved as `TopicMaterial`
  *   Processing    AI transforms TopicMaterial.content into drafts
@@ -142,8 +142,8 @@ export type WorkflowStepDescriptor = {
 export const WORKFLOW_STAGES: ReadonlyArray<WorkflowStepDescriptor> = [
   {
     id: "material",
-    label: "Material",
-    short: "1 Material",
+    label: "Source",
+    short: "1 Source",
     description: "Capture raw inputs — text, URLs, files, transcripts, voice, screenshots.",
   },
   {
