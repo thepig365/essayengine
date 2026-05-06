@@ -12,6 +12,7 @@ import {
   TranscriptWorkspacePanel,
 } from "@/components/essay-engine/panels";
 import { ReviewProductWorkspace } from "@/components/workflow/ReviewProductWorkspace";
+import { ProcessingWorkspace } from "@/components/workflow/ProcessingWorkspace";
 import { TopicWorkspace } from "@/components/workflow/TopicWorkspace";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
@@ -61,15 +62,10 @@ import type { SourceMaterialPipelineTab, SourceMaterialType, SourceSegment } fro
 import type { TopicMaterial } from "@/types/workflow";
 
 import {
-  INSTRUCTION_PRESETS,
   MODES,
-  PROVIDER_OPTIONS,
   SOURCE_CHIPS,
-  SOURCE_LANGUAGES,
-  TARGET_LANGUAGES,
   TASKS,
   TASK_ICONS,
-  TONES,
   TTS_SPEEDS,
   TTS_STYLES,
   TTS_VOICES,
@@ -2270,6 +2266,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setCustomInstruction(def.instruction);
   }
 
+  function handleCustomInstructionChange(value: string) {
+    const head = value.trim().split("\n")[0]?.trim() ?? "";
+    if (isStandaloneUrlText(value.trim())) {
+      setSourceMaterialRawInput(value.trim());
+      setCustomInstruction("");
+      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
+      return;
+    }
+    if (head && isStandaloneUrlText(head) && (value.includes("\n") || value.length > head.length + 2)) {
+      setSourceMaterialRawInput(head);
+      setCustomInstruction(value.slice(value.indexOf("\n")).trim());
+      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
+      return;
+    }
+    setCustomInstruction(value);
+  }
+
   function buildGenerateSourceContract(payloadInput: string): string {
     const sel = computeSelectedSourceMaterial();
     const mat = sel?.text ?? payloadInput;
@@ -3001,270 +3014,48 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </div>
         </section>
 
-        <section className="layer request-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Request / 创作请求</p>
-            <h2>What do you want to create from this selected material?</h2>
-            <p>请先完成左侧「已选题材」后再填写。不要把素材链接写在这里——链接应只在「素材来源」。</p>
-          </div>
-          <p className="transcript-note">
-            First extract and select source material before creating output. / 请先提取并选择素材，再进行写作或分析。
-          </p>
-          <label className="field">
-            <span>Your request / 你的创作要求</span>
-            <textarea
-              className="instruction"
-              value={customInstruction}
-              onChange={(e) => {
-                const v = e.target.value;
-                const head = v.trim().split("\n")[0]?.trim() ?? "";
-                if (isStandaloneUrlText(v.trim())) {
-                  setSourceMaterialRawInput(v.trim());
-                  setCustomInstruction("");
-                  setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
-                  return;
-                }
-                if (head && isStandaloneUrlText(head) && (v.includes("\n") || v.length > head.length + 2)) {
-                  setSourceMaterialRawInput(head);
-                  setCustomInstruction(v.slice(v.indexOf("\n")).trim());
-                  setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
-                  return;
-                }
-                setCustomInstruction(v);
-              }}
-              rows={4}
-              placeholder="Example: Turn this selected material into a healing essay, LinkedIn post, article outline, Mendbook chapter, or audiobook script."
-            />
-          </label>
-          <div className="request-quick-picks ee-quick-action-grid" aria-label="Quick requests">
-            {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
-              <button
-                key={b.label}
-                type="button"
-                disabled={!canRunMaterialOutputNow() || materialAnalysisLoading}
-                onClick={() => runMaterialAnalysisTask(b.task)}
-                title={b.label}
-              >
-                {b.label}
-              </button>
-            ))}
-            {QUICK_REQUEST_BUTTONS.map((def) => (
-              <button
-                key={def.label}
-                type="button"
-                disabled={!canRunMaterialOutputNow()}
-                onClick={() => applyQuickRequest(def)}
-                title={def.label}
-              >
-                {def.label}
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">2. Engine Selection Layer</p>
-            <h2>Engine selection</h2>
-            <p>Select one engine for normal mode, or multiple engines for real comparison.</p>
-          </div>
-          <div className={comparisonActive ? "mode-badge comparison" : "mode-badge"}>
-            {comparisonActive
-              ? "Comparison mode active. Results will appear side-by-side in the Result / Validation workspace."
-              : "Single engine mode. One result will be generated."}
-          </div>
-          <div className="engine-list">
-            {PROVIDER_OPTIONS.map((p) => (
-              <label key={p.value} className={providers.includes(p.value) ? "engine selected" : "engine"}>
-                <input
-                  type="checkbox"
-                  checked={providers.includes(p.value)}
-                  onChange={() => toggleProvider(p.value)}
-                />
-                <span>
-                  <strong>{p.label}</strong>
-                  <small>{p.note}</small>
-                </span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className="layer task-layer">
-          <div className="layer-head">
-            <p className="eyebrow">3. Task Layer</p>
-            <h2>Transformation task</h2>
-            <p>Choose what the engine should do with the captured source.</p>
-          </div>
-          <div className="task-icon-bar" aria-label="Transformation task">
-            {TASKS.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                className={task === t.value ? "task-icon-button active" : "task-icon-button"}
-                onClick={() => setTask(t.value)}
-                aria-label={t.label}
-                title={t.label}
-                data-tooltip={t.label}
-              >
-                <span className="task-icon" aria-hidden="true">{TASK_ICONS[t.value]}</span>
-                {!controlsCollapsed && <span className="task-label">{t.label}</span>}
-              </button>
-            ))}
-          </div>
-          {!controlsCollapsed && <div className="selected-description">
-            <strong>{activeTask.label}</strong>
-            <p>{activeTask.helper}</p>
-          </div>}
-          {!controlsCollapsed && showWritingPresetHint && (
-            <div className="writing-hint">
-              For English human rewriting, use Humanize English or Author-style rewrite. For Chinese rewriting, use Natural Chinese rewrite.
-            </div>
-          )}
-        </section>
-
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">4. Language Layer</p>
-            <h2>Language direction</h2>
-            <p>Use controlled language choices for predictable translation and rewriting.</p>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>Source Language</span>
-              <select value={sourceLanguage} onChange={(e) => setSourceLanguage(e.target.value)}>
-                {SOURCE_LANGUAGES.map((language) => (
-                  <option key={language.label} value={language.value}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Target Language</span>
-              <select value={targetLanguage} onChange={(e) => setTargetLanguage(e.target.value)}>
-                {TARGET_LANGUAGES.map((language) => (
-                  <option key={language.label} value={language.value}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="quick-picks" aria-label="Common target languages">
-            <button type="button" onClick={() => setTargetLanguage("Chinese Simplified")}>
-              Chinese Simplified
-            </button>
-            <button type="button" onClick={() => setTargetLanguage("English")}>
-              English
-            </button>
-            <button type="button" onClick={() => setTargetLanguage("Chinese Traditional")}>
-              Chinese Traditional
-            </button>
-          </div>
-        </section>
-
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">5. Output Behavior Layer</p>
-            <h2>Output behavior</h2>
-            <p>Choose how strictly the result should preserve or reshape the source.</p>
-          </div>
-          <label className="field">
-            <span>Output Behavior</span>
-            <select value={outputMode} onChange={(e) => setOutputMode(e.target.value as OutputMode)}>
-              {MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="selected-description">
-            <strong>{activeMode.label}</strong>
-            <p>{activeMode.helper}</p>
-          </div>
-        </section>
-
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">6. Advanced Control Layer</p>
-            <h2>Tone and instruction</h2>
-            <p>Use presets for common rules, then add precise constraints only when needed.</p>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>Tone</span>
-              <select value={tone} onChange={(e) => setTone(e.target.value)}>
-                {TONES.map((t) => (
-                  <option key={t.label} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Instruction Preset</span>
-              <select value={instructionPreset} onChange={(e) => setInstructionPreset(e.target.value)}>
-                {INSTRUCTION_PRESETS.map((preset) => (
-                  <option key={preset.label} value={preset.value}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="writing-hint">
-            Custom requests and quick picks live in the Request block above. Use tone and presets here for voice-level shaping.
-          </div>
-          <div className="writing-hint">
-            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any specific writer.
-          </div>
-        </section>
-
-        <section className="layer run-layer" ref={generateSectionRef}>
-          <div className="layer-head">
-            <p className="eyebrow">7. Generate / Run Layer</p>
-            <h2>Run workspace</h2>
-            <p>Generate output from the current source, engine selection, and transformation settings.</p>
-          </div>
-          <div className="ready-summary">
-            <strong>Before Generate</strong>
-            <p>{sourceSummary}</p>
-            <ul>
-              <li>{providers.length} engine{providers.length === 1 ? "" : "s"}</li>
-              <li>Task: {task}</li>
-              <li>Target: {targetLanguage}</li>
-              <li>Behavior: {outputMode}</li>
-            </ul>
-          </div>
-          <dl className="run-summary">
-            <div>
-              <dt>Task</dt>
-              <dd>{activeTask.label}</dd>
-            </div>
-            <div>
-              <dt>Target</dt>
-              <dd>{targetLanguage}</dd>
-            </div>
-            <div>
-              <dt>Providers</dt>
-              <dd>{providers.length}</dd>
-            </div>
-            <div>
-              <dt>Behavior</dt>
-              <dd>{activeMode.label}</dd>
-            </div>
-          </dl>
-          {generateBlocked && (
-            <div className="run-blocked">
-              Transcript fetched. Apply the full transcript or selected sections to Source Capture before generating.
-            </div>
-          )}
-          <button type="button" className="primary" onClick={generate} disabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}>
-            {loading ? "Generating..." : runLabel}
-          </button>
-          {error && <p className="error">{error}</p>}
-        </section>
+        <ProcessingWorkspace
+          active
+          variant="controls"
+          topicMaterial={topicMaterial}
+          customInstruction={customInstruction}
+          onCustomInstructionChange={handleCustomInstructionChange}
+          canRunMaterialOutput={canRunMaterialOutputNow()}
+          materialAnalysisLoading={materialAnalysisLoading}
+          materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+          onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+          quickRequestButtons={QUICK_REQUEST_BUTTONS}
+          onApplyQuickRequest={applyQuickRequest}
+          providers={providers}
+          comparisonActive={comparisonActive}
+          onToggleProvider={toggleProvider}
+          controlsCollapsed={controlsCollapsed}
+          task={task}
+          onTaskChange={setTask}
+          activeTask={activeTask}
+          showWritingPresetHint={showWritingPresetHint}
+          sourceLanguage={sourceLanguage}
+          onSourceLanguageChange={setSourceLanguage}
+          targetLanguage={targetLanguage}
+          onTargetLanguageChange={setTargetLanguage}
+          outputMode={outputMode}
+          onOutputModeChange={setOutputMode}
+          activeMode={activeMode}
+          tone={tone}
+          onToneChange={setTone}
+          instructionPreset={instructionPreset}
+          onInstructionPresetChange={setInstructionPreset}
+          sourceSummary={sourceSummary}
+          generateBlocked={generateBlocked}
+          loading={loading}
+          canGenerate={canProcessTopicMaterial(topicMaterial)}
+          runLabel={runLabel}
+          error={error}
+          onGenerate={generate}
+          generateSectionRef={(node) => {
+            generateSectionRef.current = node;
+          }}
+        />
 
         <section className="layer read-layer">
           <div className="layer-head">
@@ -4021,75 +3812,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       </section>
 
       <div id="ee-panel-workspace" className="work-column">
-        <section
-          className="layer ee-request-workspace-desktop"
-          aria-label="Request workspace overview"
-        >
-          <div className="layer-head">
-            <p className="eyebrow">Request</p>
-            <h2>Request workspace</h2>
-            <p>
-              Tell the engine what to create from your source: use the <strong>Control Console</strong> (left) for your
-              custom request, quick request buttons, engines, task, languages, output behavior, and tone. Then run{" "}
-              <strong>Generate</strong> to produce your Workpiece.
-            </p>
-          </div>
-          <div className="request-workspace-summary">
-            <strong>Current setup (read-only)</strong>
-            <dl>
-              <div>
-                <dt>Task</dt>
-                <dd>{activeTask.label}</dd>
-              </div>
-              <div>
-                <dt>Engines</dt>
-                <dd>
-                  {providers.length === 0
-                    ? "None selected"
-                    : providers
-                        .map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p)
-                        .join(", ")}
-                </dd>
-              </div>
-              <div>
-                <dt>Target language</dt>
-                <dd>{targetLanguage}</dd>
-              </div>
-              <div>
-                <dt>Output behavior</dt>
-                <dd>{activeMode.label}</dd>
-              </div>
-              <div>
-                <dt>Tone</dt>
-                <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
-              </div>
-              <div>
-                <dt>Custom request</dt>
-                <dd>
-                  {customInstruction.trim()
-                    ? customInstruction.trim().length > 220
-                      ? `${customInstruction.trim().slice(0, 220)}…`
-                      : customInstruction.trim()
-                    : "—"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div className="request-workspace-actions">
-            <button
-              type="button"
-              onClick={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              Open Control Console
-            </button>
-            <button
-              type="button"
-              onClick={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              Jump to Generate
-            </button>
-          </div>
-        </section>
+        <ProcessingWorkspace
+          active
+          variant="desktopOverview"
+          topicMaterial={topicMaterial}
+          activeTask={activeTask}
+          providers={providers}
+          targetLanguage={targetLanguage}
+          activeMode={activeMode}
+          tone={tone}
+          customInstruction={customInstruction}
+          onOpenControlConsole={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onJumpToGenerate={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />
         {effectiveIsDesktopConsole ? (
           <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-step-publish">
             <WorkflowTimeline
