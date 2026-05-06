@@ -877,6 +877,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
         }
+        if (stepId === "refine") {
+          document.getElementById("ee-processing-studio-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
         if (stepId === "source") {
           document.getElementById("ee-panel-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
@@ -3007,48 +3011,50 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </div>
         </MaterialWorkspace>
 
-        <ProcessingWorkspace
-          active
-          variant="controls"
-          topicMaterial={topicMaterial}
-          customInstruction={customInstruction}
-          onCustomInstructionChange={handleCustomInstructionChange}
-          canRunMaterialOutput={canRunMaterialOutputNow()}
-          materialAnalysisLoading={materialAnalysisLoading}
-          materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
-          onRunMaterialAnalysisTask={runMaterialAnalysisTask}
-          quickRequestButtons={QUICK_REQUEST_BUTTONS}
-          onApplyQuickRequest={applyQuickRequest}
-          providers={providers}
-          comparisonActive={comparisonActive}
-          onToggleProvider={toggleProvider}
-          controlsCollapsed={controlsCollapsed}
-          task={task}
-          onTaskChange={setTask}
-          activeTask={activeTask}
-          showWritingPresetHint={showWritingPresetHint}
-          sourceLanguage={sourceLanguage}
-          onSourceLanguageChange={setSourceLanguage}
-          targetLanguage={targetLanguage}
-          onTargetLanguageChange={setTargetLanguage}
-          outputMode={outputMode}
-          onOutputModeChange={setOutputMode}
-          activeMode={activeMode}
-          tone={tone}
-          onToneChange={setTone}
-          instructionPreset={instructionPreset}
-          onInstructionPresetChange={setInstructionPreset}
-          sourceSummary={sourceSummary}
-          generateBlocked={generateBlocked}
-          loading={loading}
-          canGenerate={canProcessTopicMaterial(topicMaterial)}
-          runLabel={runLabel}
-          error={error}
-          onGenerate={generate}
-          generateSectionRef={(node) => {
-            generateSectionRef.current = node;
-          }}
-        />
+        {mobileWorkflowStepId !== "refine" ? (
+          <ProcessingWorkspace
+            active
+            variant="controls"
+            topicMaterial={topicMaterial}
+            customInstruction={customInstruction}
+            onCustomInstructionChange={handleCustomInstructionChange}
+            canRunMaterialOutput={canRunMaterialOutputNow()}
+            materialAnalysisLoading={materialAnalysisLoading}
+            materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+            onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+            quickRequestButtons={QUICK_REQUEST_BUTTONS}
+            onApplyQuickRequest={applyQuickRequest}
+            providers={providers}
+            comparisonActive={comparisonActive}
+            onToggleProvider={toggleProvider}
+            controlsCollapsed={controlsCollapsed}
+            task={task}
+            onTaskChange={setTask}
+            activeTask={activeTask}
+            showWritingPresetHint={showWritingPresetHint}
+            sourceLanguage={sourceLanguage}
+            onSourceLanguageChange={setSourceLanguage}
+            targetLanguage={targetLanguage}
+            onTargetLanguageChange={setTargetLanguage}
+            outputMode={outputMode}
+            onOutputModeChange={setOutputMode}
+            activeMode={activeMode}
+            tone={tone}
+            onToneChange={setTone}
+            instructionPreset={instructionPreset}
+            onInstructionPresetChange={setInstructionPreset}
+            sourceSummary={sourceSummary}
+            generateBlocked={generateBlocked}
+            loading={loading}
+            canGenerate={canProcessTopicMaterial(topicMaterial)}
+            runLabel={runLabel}
+            error={error}
+            onGenerate={generate}
+            generateSectionRef={(node) => {
+              generateSectionRef.current = node;
+            }}
+          />
+        ) : null}
 
         <section className="layer read-layer">
           <div className="layer-head">
@@ -3397,6 +3403,52 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       </section>
 
       <div id="ee-panel-workspace" className="work-column">
+        {mobileWorkflowStepId === "refine" ? (
+          <div id="ee-processing-studio-main" className="ee-processing-studio-main ee-narrow-step-processing">
+            <ProcessingWorkspace
+              active
+              variant="controls"
+              topicMaterial={topicMaterial}
+              customInstruction={customInstruction}
+              onCustomInstructionChange={handleCustomInstructionChange}
+              canRunMaterialOutput={canRunMaterialOutputNow()}
+              materialAnalysisLoading={materialAnalysisLoading}
+              materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+              onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+              quickRequestButtons={QUICK_REQUEST_BUTTONS}
+              onApplyQuickRequest={applyQuickRequest}
+              providers={providers}
+              comparisonActive={comparisonActive}
+              onToggleProvider={toggleProvider}
+              controlsCollapsed={controlsCollapsed}
+              task={task}
+              onTaskChange={setTask}
+              activeTask={activeTask}
+              showWritingPresetHint={showWritingPresetHint}
+              sourceLanguage={sourceLanguage}
+              onSourceLanguageChange={setSourceLanguage}
+              targetLanguage={targetLanguage}
+              onTargetLanguageChange={setTargetLanguage}
+              outputMode={outputMode}
+              onOutputModeChange={setOutputMode}
+              activeMode={activeMode}
+              tone={tone}
+              onToneChange={setTone}
+              instructionPreset={instructionPreset}
+              onInstructionPresetChange={setInstructionPreset}
+              sourceSummary={sourceSummary}
+              generateBlocked={generateBlocked}
+              loading={loading}
+              canGenerate={canProcessTopicMaterial(topicMaterial)}
+              runLabel={runLabel}
+              error={error}
+              onGenerate={generate}
+              generateSectionRef={(node) => {
+                generateSectionRef.current = node;
+              }}
+            />
+          </div>
+        ) : null}
         <ProcessingWorkspace
           active
           variant="desktopOverview"
@@ -4140,6 +4192,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-mark,
         .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-revise,
         .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-validate {
+          display: block !important;
+        }
+        .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-processing {
           display: block !important;
         }
         .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-request-workspace-desktop,
@@ -5539,6 +5594,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-validate {
+            display: block !important;
+          }
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-processing {
             display: block !important;
           }
 

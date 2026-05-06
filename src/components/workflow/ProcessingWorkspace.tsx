@@ -17,6 +17,10 @@ import type { ProcessingLayer, TopicMaterial } from "@/types/workflow";
 /**
  * Stage 4: Processing — AI transforms over `TopicMaterial.content`.
  *
+ * `variant="controls"` is mounted from EngineForm in the left aside when the workflow
+ * step is not `refine`, and in the main `work-column` when the step is `refine` (Processing)
+ * so the grouped Studio UI stays on the active Processing step without duplicating instances.
+ *
  * Disabled until `TopicMaterial.content` exists. AI calls MUST send
  * TopicMaterial.content as input (never the raw original source) unless
  * `topicMaterial.useFullSource === true`.

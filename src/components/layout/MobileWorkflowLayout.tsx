@@ -6,7 +6,7 @@ import { MOBILE_WORKFLOW_STEPS } from "@/essay-engine/mobileWorkflowSteps";
 type Props = {
   activeStepIndex: number;
   onActiveStepIndexChange: (index: number) => void;
-  /** Shown on the Workpiece step — runs the main engine generate action. */
+  /** Shown on Topic or Processing step — sticky shortcut for the main Generate action. */
   onPrimaryWorkspaceAction?: () => void;
   primaryWorkspaceDisabled?: boolean;
   primaryWorkspaceLabel?: string;
@@ -25,7 +25,7 @@ export function MobileWorkflowLayout({
   const step = MOBILE_WORKFLOW_STEPS[activeStepIndex];
   const stepId = step?.id;
   const showPrimary =
-    stepId === "workpiece" && typeof onPrimaryWorkspaceAction === "function";
+    (stepId === "workpiece" || stepId === "refine") && typeof onPrimaryWorkspaceAction === "function";
 
   return (
     <div className="mobile-workflow-shell" aria-label="Mobile workflow">
