@@ -52,8 +52,11 @@ export function TopicWorkspace({
       {renderTopicMaterialPanel ? (
         <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
           <div className="range-head">
-            <strong>题材 / TopicMaterial</strong>
+            <strong>TopicMaterial — saved topic</strong>
             <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材”时，才允许使用全文。</p>
+            <p className="transcript-note" style={{ margin: "0.35rem 0 0" }}>
+              Saved TopicMaterial is restored when this project reloads.
+            </p>
           </div>
           <div className="range-actions cta-row ee-quick-action-grid">
             <button type="button" className="primary" onClick={onSaveAsTopic} disabled={!canSaveAsTopic}>

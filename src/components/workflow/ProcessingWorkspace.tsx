@@ -125,14 +125,13 @@ export function ProcessingWorkspace({
 
   if (variant === "desktopOverview") {
     return (
-      <section className="layer ee-request-workspace-desktop" aria-label="Request workspace overview">
+      <section className="layer ee-request-workspace-desktop" aria-label="Processing workspace overview">
         <div className="layer-head">
-          <p className="eyebrow">Request</p>
-          <h2>Request workspace</h2>
+          <p className="eyebrow">Processing / 加工</p>
+          <h2>Processing workspace</h2>
           <p>
-            Tell the engine what to create from your source: use the <strong>Control Console</strong> (left) for your
-            custom request, quick request buttons, engines, task, languages, output behavior, and tone. Then run{" "}
-            <strong>Generate</strong> to produce your Workpiece.
+            After you save <strong>TopicMaterial</strong>, use the <strong>Control Console</strong> (left) to describe how to process it:
+            custom processing text, quick actions, engines, task, languages, output behavior, and tone. Then run <strong>Generate</strong>.
           </p>
         </div>
         <div className="request-workspace-summary">
@@ -191,24 +190,27 @@ export function ProcessingWorkspace({
       <>
         <section className="layer request-layer">
           <div className="layer-head">
-            <p className="eyebrow">Request / 创作请求</p>
-            <h2>What do you want to create from this selected material?</h2>
-            <p>请先完成左侧「已选题材」后再填写。不要把素材链接写在这里——链接应只在「素材来源」。</p>
+            <p className="eyebrow">Processing / 加工</p>
+            <h2>How do you want to process this TopicMaterial?</h2>
+            <p>
+              Use this area after <strong>TopicMaterial</strong> is saved. Do not paste source URLs here — put URLs only under{" "}
+              <strong>Material</strong>. The engine runs on saved <strong>TopicMaterial.content</strong>, not on ad-hoc selection text.
+            </p>
           </div>
           <p className="transcript-note">
-            First extract and select source material before creating output. / 请先提取并选择素材，再进行写作或分析。
+            Save a topic first, then choose processing instructions and run Generate. / 请先保存题材，再填写加工说明并生成。
           </p>
           <label className="field">
-            <span>Your request / 你的创作要求</span>
+            <span>Processing instructions / 加工说明</span>
             <textarea
               className="instruction"
               value={customInstruction}
               onChange={(e) => onCustomInstructionChange?.(e.target.value)}
               rows={4}
-              placeholder="Example: Turn this selected material into a healing essay, LinkedIn post, article outline, Mendbook chapter, or audiobook script."
+              placeholder="Example: Summarize key claims, rewrite as a reflective essay, translate to English, or tighten for spoken audio — all applied to your saved TopicMaterial."
             />
           </label>
-          <div className="request-quick-picks ee-quick-action-grid" aria-label="Quick requests">
+          <div className="request-quick-picks ee-quick-action-grid" aria-label="Quick processing actions">
             {materialAnalysisButtons.map((b) => (
               <button
                 key={b.label}
@@ -387,7 +389,7 @@ export function ProcessingWorkspace({
             </label>
           </div>
           <div className="writing-hint">
-            Custom requests and quick picks live in the Request block above. Use tone and presets here for voice-level shaping.
+            Custom processing text and quick picks live in the Processing block above. Use tone and presets here for voice-level shaping.
           </div>
           <div className="writing-hint">
             For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any specific writer.

@@ -2875,9 +2875,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </div>
         <section className="layer source-input-layer">
           <div className="layer-head">
-            <p className="eyebrow">Source / 素材来源</p>
+            <p className="eyebrow">Material / 素材</p>
             <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
-            <p>此处只放素材，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
+            <p>此处只放原材料与链接，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
           </div>
           <label className="field">
             <span>Paste source URL or content / 粘贴素材链接或内容</span>
@@ -2979,7 +2979,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
           <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
             <div className="range-head">
-              <strong>Selected Material / 已选题材</strong>
+              <strong>Extraction &amp; selection / 提取与勾选</strong>
+              <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
+                Live preview of what you checked in <strong>Source Material Extractor</strong>. Save it as <strong>TopicMaterial</strong> in the Topic
+                panel before processing.
+              </p>
             </div>
             {computeSelectedSourceMaterial() ? (
               <>
@@ -3147,6 +3151,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <div className="layer-head">
           <p className="eyebrow">Source Material Extractor / 素材提取器</p>
           <h2>Content Source Analyzer / 内容素材分析器</h2>
+          <p>
+            <strong>Extraction &amp; selection:</strong> every source becomes selectable blocks here. Pick ranges or paragraphs, then save as{" "}
+            <strong>TopicMaterial</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
+          </p>
           <p>所有来源都先变成「可选的文本块」，再分析与写入；默认不使用全文。</p>
         </div>
 
@@ -3312,7 +3320,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         )}
 
         <details open className="priority-section" style={{ marginTop: "1rem" }}>
-          <summary>已选题材 / Selected Material</summary>
+          <summary>Extraction &amp; selection / 提取与勾选</summary>
           <div className="timestamp-chapters">
             <p className="transcript-note">
               当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材"}</strong> · 类型：

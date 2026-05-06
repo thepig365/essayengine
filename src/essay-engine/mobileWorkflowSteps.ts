@@ -1,10 +1,10 @@
-/** Single shared workflow spine (desktop + mobile). */
+/** Single shared workflow spine (desktop + mobile). Display names follow the V2 five-stage model; `id` values stay stable for CSS and routing. */
 export const MOBILE_WORKFLOW_STEPS = [
-  { id: "source", label: "Source", short: "Source" },
-  { id: "request", label: "Request", short: "Request" },
-  { id: "workpiece", label: "Workpiece", short: "Workpiece" },
-  { id: "refine", label: "Refine", short: "Refine" },
-  { id: "publish", label: "Publish / Repurpose", short: "Publish" },
+  { id: "source", label: "Material", short: "Material" },
+  { id: "request", label: "Extraction", short: "Extract" },
+  { id: "workpiece", label: "Topic", short: "Topic" },
+  { id: "refine", label: "Processing", short: "Process" },
+  { id: "publish", label: "Review / Product", short: "Review" },
 ] as const;
 
 export type MobileWorkflowStepId = (typeof MOBILE_WORKFLOW_STEPS)[number]["id"];
