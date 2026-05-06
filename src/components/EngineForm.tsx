@@ -489,6 +489,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [autoExtractStatus, setAutoExtractStatus] = useState<string | null>(null);
   const [lastQuickAction, setLastQuickAction] = useState<string | null>(null);
   const generateSectionRef = useRef<HTMLElement | null>(null);
+  const advancedStudioDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const setProjectStatusRef = useRef<(message: string | null) => void>(() => {});
 
   const {
@@ -2858,7 +2859,16 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const scrollToAdvancedStudio = () => scrollToEl("ee-advanced-studio");
+  const scrollToAdvancedStudio = () => {
+    const details =
+      advancedStudioDetailsRef.current ??
+      (document.getElementById("ee-advanced-studio") as HTMLDetailsElement | null);
+    if (!details) return;
+    details.open = true;
+    requestAnimationFrame(() => {
+      details.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   const handleMegaMenuItem = (item: MegaMenuItemSpec) => {
     if (item.tier === "advanced") {
@@ -3062,7 +3072,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </div>
         }
       />
-      <details className="ee-advanced-studio" id="ee-advanced-studio">
+      <details ref={advancedStudioDetailsRef} className="ee-advanced-studio" id="ee-advanced-studio">
         <summary className="ee-advanced-studio-summary">
           <span className="ee-advanced-summary-title">Open Advanced Studio</span>
           <span className="ee-advanced-summary-sub">Full engine controls are available here.</span>
