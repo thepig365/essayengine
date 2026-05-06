@@ -14,7 +14,6 @@ export type EssayEngineNavProps = {
   functionsMenuFocusSection: MegaMenuCategorySpec["id"] | null;
   onFunctionsMenuFocusSectionChange: (id: MegaMenuCategorySpec["id"] | null) => void;
   activeWorkflowStepIndex: number;
-  onWorkflowRibbonStep: (index: number) => void;
   onMegaItemActivate: (item: MegaMenuItemSpec) => void;
   /** Layout toggle, guide, etc. — right side of the top row */
   trailingActions?: ReactNode;
@@ -26,7 +25,6 @@ export function EssayEngineNav({
   functionsMenuFocusSection,
   onFunctionsMenuFocusSectionChange,
   activeWorkflowStepIndex,
-  onWorkflowRibbonStep,
   onMegaItemActivate,
   trailingActions,
 }: EssayEngineNavProps) {
@@ -97,19 +95,17 @@ export function EssayEngineNav({
               (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
             const isExportStep = i === 5;
             return (
-              <button
+              <span
                 key={label}
-                type="button"
                 className={
                   "ee-ribbon-step" +
                   (isActive ? " ee-ribbon-step--active" : "") +
                   (isExportStep ? " ee-ribbon-step--final" : "")
                 }
-                onClick={() => onWorkflowRibbonStep(i)}
               >
                 <span className="ee-ribbon-label">{label}</span>
                 {i < WORKFLOW_RIBBON.length - 1 ? <span className="ee-ribbon-chev" aria-hidden>→</span> : null}
-              </button>
+              </span>
             );
           })}
         </div>

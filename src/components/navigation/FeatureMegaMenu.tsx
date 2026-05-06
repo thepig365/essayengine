@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { MegaMenuCategorySpec, MegaMenuItemSpec } from "@/components/navigation/megaMenuData";
 
 type Props = {
@@ -13,20 +14,39 @@ type Props = {
 };
 
 export function FeatureMegaMenu({ open, categories, focusSectionId, onClose, onItemActivate }: Props) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Partial<Record<MegaMenuCategorySpec["id"], HTMLElement | null>>>({});
 
   useEffect(() => {
-    if (!open || !focusSectionId) return;
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const id = window.requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      if (!focusSectionId) {
+        panel.scrollTo({ top: 0 });
+        return;
+      }
+
       const el = sectionRefs.current[focusSectionId];
-      el?.scrollIntoView({ block: "start", behavior: "smooth" });
+      if (!el) return;
+      panel.scrollTo({ top: Math.max(el.offsetTop - 16, 0), behavior: "smooth" });
     });
     return () => window.cancelAnimationFrame(id);
   }, [open, focusSectionId]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className="ee-functions-overlay"
       role="dialog"
@@ -36,7 +56,7 @@ export function FeatureMegaMenu({ open, categories, focusSectionId, onClose, onI
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="ee-functions-panel" onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className="ee-functions-panel" onMouseDown={(e) => e.stopPropagation()}>
         <div className="ee-functions-head">
           <div>
             <p className="ee-functions-eyebrow">Workflow tools</p>
@@ -54,7 +74,7 @@ export function FeatureMegaMenu({ open, categories, focusSectionId, onClose, onI
           {categories.map((category) => (
             <section
               key={category.id}
-              className="ee-functions-section"
+              className={"ee-functions-section" + (category.id === focusSectionId ? " ee-functions-section--focus" : "")}
               data-section-id={category.id}
               ref={(node) => {
                 sectionRefs.current[category.id] = node;
@@ -103,6 +123,7 @@ export function FeatureMegaMenu({ open, categories, focusSectionId, onClose, onI
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
