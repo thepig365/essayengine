@@ -50,13 +50,13 @@ export function TopicWorkspace({
       data-topic-saved={topicMaterial?.saved ? "true" : "false"}
       data-topic-uses-full-source={topicMaterial?.useFullSource ? "true" : "false"}
       hidden={!active}
-      aria-label="Topic — selected material"
+      aria-label="Topic — selected source"
     >
       {renderTopicMaterialPanel ? (
         <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
           <div className="range-head">
-            <strong>已选主题素材</strong>
-            <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材”时，才允许使用全文。</p>
+            <strong>已选主题素材源</strong>
+            <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材源”时，才允许使用全文。</p>
             <p className="transcript-note" style={{ margin: "0.35rem 0 0" }}>
               已保存的主题会在重新打开项目时恢复。
             </p>
@@ -66,7 +66,7 @@ export function TopicWorkspace({
               Save as Topic / 保存为题材
             </button>
             <button type="button" className="secondary" onClick={onUseFullSource} disabled={!canUseFullSource}>
-              Use Full Source / 使用完整素材
+              Use Full Source / 使用完整素材源
             </button>
             <button type="button" className="copy-action" onClick={onClearTopic} disabled={!topicMaterial}>
               Clear Topic
@@ -75,7 +75,7 @@ export function TopicWorkspace({
           {topicMaterialStatus && <span className="range-status">{topicMaterialStatus}</span>}
           {topicMaterial ? (
             <div className="topic-material-preview">
-              {isCurrentTopicStale && <span className="range-status">题材可能已过期：素材已被修改，请重新保存题材。</span>}
+              {isCurrentTopicStale && <span className="range-status">题材可能已过期：素材源已被修改，请重新保存题材。</span>}
               <dl className="topic-material-metrics">
                 <div>
                   <dt>Source type</dt>
@@ -103,7 +103,7 @@ export function TopicWorkspace({
               <textarea className="transcript-preview" readOnly rows={compact ? 3 : 6} value={topicMaterial.content} />
             </div>
           ) : (
-            <p className="transcript-note">尚未保存题材。请先勾选素材并点击“Save as Topic / 保存为题材”。</p>
+            <p className="transcript-note">尚未保存题材。请先勾选素材源并点击“Save as Topic / 保存为题材”。</p>
           )}
         </section>
       ) : null}

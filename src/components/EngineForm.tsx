@@ -1195,7 +1195,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       setLoading(false);
       setError(
         isProbablyUrl(customInstruction, { anywhere: true })
-          ? "这看起来是素材链接。请先放到“素材”阶段提取并保存为题材。"
+          ? "这看起来是素材源链接。请先放到“Source / 素材源”阶段提取并保存为题材。"
           : "请先在“题材”阶段保存题材，再进行加工。",
       );
       return;
@@ -1282,7 +1282,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         setTopicStatus(null);
         setSourceMaterialPipeline("transcript");
         setMaterialUseFullExplicit(false);
-        setTranscriptStatus("素材已提取。请勾选章节或片段后再写入 Source。");
+        setTranscriptStatus("素材源已提取。请勾选章节或片段后再写入 Source。");
       } else {
         setTranscriptText("");
         setTranscriptSegments([]);
@@ -1520,7 +1520,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
   function useFullTranscriptAsSource() {
     if (!transcriptText.trim()) {
-      setTranscriptStatus("暂无转录预览。请先提取素材。");
+      setTranscriptStatus("暂无转录预览。请先提取素材源。");
       return;
     }
     const content = formatTranscriptText(transcriptText);
@@ -1533,10 +1533,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     createSourceVersion({
       content,
       origin: "transcript_selection",
-      label: "使用完整素材（转录全文）",
+      label: "使用完整素材源（转录全文）",
       parentVersionId: currentSourceVersionId ?? undefined,
     });
-    setTranscriptStatus("已使用完整素材替换 Source Capture（显式）。");
+    setTranscriptStatus("已使用完整素材源替换 Source Capture（显式）。");
     setRangeStatus(null);
   }
 
@@ -1956,7 +1956,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (materialUseFullExplicit) {
       return {
         text: formatTranscriptText(transcriptText),
-        summary: "使用完整素材（字幕 / 转录全文）",
+        summary: "使用完整素材源（字幕 / 转录全文）",
       };
     }
     const ch = checkedWorkspaceSections();
@@ -2209,7 +2209,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleSaveAsTopic() {
     const nextTopicMaterial = createTopicMaterialFromCurrentSelection();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("请先选择素材。");
+      setTopicMaterialStatus("请先选择素材源。");
       setMaterialAnalysisStatus("No selected material to save.");
       return;
     }
@@ -2224,13 +2224,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleUseFullSource() {
     const nextTopicMaterial = createTopicMaterialFromFullSource();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("没有可用的完整素材。");
+      setTopicMaterialStatus("没有可用的完整素材源。");
       setMaterialAnalysisStatus("No transcript or document text available as full source.");
       return;
     }
     setMaterialUseFullExplicit(true);
     appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
-    saveTopicMaterial(nextTopicMaterial, "已使用完整素材保存题材。");
+    saveTopicMaterial(nextTopicMaterial, "已使用完整素材源保存题材。");
     setMaterialAnalysisStatus("Full source is on; material was appended to your task instruction.");
     setProjectStatus("Full source enabled and saved as topic material.");
   }
@@ -2285,13 +2285,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (isStandaloneUrlText(value.trim())) {
       setSourceMaterialRawInput(value.trim());
       setCustomInstruction("");
-      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
+      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材源」，正在提取。");
       return;
     }
     if (head && isStandaloneUrlText(head) && (value.includes("\n") || value.length > head.length + 2)) {
       setSourceMaterialRawInput(head);
       setCustomInstruction(value.slice(value.indexOf("\n")).trim());
-      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
+      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材源」。");
       return;
     }
     setCustomInstruction(value);
@@ -2569,13 +2569,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function replaceSourceCaptureFromMaterialSelection() {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("请先选择素材。");
+      setMaterialAnalysisStatus("请先选择素材源。");
       return;
     }
     replaceSource(
       sel.text,
       "mixed_source_content",
-      "已用所选素材替换 Source Capture。",
+      "已用所选素材源替换 Source Capture。",
       setMaterialAnalysisStatus,
       1,
     );
@@ -3299,7 +3299,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             <div className="range-head">
               <strong>Extraction &amp; selection / 提取与勾选</strong>
               <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
-                Live preview of what you checked in <strong>Source Material Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
+                Live preview of what you checked in <strong>Source Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
               </p>
             </div>
             {computeSelectedSourceMaterial() ? (
@@ -3314,7 +3314,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 <textarea readOnly className="transcript-preview" rows={4} value={computeSelectedSourceMaterial()?.text ?? ""} />
               </>
             ) : (
-              <p className="transcript-note">尚未选择可用素材。请先勾选上方块或时间范围，或勾选「使用完整素材」。</p>
+              <p className="transcript-note">尚未选择可用素材源。请先勾选上方块或时间范围，或勾选「使用完整素材源」。</p>
             )}
             <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
@@ -4581,7 +4581,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             <section className="mobile-panel mobile-draft-panel">
               <div className="mobile-panel-head">
                 <strong>Draft</strong>
-                <span>用于润色与发布 — 不属于素材步骤</span>
+                <span>用于润色与发布 — 不属于 Source / 素材源步骤</span>
               </div>
               <input
                 value={essayDraftTitle}
@@ -4630,7 +4630,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 <span>最新生成的 AI 输出</span>
               </div>
               <div className="mobile-result-output" data-selectable-output="true">
-                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材生成。"}
+                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材源生成。"}
               </div>
               <div className="mobile-action-grid">
                 <button

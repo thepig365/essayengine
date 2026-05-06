@@ -14,7 +14,7 @@ type SourceSummaryDetails = {
 };
 
 /**
- * Stage 1: Material — raw inputs only.
+ * Stage 1: Source — raw inputs only.
  *
  * Allowed:
  *   - text input, URL input, file upload
@@ -109,7 +109,7 @@ export function MaterialWorkspace({
           <p>此处只放原材料与链接，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
         </div>
         <label className="field">
-          <span>Paste source URL or content / 粘贴素材链接或内容</span>
+          <span>Paste source URL or content / 粘贴素材源链接或内容</span>
           <textarea
             rows={5}
             className="instruction"

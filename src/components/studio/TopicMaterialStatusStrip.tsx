@@ -21,10 +21,10 @@ export function TopicMaterialStatusStrip({
 }: Props) {
   const badge =
     variant === "missing"
-      ? "尚未保存主题素材"
+      ? "尚未保存主题素材源"
       : variant === "stale"
         ? "可能过期"
-        : "已保存主题素材";
+        : "已保存主题素材源";
 
   return (
     <div className="ee-topic-strip" role="status" aria-live="polite">
@@ -37,11 +37,11 @@ export function TopicMaterialStatusStrip({
           <span className="ee-topic-meta-key">长度</span> {wordCount} 词
         </span>
         <span className="ee-topic-meta">
-          模式：{fullSourceAvailable ? "使用完整素材" : "使用已选素材"}
+          模式：{fullSourceAvailable ? "使用完整素材源" : "使用已选素材源"}
         </span>
       </div>
       {variant === "stale" ? (
-        <p className="ee-topic-stale-msg">题材可能已过期：素材已被修改，请重新保存题材。</p>
+        <p className="ee-topic-stale-msg">题材可能已过期：素材源已被修改，请重新保存题材。</p>
       ) : null}
       {statusNote ? <p className="ee-topic-note">{statusNote}</p> : null}
       {preview.trim() ? (
@@ -51,7 +51,7 @@ export function TopicMaterialStatusStrip({
         </p>
       ) : (
         <p className="ee-topic-preview ee-topic-preview--empty">
-          尚无主题预览。请在 Advanced Studio 的题材步骤中保存已选素材。
+          尚无主题预览。请在 Advanced Studio 的题材步骤中保存已选素材源。
         </p>
       )}
       <style jsx>{`
