@@ -69,7 +69,9 @@ export function EssayEngineNav({
           ))}
         </nav>
       </div>
-      <div className="ee-workflow-ribbon" aria-label="Workflow progress">
+      <div className="ee-workflow-track" role="presentation">
+        <span className="ee-workflow-track-label">Progress</span>
+        <div className="ee-workflow-ribbon" aria-label="Workflow progress">
         {WORKFLOW_RIBBON.map((label, i) => {
           const isActive =
             (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
@@ -90,6 +92,7 @@ export function EssayEngineNav({
             </button>
           );
         })}
+        </div>
       </div>
 
       {activeMega ? <FeatureMegaMenu category={activeMega} onClose={closeMega} onItemActivate={handleItem} /> : null}
@@ -162,49 +165,6 @@ export function EssayEngineNav({
           background: rgba(30, 58, 58, 0.8);
           color: #ecfeff;
         }
-        .ee-workflow-ribbon {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 4px 2px;
-          padding: 10px 14px 12px;
-        }
-        .ee-ribbon-step {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          border: none;
-          background: transparent;
-          color: #94a3b8;
-          font: inherit;
-          font-size: 12px;
-          font-weight: 750;
-          cursor: pointer;
-          padding: 6px 4px;
-          border-radius: 8px;
-        }
-        .ee-ribbon-step:hover {
-          color: #e2e8f0;
-          background: rgba(51, 65, 85, 0.35);
-        }
-        .ee-ribbon-step--active .ee-ribbon-label {
-          color: #7dd3c0;
-          text-decoration: underline;
-          text-underline-offset: 4px;
-        }
-        .ee-ribbon-step--final .ee-ribbon-label {
-          font-weight: 820;
-          color: #e2e8f0;
-        }
-        .ee-ribbon-step--final.ee-ribbon-step--active .ee-ribbon-label {
-          color: #5eead4;
-        }
-        .ee-ribbon-chev {
-          color: #475569;
-          font-weight: 400;
-          margin-right: 2px;
-          user-select: none;
-        }
         @media (max-width: 720px) {
           .ee-top-nav-inner {
             flex-direction: column;
@@ -213,7 +173,7 @@ export function EssayEngineNav({
           .ee-nav-primary {
             justify-content: flex-start;
           }
-          .ee-workflow-ribbon {
+          .ee-workflow-track .ee-workflow-ribbon {
             overflow-x: auto;
             flex-wrap: nowrap;
             -webkit-overflow-scrolling: touch;

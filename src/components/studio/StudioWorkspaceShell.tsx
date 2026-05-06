@@ -5,14 +5,25 @@ import type { ReactNode } from "react";
 type Props = {
   topicStrip: ReactNode;
   sourcePanel: ReactNode;
+  sourceActions?: ReactNode;
   draftPanel: ReactNode;
+  draftActions?: ReactNode;
   finalPanel: ReactNode;
+  finalActions?: ReactNode;
 };
 
 /**
  * Spacious triptych for Phase 1 shell — layout only; parents supply content or placeholders.
  */
-export function StudioWorkspaceShell({ topicStrip, sourcePanel, draftPanel, finalPanel }: Props) {
+export function StudioWorkspaceShell({
+  topicStrip,
+  sourcePanel,
+  sourceActions,
+  draftPanel,
+  draftActions,
+  finalPanel,
+  finalActions,
+}: Props) {
   return (
     <section className="ee-studio-shell" aria-label="Main workspace">
       {topicStrip}
@@ -20,14 +31,17 @@ export function StudioWorkspaceShell({ topicStrip, sourcePanel, draftPanel, fina
         <div className="ee-studio-col ee-studio-col--source">
           <h2 className="ee-studio-heading">Source</h2>
           {sourcePanel}
+          {sourceActions ? <div className="ee-studio-panel-actions">{sourceActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--draft">
           <h2 className="ee-studio-heading">Draft / Semi-product</h2>
           {draftPanel}
+          {draftActions ? <div className="ee-studio-panel-actions">{draftActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--final">
           <h2 className="ee-studio-heading">Final / Review</h2>
           {finalPanel}
+          {finalActions ? <div className="ee-studio-panel-actions">{finalActions}</div> : null}
         </div>
       </div>
       <style jsx>{`

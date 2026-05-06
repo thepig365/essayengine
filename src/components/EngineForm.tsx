@@ -2870,6 +2870,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     });
   };
 
+  const afterAdvancedStudioOpen = (fn: () => void) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(fn);
+    });
+  };
+
   const handleMegaMenuItem = (item: MegaMenuItemSpec) => {
     if (item.tier === "advanced") {
       scrollToAdvancedStudio();
@@ -3020,6 +3026,37 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     else scrollToEl("ee-advanced-export-anchor");
   };
 
+  const shellOpenMaterial = () => {
+    setSourceMaterialPipeline("paste");
+    scrollToAdvancedStudio();
+  };
+
+  const shellExtractSource = () => {
+    setSourceMaterialPipeline("transcript");
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
+  };
+
+  const shellProcessSavedTopic = () => {
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => selectWorkflowStep(3));
+  };
+
+  const shellOpenDraftEditor = () => {
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => scrollToEl("ee-draft-editor"));
+  };
+
+  const shellOpenReview = () => {
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => selectWorkflowStep(4));
+  };
+
+  const shellExportFinal = () => {
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => scrollToEl("ee-advanced-export-anchor"));
+  };
+
   return (
     <EssayEngineProvider value={essayEngineController}>
     <div className="ee-engine-v2-shell">
@@ -3051,15 +3088,35 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             </pre>
           </div>
         }
+        sourceActions={
+          <>
+            <button type="button" className="primary" onClick={shellOpenMaterial}>
+              Open Material
+            </button>
+            <button type="button" className="secondary" onClick={shellExtractSource}>
+              Extract Source
+            </button>
+          </>
+        }
         draftPanel={
           <div className="ee-studio-canvas">
             <p className="ee-studio-canvas-lead">AI output / draft (read-only preview).</p>
             <pre className="ee-studio-canvas-body">
               {(primaryResultOutput || essayDraftContent).trim()
                 ? `${(primaryResultOutput || essayDraftContent).trim().slice(0, 900)}${(primaryResultOutput || essayDraftContent).trim().length > 900 ? "…" : ""}`
-                : "Generate or edit the essay draft in Advanced Studio to see content here."}
+                : "No draft yet. Process your saved topic to create a first draft."}
             </pre>
           </div>
+        }
+        draftActions={
+          <>
+            <button type="button" className="primary" onClick={shellProcessSavedTopic}>
+              Process Saved Topic
+            </button>
+            <button type="button" className="secondary" onClick={shellOpenDraftEditor}>
+              Open Draft Editor
+            </button>
+          </>
         }
         finalPanel={
           <div className="ee-studio-canvas">
@@ -3067,15 +3124,30 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <pre className="ee-studio-canvas-body">
               {finalVersion?.content?.trim()
                 ? `${finalVersion.content.trim().slice(0, 900)}${finalVersion.content.trim().length > 900 ? "…" : ""}`
-                : "Mark a final version in Advanced Studio to preview here."}
+                : "No final product yet. Review a draft, listen to it, then mark it as final."}
             </pre>
           </div>
+        }
+        finalActions={
+          <>
+            <button type="button" className="primary" onClick={shellOpenReview}>
+              Open Review
+            </button>
+            <button type="button" className="secondary" onClick={shellExportFinal}>
+              Export Final
+            </button>
+          </>
         }
       />
       <details ref={advancedStudioDetailsRef} className="ee-advanced-studio" id="ee-advanced-studio">
         <summary className="ee-advanced-studio-summary">
-          <span className="ee-advanced-summary-title">Open Advanced Studio</span>
-          <span className="ee-advanced-summary-sub">Full engine controls are available here.</span>
+          <div className="ee-advanced-summary-row">
+            <div className="ee-advanced-summary-text">
+              <span className="ee-advanced-summary-title">Advanced Studio</span>
+              <span className="ee-advanced-summary-sub">Capture, process, review, export — full controls below.</span>
+            </div>
+            <span className="ee-advanced-open-pill">Open Full Studio</span>
+          </div>
         </summary>
         <div className="ee-advanced-studio-body">
     <div
@@ -4044,6 +4116,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </SourceMaterialPanel>
         ) : null}
 
+        <div id="ee-draft-editor">
         <ReviewProductWorkspace
           active
           layout={effectiveIsDesktopConsole ? "split" : "stack"}
@@ -4323,6 +4396,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             audioBusy: ttsLoading,
           }}
         />
+        </div>
       </div>
       </DesktopConsoleLayout>
 

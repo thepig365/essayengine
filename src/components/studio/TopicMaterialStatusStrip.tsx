@@ -24,15 +24,21 @@ export function TopicMaterialStatusStrip({
       ? "尚未保存主题素材"
       : variant === "stale"
         ? "可能过期"
-        : "已保存主题";
+        : "已保存主题素材";
 
   return (
     <div className="ee-topic-strip" role="status" aria-live="polite">
       <div className="ee-topic-strip-main">
         <span className={"ee-topic-badge ee-topic-badge--" + variant}>{badge}</span>
-        <span className="ee-topic-meta">{sourceTypeLabel}</span>
-        <span className="ee-topic-meta">{wordCount} 词</span>
-        <span className="ee-topic-meta">{fullSourceAvailable ? "正在使用完整素材" : "未使用完整素材"}</span>
+        <span className="ee-topic-meta">
+          <span className="ee-topic-meta-key">来源</span> {sourceTypeLabel}
+        </span>
+        <span className="ee-topic-meta">
+          <span className="ee-topic-meta-key">长度</span> {wordCount} 词
+        </span>
+        <span className="ee-topic-meta">
+          模式：{fullSourceAvailable ? "使用完整素材" : "使用已选素材"}
+        </span>
       </div>
       {variant === "stale" ? (
         <p className="ee-topic-stale-msg">题材可能已过期：素材已被修改，请重新保存题材。</p>
@@ -90,6 +96,11 @@ export function TopicMaterialStatusStrip({
           font-size: 12px;
           font-weight: 650;
           color: #94a3b8;
+        }
+        .ee-topic-meta-key {
+          font-weight: 800;
+          color: #64748b;
+          margin-right: 4px;
         }
         .ee-topic-stale-msg {
           margin: 8px 0 0;
