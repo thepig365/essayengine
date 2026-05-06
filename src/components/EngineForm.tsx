@@ -1,23 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EssayDraftWorkspace } from "@/components/EssayDraftWorkspace";
-import { FinalPanel } from "@/components/FinalPanel";
 import { DesktopConsoleLayout } from "@/components/layout/DesktopConsoleLayout";
 import { MobileWorkflowLayout } from "@/components/layout/MobileWorkflowLayout";
 import { WorkflowStepChips } from "@/components/layout/WorkflowStepChips";
 import { MobileWorkflowPanel } from "@/components/MobileWorkflowPanel";
-import { OutputPanel } from "@/components/OutputPanel";
 import {
-  DraftGeneratorPanel,
   EngineSelectionPanel,
-  EssayAssemblyPanel,
-  ListenAndMarkPanel,
-  ResultValidationPanel,
   SourceMaterialPanel,
   StructureBuilderPanel,
   TranscriptWorkspacePanel,
 } from "@/components/essay-engine/panels";
+import { ReviewProductWorkspace } from "@/components/workflow/ReviewProductWorkspace";
+import { TopicWorkspace } from "@/components/workflow/TopicWorkspace";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -3575,59 +3570,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </div>
         </details>
 
-        <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
-          <div className="range-head">
-            <strong>题材 / TopicMaterial</strong>
-            <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材”时，才允许使用全文。</p>
-          </div>
-          <div className="range-actions cta-row ee-quick-action-grid">
-            <button type="button" className="primary" onClick={handleSaveAsTopic} disabled={!hasSelectedMaterialForTopic()}>
-              Save as Topic / 保存为题材
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={handleUseFullSource}
-              disabled={!resolveFullSourceTextForRequest()?.trim()}
-            >
-              Use Full Source / 使用完整素材
-            </button>
-            <button type="button" className="copy-action" onClick={handleClearTopic} disabled={!topicMaterial}>
-              Clear Topic
-            </button>
-          </div>
-          {topicMaterialStatus && <span className="range-status">{topicMaterialStatus}</span>}
-          {topicMaterial ? (
-            <div className="topic-material-preview">
-              {topicMaterialIsStale && <span className="range-status">题材可能已过期：素材已被修改，请重新保存题材。</span>}
-              <dl className="topic-material-metrics">
-                <div>
-                  <dt>Source type</dt>
-                  <dd>{topicMaterial.sourceType}</dd>
-                </div>
-                <div>
-                  <dt>Selected segments</dt>
-                  <dd>{topicMaterial.selectedSegmentIds.length}</dd>
-                </div>
-                <div>
-                  <dt>Selected range</dt>
-                  <dd>{topicSelectedRangeLabel || "-"}</dd>
-                </div>
-                <div>
-                  <dt>Words / characters</dt>
-                  <dd>{topicMaterialWordCount.toLocaleString()} / {topicMaterial.content.length.toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt>Use full source</dt>
-                  <dd>{topicMaterial.useFullSource ? "true" : "false"}</dd>
-                </div>
-              </dl>
-              <textarea className="transcript-preview" readOnly rows={6} value={topicMaterial.content} />
-            </div>
-          ) : (
-            <p className="transcript-note">尚未保存题材。请先勾选素材并点击“Save as Topic / 保存为题材”。</p>
-          )}
-        </section>
+        <TopicWorkspace
+          active
+          topicMaterial={topicMaterial}
+          topicMaterialStatus={topicMaterialStatus}
+          isCurrentTopicStale={topicMaterialIsStale}
+          topicMaterialWordCount={topicMaterialWordCount}
+          topicSelectedRangeLabel={topicSelectedRangeLabel}
+          canSaveAsTopic={hasSelectedMaterialForTopic()}
+          canUseFullSource={Boolean(resolveFullSourceTextForRequest()?.trim())}
+          onSaveAsTopic={handleSaveAsTopic}
+          onUseFullSource={handleUseFullSource}
+          onClearTopic={handleClearTopic}
+        />
 
         <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
           <summary>分析素材 / Analyze Source（仅已选）</summary>
@@ -4338,287 +4293,284 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </section>
         </SourceMaterialPanel>
 
-        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate">
-        <OutputPanel
-          result={result}
-          task={task}
-          selectedProviders={providers}
-          onReplaceResultSource={useResultAsSource}
-          onAddResultToSource={addResultToSource}
-          onContinueResult={continueFromResult}
-          onReadResult={readResultAloud}
-          onAddResultToDraft={(output) => appendToEssayDraft(output, "Result added to Essay Draft.")}
-          onReplaceDraftWithResult={(output) => replaceEssayDraft(output, "Essay Draft replaced with selected result.")}
-          onMarkFinal={markResultAsFinal}
-          finalResult={finalResult}
-          resultStep={workflowStep + 1}
-        />
-        </ResultValidationPanel>
-
-        <DraftGeneratorPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-        <EssayDraftWorkspace
-          title={essayDraftTitle}
-          content={essayDraftContent}
-          updatedAt={essayDraftUpdatedAt}
-          onTitleChange={(value) => {
-            setEssayDraftTitle(value);
-            setEssayDraftUpdatedAt(new Date().toISOString());
+        <ReviewProductWorkspace
+          active
+          outputPanelProps={{
+            result,
+            task,
+            selectedProviders: providers,
+            onReplaceResultSource: useResultAsSource,
+            onAddResultToSource: addResultToSource,
+            onContinueResult: continueFromResult,
+            onReadResult: readResultAloud,
+            onAddResultToDraft: (output) => appendToEssayDraft(output, "Result added to Essay Draft."),
+            onReplaceDraftWithResult: (output) => replaceEssayDraft(output, "Essay Draft replaced with selected result."),
+            onMarkFinal: markResultAsFinal,
+            finalResult,
+            resultStep: workflowStep + 1,
           }}
-          onContentChange={(value) => {
-            setEssayDraftContent(value);
-            setEssayDraftUpdatedAt(new Date().toISOString());
+          draftWorkspaceProps={{
+            title: essayDraftTitle,
+            content: essayDraftContent,
+            updatedAt: essayDraftUpdatedAt,
+            onTitleChange: (value) => {
+              setEssayDraftTitle(value);
+              setEssayDraftUpdatedAt(new Date().toISOString());
+            },
+            onContentChange: (value) => {
+              setEssayDraftContent(value);
+              setEssayDraftUpdatedAt(new Date().toISOString());
+            },
+            onSaveDraft: saveEssayDraft,
+            onClearDraft: clearEssayDraft,
+            onCopyDraft: copyEssayDraft,
+            onUseDraftAsSource: useEssayDraftAsSource,
+            onMarkDraftFinal: markEssayDraftAsFinal,
+            onReadDraft: () => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftParts: () => runTtsAction("parts", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftMerged: () => runTtsAction("merged", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftTxt: downloadEssayDraftTxt,
+            audioBusy: ttsLoading,
+            status: essayDraftStatus,
           }}
-          onSaveDraft={saveEssayDraft}
-          onClearDraft={clearEssayDraft}
-          onCopyDraft={copyEssayDraft}
-          onUseDraftAsSource={useEssayDraftAsSource}
-          onMarkDraftFinal={markEssayDraftAsFinal}
-          onReadDraft={() => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftParts={() => runTtsAction("parts", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftMerged={() => runTtsAction("merged", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftTxt={downloadEssayDraftTxt}
-          audioBusy={ttsLoading}
-          status={essayDraftStatus}
-        />
-        </DraftGeneratorPanel>
+          listenPanelContent={
+            <>
+              {effectiveIsMobileLayout ? (
+                <details className="ee-mobile-read-aloud-settings">
+                  <summary className="ee-mobile-read-aloud-summary">Read aloud settings</summary>
+                  <section className="layer read-layer ee-mobile-read-layer-duplicate">
+                    <div className="layer-head">
+                      <p className="eyebrow">9. Read Aloud Layer</p>
+                      <h2>{workflowListenGuide.asideHeadline}</h2>
+                      <p>{workflowListenGuide.asideBody}</p>
+                    </div>
+                    <div className="field-grid">
+                      <label className="field">
+                        <span>Voice</span>
+                        <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
+                          {TTS_VOICES.map((voice) => (
+                            <option key={voice} value={voice}>
+                              {voice}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Speed</span>
+                        <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
+                          {TTS_SPEEDS.map((speed) => (
+                            <option key={speed} value={speed}>
+                              {speed.toFixed(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label className="field">
+                      <span>Style</span>
+                      <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
+                        {TTS_STYLES.map((style) => (
+                          <option key={style} value={style}>
+                            {style}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </section>
+                </details>
+              ) : null}
+              <section className="layer audio-panel">
+                <div className="layer-head">
+                  <p className="eyebrow">{workflowListenGuide.panelEyebrow}</p>
+                  <h2>{workflowListenGuide.panelHeadline}</h2>
+                  <p>{workflowListenGuide.panelBody}</p>
+                </div>
+                <div className={`media-player state-${audioPlayer.state}`}>
+                  <div className="player-topline">
+                    <button
+                      type="button"
+                      className="player-main-button"
+                      onClick={toggleAudioPlayback}
+                      disabled={!audioCanToggle}
+                      aria-label={audioPlayer.state === "playing" ? "Pause audio" : "Play audio"}
+                    >
+                      {audioPlayer.state === "playing" ? "❚❚" : "▶"}
+                    </button>
+                    <div>
+                      <strong>
+                        {audioPlayer.state === "loading"
+                          ? "Generating audio..."
+                          : audioPlayer.state === "playing"
+                            ? "▶ Playing"
+                            : audioPlayer.state === "paused"
+                              ? "Paused"
+                              : audioPlayer.state === "finished"
+                                ? "Finished"
+                                : audioPlayer.state === "error"
+                                  ? "Audio generation failed."
+                                  : "Ready to listen"}
+                      </strong>
+                      <p>
+                        {audioPlayer.label} • Voice {ttsVoice} • {ttsSpeed.toFixed(1)}x
+                      </p>
+                    </div>
+                  </div>
 
-        <ListenAndMarkPanel className="ee-narrow-step-mark">
-        {effectiveIsMobileLayout ? (
-          <details className="ee-mobile-read-aloud-settings">
-            <summary className="ee-mobile-read-aloud-summary">Read aloud settings</summary>
-            <section className="layer read-layer ee-mobile-read-layer-duplicate">
-              <div className="layer-head">
-                <p className="eyebrow">9. Read Aloud Layer</p>
-                <h2>{workflowListenGuide.asideHeadline}</h2>
-                <p>{workflowListenGuide.asideBody}</p>
-              </div>
-              <div className="field-grid">
+                  {audioPlayer.state === "loading" ? (
+                    <div className="player-loading">
+                      <div className="loading-dots" aria-label="Generating audio">
+                        <span>●</span>
+                        <span>●</span>
+                        <span>○</span>
+                        <span>○</span>
+                        <span>○</span>
+                      </div>
+                      <span>
+                        Part {audioPlayer.partIndex + 1} of {audioPlayer.partTotal || 1}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="player-progress-row">
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.max(audioPlayer.duration, 0)}
+                          step={0.1}
+                          value={Math.min(audioPlayer.currentTime, audioPlayer.duration || audioPlayer.currentTime)}
+                          onChange={(e) => seekAudio(Number(e.target.value))}
+                          disabled={!audioCanToggle && audioPlayer.state !== "finished"}
+                          style={{ background: `linear-gradient(90deg, #5da8a6 ${audioProgressPercent}%, #263241 ${audioProgressPercent}%)` }}
+                          aria-label="Audio progress"
+                        />
+                        <span>
+                          {formatAudioTime(audioPlayer.currentTime)} / {formatAudioTime(audioPlayer.duration)}
+                        </span>
+                      </div>
+                      <div className="player-controls">
+                        <button type="button" className="secondary" onClick={playPreviousAudioPart} disabled={!audioCanMovePrev}>
+                          Prev
+                        </button>
+                        <button type="button" className="primary player-pause" onClick={toggleAudioPlayback} disabled={!audioCanToggle}>
+                          {audioPlayer.state === "playing" ? "Pause" : "Play"}
+                        </button>
+                        <button type="button" className="secondary" onClick={playNextAudioPart} disabled={!audioCanMoveNext}>
+                          Next
+                        </button>
+                        <span>
+                          Part {audioPlayer.partTotal ? audioPlayer.partIndex + 1 : 0} of {audioPlayer.partTotal}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="audio-grid">
+                  <div className="audio-card">
+                    <strong>Source audio</strong>
+                    <p>{input.trim() ? sourceSummary : "No source available."}</p>
+                    <div className="range-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+                        disabled={!input.trim() || ttsLoading}
+                      >
+                        Read source
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("merged", input, "essayengine-source", "essayengine-source.mp3")}
+                        disabled={!input.trim() || ttsLoading}
+                      >
+                        Download MP3
+                      </button>
+                    </div>
+                  </div>
+                  <div className="audio-card">
+                    <strong>Result audio</strong>
+                    <p>{primaryResultOutput ? "Generated result is ready to listen to." : "Generate a result first."}</p>
+                    <div className="range-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("play", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
+                        disabled={!primaryResultOutput || ttsLoading}
+                      >
+                        Read result
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("merged", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
+                        disabled={!primaryResultOutput || ttsLoading}
+                      >
+                        Download MP3
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {ttsStatus && <p className="tts-status">{ttsStatus}</p>}
+              </section>
+            </>
+          }
+          beforeFinalPanel={
+            effectiveIsMobileLayout ? (
+              <section className="layer project-layer ee-mobile-project-assemble">
+                <div className="layer-head">
+                  <p className="eyebrow">10. Project Save Layer</p>
+                  <h2>Project save</h2>
+                  <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
+                </div>
                 <label className="field">
-                  <span>Voice</span>
-                  <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
-                    {TTS_VOICES.map((voice) => (
-                      <option key={voice} value={voice}>
-                        {voice}
+                  <span>Project name</span>
+                  <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+                </label>
+                <div className="project-actions">
+                  <button type="button" onClick={() => saveCurrentProject()}>
+                    Save project
+                  </button>
+                  <button type="button" onClick={startNewProject}>
+                    New Project
+                  </button>
+                </div>
+                <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+                <label className="field">
+                  <span>Load project</span>
+                  <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label className="field">
-                  <span>Speed</span>
-                  <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
-                    {TTS_SPEEDS.map((speed) => (
-                      <option key={speed} value={speed}>
-                        {speed.toFixed(1)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label className="field">
-                <span>Style</span>
-                <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
-                  {TTS_STYLES.map((style) => (
-                    <option key={style} value={style}>
-                      {style}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </section>
-          </details>
-        ) : null}
-        <section className="layer audio-panel">
-          <div className="layer-head">
-            <p className="eyebrow">{workflowListenGuide.panelEyebrow}</p>
-            <h2>{workflowListenGuide.panelHeadline}</h2>
-            <p>
-              {workflowListenGuide.panelBody}
-            </p>
-          </div>
-          <div className={`media-player state-${audioPlayer.state}`}>
-            <div className="player-topline">
-              <button
-                type="button"
-                className="player-main-button"
-                onClick={toggleAudioPlayback}
-                disabled={!audioCanToggle}
-                aria-label={audioPlayer.state === "playing" ? "Pause audio" : "Play audio"}
-              >
-                {audioPlayer.state === "playing" ? "❚❚" : "▶"}
-              </button>
-              <div>
-                <strong>
-                  {audioPlayer.state === "loading"
-                    ? "Generating audio..."
-                    : audioPlayer.state === "playing"
-                      ? "▶ Playing"
-                      : audioPlayer.state === "paused"
-                        ? "Paused"
-                        : audioPlayer.state === "finished"
-                          ? "Finished"
-                          : audioPlayer.state === "error"
-                            ? "Audio generation failed."
-                            : "Ready to listen"}
-                </strong>
-                <p>
-                  {audioPlayer.label} • Voice {ttsVoice} • {ttsSpeed.toFixed(1)}x
-                </p>
-              </div>
-            </div>
-
-            {audioPlayer.state === "loading" ? (
-              <div className="player-loading">
-                <div className="loading-dots" aria-label="Generating audio">
-                  <span>●</span>
-                  <span>●</span>
-                  <span>○</span>
-                  <span>○</span>
-                  <span>○</span>
-                </div>
-                <span>
-                  Part {audioPlayer.partIndex + 1} of {audioPlayer.partTotal || 1}
-                </span>
-              </div>
-            ) : (
-              <>
-                <div className="player-progress-row">
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(audioPlayer.duration, 0)}
-                    step={0.1}
-                    value={Math.min(audioPlayer.currentTime, audioPlayer.duration || audioPlayer.currentTime)}
-                    onChange={(e) => seekAudio(Number(e.target.value))}
-                    disabled={!audioCanToggle && audioPlayer.state !== "finished"}
-                    style={{ background: `linear-gradient(90deg, #5da8a6 ${audioProgressPercent}%, #263241 ${audioProgressPercent}%)` }}
-                    aria-label="Audio progress"
-                  />
-                  <span>
-                    {formatAudioTime(audioPlayer.currentTime)} / {formatAudioTime(audioPlayer.duration)}
-                  </span>
-                </div>
-                <div className="player-controls">
-                  <button type="button" className="secondary" onClick={playPreviousAudioPart} disabled={!audioCanMovePrev}>
-                    Prev
+                <div className="project-actions">
+                  <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
+                    Duplicate project
                   </button>
-                  <button type="button" className="primary player-pause" onClick={toggleAudioPlayback} disabled={!audioCanToggle}>
-                    {audioPlayer.state === "playing" ? "Pause" : "Play"}
+                  <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
+                    Delete project
                   </button>
-                  <button type="button" className="secondary" onClick={playNextAudioPart} disabled={!audioCanMoveNext}>
-                    Next
-                  </button>
-                  <span>
-                    Part {audioPlayer.partTotal ? audioPlayer.partIndex + 1 : 0} of {audioPlayer.partTotal}
-                  </span>
                 </div>
-              </>
-            )}
-          </div>
-          <div className="audio-grid">
-            <div className="audio-card">
-              <strong>Source audio</strong>
-              <p>{input.trim() ? sourceSummary : "No source available."}</p>
-              <div className="range-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
-                  disabled={!input.trim() || ttsLoading}
-                >
-                  Read source
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("merged", input, "essayengine-source", "essayengine-source.mp3")}
-                  disabled={!input.trim() || ttsLoading}
-                >
-                  Download MP3
-                </button>
-              </div>
-            </div>
-            <div className="audio-card">
-              <strong>Result audio</strong>
-              <p>{primaryResultOutput ? "Generated result is ready to listen to." : "Generate a result first."}</p>
-              <div className="range-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("play", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
-                  disabled={!primaryResultOutput || ttsLoading}
-                >
-                  Read result
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("merged", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
-                  disabled={!primaryResultOutput || ttsLoading}
-                >
-                  Download MP3
-                </button>
-              </div>
-            </div>
-          </div>
-          {ttsStatus && <p className="tts-status">{ttsStatus}</p>}
-        </section>
-        </ListenAndMarkPanel>
-
-        <EssayAssemblyPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-        {effectiveIsMobileLayout ? (
-          <section className="layer project-layer ee-mobile-project-assemble">
-            <div className="layer-head">
-              <p className="eyebrow">10. Project Save Layer</p>
-              <h2>Project save</h2>
-              <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
-            </div>
-            <label className="field">
-              <span>Project name</span>
-              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
-            </label>
-            <div className="project-actions">
-              <button type="button" onClick={() => saveCurrentProject()}>
-                Save project
-              </button>
-              <button type="button" onClick={startNewProject}>
-                New Project
-              </button>
-            </div>
-            <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
-            <label className="field">
-              <span>Load project</span>
-              <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="project-actions">
-              <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
-                Duplicate project
-              </button>
-              <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
-                Delete project
-              </button>
-            </div>
-            <div className="project-meta">
-              <span>Status: {resultStatus}</span>
-              {projectStatus && <strong>{projectStatus}</strong>}
-            </div>
-          </section>
-        ) : null}
-        <FinalPanel
-          finalVersion={finalVersion}
-          onCopyFinal={copyFinalArticle}
-          onDownloadFinalTxt={downloadFinalTxt}
-          onReadFinal={() => finalVersion && runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3")}
-          onDownloadFinalAudiobook={() => finalVersion && runTtsAction("merged", finalVersion.content, "essayengine-final", "essayengine-final.mp3")}
-          onCopyGoogleDocs={copyFinalForGoogleDocs}
-          audioBusy={ttsLoading}
+                <div className="project-meta">
+                  <span>Status: {resultStatus}</span>
+                  {projectStatus && <strong>{projectStatus}</strong>}
+                </div>
+              </section>
+            ) : null
+          }
+          finalPanelProps={{
+            finalVersion,
+            onCopyFinal: copyFinalArticle,
+            onDownloadFinalTxt: downloadFinalTxt,
+            onReadFinal: () => finalVersion && runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+            onDownloadFinalAudiobook: () =>
+              finalVersion && runTtsAction("merged", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+            onCopyGoogleDocs: copyFinalForGoogleDocs,
+            audioBusy: ttsLoading,
+          }}
         />
-        </EssayAssemblyPanel>
       </div>
       </DesktopConsoleLayout>
 
