@@ -44,6 +44,12 @@ import {
   userFacingDetectedSourceKind,
 } from "@/lib/sourceMaterialUtils";
 import {
+  canProcessTopicMaterial,
+  computeSourceFingerprint,
+  isTopicMaterialStale,
+} from "@/lib/topicMaterialGuard";
+import { isProbablyUrl } from "@/lib/workflowAdapters";
+import {
   type FinalResultSelection,
   type ResultStatus,
   type SavedEssayEngineProjectState,
@@ -57,6 +63,7 @@ import type {
   TranscriptSegment,
 } from "@/types/engine";
 import type { SourceMaterialPipelineTab, SourceMaterialType, SourceSegment } from "@/types/sourceMaterial";
+import type { TopicMaterial } from "@/types/workflow";
 
 import {
   INSTRUCTION_PRESETS,
@@ -474,6 +481,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [audioUploadLoading, setAudioUploadLoading] = useState(false);
   const [materialUseFullExplicit, setMaterialUseFullExplicit] = useState(false);
   const [savedTopicMaterial, setSavedTopicMaterial] = useState("");
+  const [topicMaterial, setTopicMaterial] = useState<TopicMaterial | null>(null);
+  const [topicMaterialFingerprint, setTopicMaterialFingerprint] = useState<string | null>(null);
+  const [topicMaterialStatus, setTopicMaterialStatus] = useState("");
   const [materialCustomPrompt, setMaterialCustomPrompt] = useState("");
   const [materialAnalysisStatus, setMaterialAnalysisStatus] = useState<string | null>(null);
   const [materialAnalysisLoading, setMaterialAnalysisLoading] = useState(false);
@@ -770,6 +780,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       pasteBlockInput,
       materialUseFullExplicit,
       savedTopicMaterial,
+      topicMaterial,
+      topicMaterialFingerprint,
+      topicMaterialStatus,
       materialCustomPrompt,
       sourceMaterialRawInput,
       mobileWorkflow.captureIdea,
@@ -1024,6 +1037,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       },
       materialUseFullExplicit,
       savedTopicMaterial,
+      topicMaterial,
+      topicMaterialFingerprint,
       materialCustomPrompt,
       linkCaptureUrlDraft: linkExtractUrl,
       pasteMaterialDraft: pasteBlockInput,
@@ -1072,6 +1087,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     }
     setMaterialUseFullExplicit(state.materialUseFullExplicit ?? false);
     setSavedTopicMaterial(state.savedTopicMaterial ?? "");
+    setTopicMaterial(state.topicMaterial ?? null);
+    setTopicMaterialFingerprint(state.topicMaterialFingerprint ?? null);
+    setTopicMaterialStatus("");
     setMaterialCustomPrompt(state.materialCustomPrompt ?? "");
     setLinkExtractUrl(state.linkCaptureUrlDraft ?? "");
     setPasteBlockInput(state.pasteMaterialDraft ?? "");
@@ -1118,6 +1136,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setAudioUploadLoading(false);
     setMaterialUseFullExplicit(false);
     setSavedTopicMaterial("");
+    setTopicMaterial(null);
+    setTopicMaterialFingerprint(null);
+    setTopicMaterialStatus("");
     setMaterialCustomPrompt("");
     setMaterialAnalysisStatus(null);
     setMaterialAnalysisLoading(false);
@@ -1165,18 +1186,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setLoading(true);
     setError(null);
     onResult(null);
-    if (!canRunMaterialOutputNow()) {
+    if (!canProcessTopicMaterial(topicMaterial)) {
       setLoading(false);
-      setError("Extract and select source material first, then generate or analyze.");
+      setError(
+        isProbablyUrl(customInstruction, { anywhere: true })
+          ? "这看起来是素材链接。请先放到“素材”阶段提取并保存为题材。"
+          : "请先在“题材”阶段保存题材，再进行加工。",
+      );
       return;
     }
-    const payloadInput = (computeSelectedSourceMaterial()?.text ?? input).trim();
+    const payloadInput = topicMaterial.content.trim();
     if (!payloadInput) {
       setLoading(false);
-      setError("没有可发送的正文：请先勾选素材并点击「用所选替换 Source Capture」或完成选区。");
+      setError("请先在“题材”阶段保存题材，再进行加工。");
       return;
     }
     try {
+      // Processing must use TopicMaterial.content only. Full source is allowed only when topicMaterial.useFullSource is true.
       const req: EngineRequest = {
         input: payloadInput,
         task,
@@ -2018,6 +2044,208 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     return { ...g, analysisSourceType: genericMaterialKind };
   }
 
+  function makeTopicId(prefix = "topic"): string {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function topicSourceId(): string {
+    if (sourceMaterialPipeline === "transcript") {
+      return youtubeSourceUrl || sourceMaterialRawInput.trim() || input.trim() || "transcript-source";
+    }
+    return genericMaterialUrl || genericMaterialTitle || sourceMaterialRawInput.trim() || input.trim() || "material-source";
+  }
+
+  function topicSourceType(): string {
+    return sourceMaterialPipeline === "transcript" ? "youtube" : genericMaterialKind;
+  }
+
+  function currentTopicFingerprintText(): string {
+    if (sourceMaterialPipeline === "transcript" && transcriptText.trim()) {
+      return formatTranscriptText(transcriptText);
+    }
+    if (genericRawContent.trim()) return genericRawContent;
+    if (genericSegments.length > 0) {
+      return genericSegments.map((segment) => segment.text).join("\n\n");
+    }
+    return input;
+  }
+
+  function selectedTranscriptMaterialForTopic(): {
+    text: string;
+    summary: string;
+    selectedSegmentIds: string[];
+    selectedRange?: TopicMaterial["selectedRange"];
+  } | null {
+    if (!transcriptText.trim()) return null;
+    const ch = checkedWorkspaceSections();
+    if (ch.length > 0) {
+      return {
+        text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
+        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        selectedSegmentIds: ch.map((section) => section.id),
+      };
+    }
+    const full = checkedFullTranscriptSections();
+    if (full.length > 0) {
+      return {
+        text: cleanSectionsText(full, true, includeTranscriptTimestamps),
+        summary: `粗分段 · 已选 ${full.length} 段`,
+        selectedSegmentIds: full.map((section) => section.id),
+      };
+    }
+    const topic = checkedTopicSections();
+    if (topic.length > 0) {
+      return {
+        text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
+        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        selectedSegmentIds: topic.map((section) => section.id),
+      };
+    }
+    const manual = manualRangeBlocks({ silent: true });
+    if (manual && manual.length > 0) {
+      const first = manual[0];
+      const last = manual[manual.length - 1];
+      return {
+        text: formatManualRangesForSource(manual),
+        summary: `手动时间范围 · ${manual.length} 段`,
+        selectedSegmentIds: manual.map((block, index) => `manual-range-${index + 1}-${block.start}-${block.end}`),
+        selectedRange: {
+          startTime: first.start,
+          endTime: last.end,
+        },
+      };
+    }
+    return null;
+  }
+
+  function selectedGenericMaterialForTopic(): {
+    text: string;
+    summary: string;
+    selectedSegmentIds: string[];
+    selectedRange?: TopicMaterial["selectedRange"];
+  } | null {
+    const picked = genericSegments.filter((segment) => genericCheckedIds.includes(segment.id));
+    if (picked.length === 0) return null;
+    const hasTs = picked.some((segment) => segment.startTime !== undefined);
+    const body = picked
+      .map((segment) => {
+        if (hasTs && segment.startTime !== undefined) {
+          const start = formatSecondsTimestamp(segment.startTime);
+          const end = segment.endTime !== undefined ? formatSecondsTimestamp(segment.endTime) : "";
+          return end ? `[${start}-${end}]\n${segment.text}` : `[${start}]\n${segment.text}`;
+        }
+        return segment.text;
+      })
+      .join("\n\n");
+    const timed = picked.filter((segment) => segment.startTime !== undefined);
+    return {
+      text: body,
+      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      selectedSegmentIds: picked.map((segment) => segment.id),
+      selectedRange: timed.length
+        ? {
+            startTime: timed[0].startTime,
+            endTime: timed[timed.length - 1].endTime,
+          }
+        : undefined,
+    };
+  }
+
+  function createTopicMaterialFromCurrentSelection(): TopicMaterial | null {
+    const selected = sourceMaterialPipeline === "transcript"
+      ? selectedTranscriptMaterialForTopic()
+      : selectedGenericMaterialForTopic();
+    const content = selected?.text.trim() ?? "";
+    if (!selected || !content) return null;
+    return {
+      id: makeTopicId(),
+      sourceId: topicSourceId(),
+      sourceType: topicSourceType(),
+      selectedSegmentIds: selected.selectedSegmentIds,
+      selectedRange: selected.selectedRange,
+      content,
+      title: selected.summary,
+      useFullSource: false,
+      saved: true,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function hasSelectedMaterialForTopic(): boolean {
+    return sourceMaterialPipeline === "transcript"
+      ? Boolean(selectedTranscriptMaterialForTopic()?.text.trim())
+      : Boolean(selectedGenericMaterialForTopic()?.text.trim());
+  }
+
+  function createTopicMaterialFromFullSource(): TopicMaterial | null {
+    const content = resolveFullSourceTextForRequest()?.trim() ?? "";
+    if (!content) return null;
+    return {
+      id: makeTopicId("topic-full"),
+      sourceId: topicSourceId(),
+      sourceType: topicSourceType(),
+      selectedSegmentIds: [],
+      content,
+      title: sourceMaterialPipeline === "transcript"
+        ? transcriptLibraryTitle || "Full transcript"
+        : genericMaterialTitle || "Full source",
+      useFullSource: true,
+      saved: true,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function saveTopicMaterial(nextTopicMaterial: TopicMaterial, message: string) {
+    setTopicMaterial(nextTopicMaterial);
+    setTopicMaterialFingerprint(computeSourceFingerprint(currentTopicFingerprintText()));
+    setTopicMaterialStatus(message);
+  }
+
+  function handleSaveAsTopic() {
+    const nextTopicMaterial = createTopicMaterialFromCurrentSelection();
+    if (!nextTopicMaterial) {
+      setTopicMaterialStatus("请先选择素材。");
+      setMaterialAnalysisStatus("No selected material to save.");
+      return;
+    }
+    setSavedTopicMaterial((prev) =>
+      prev.trim() ? `${prev.trim()}\n\n---\n\n${nextTopicMaterial.content}` : nextTopicMaterial.content,
+    );
+    appendBlockToCustomInstruction("Saved topic material", nextTopicMaterial.content);
+    saveTopicMaterial(nextTopicMaterial, "题材已保存。");
+    setMaterialAnalysisStatus("Saved to topic stash and appended to Request.");
+  }
+
+  function handleUseFullSource() {
+    const nextTopicMaterial = createTopicMaterialFromFullSource();
+    if (!nextTopicMaterial) {
+      setTopicMaterialStatus("没有可用的完整素材。");
+      setMaterialAnalysisStatus("No transcript or document text available as full source.");
+      return;
+    }
+    setMaterialUseFullExplicit(true);
+    appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
+    saveTopicMaterial(nextTopicMaterial, "已使用完整素材保存题材。");
+    setMaterialAnalysisStatus("Full source is on; material was appended to Request.");
+    setProjectStatus("Full source enabled and saved as TopicMaterial.");
+  }
+
+  function handleClearTopic() {
+    setTopicMaterial(null);
+    setTopicMaterialFingerprint(null);
+    setTopicMaterialStatus("题材已清除。");
+  }
+
+  function runWithTopicMaterialGuard(action: () => void | Promise<void>) {
+    if (!canProcessTopicMaterial(topicMaterial)) {
+      setError("请先在“题材”阶段保存题材，再进行加工。");
+      setTopicMaterialStatus("请先在“题材”阶段保存题材，再进行加工。");
+      setProjectStatus("请先在“题材”阶段保存题材，再进行加工。");
+      return;
+    }
+    void action();
+  }
+
   function canRunMaterialOutputNow(): boolean {
     if (computeSelectedSourceMaterial()) return true;
     const body = input.trim();
@@ -2309,26 +2537,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   }
 
   function appendTopicMaterialFromSelection() {
-    const sel = computeSelectedSourceMaterial();
-    if (!sel) {
-      setMaterialAnalysisStatus("No selected material to save.");
-      return;
-    }
-    setSavedTopicMaterial((prev) => (prev.trim() ? `${prev.trim()}\n\n---\n\n${sel.text}` : sel.text));
-    appendBlockToCustomInstruction("Saved topic material", sel.text);
-    setMaterialAnalysisStatus("Saved to topic stash and appended to Request.");
+    handleSaveAsTopic();
   }
 
   function enableFullSourceAndAppendToRequest() {
-    const text = resolveFullSourceTextForRequest();
-    if (!text) {
-      setMaterialAnalysisStatus("No transcript or document text available as full source.");
-      return;
-    }
-    setMaterialUseFullExplicit(true);
-    appendBlockToCustomInstruction("Full source material", text);
-    setMaterialAnalysisStatus("Full source is on; material was appended to Request.");
-    setProjectStatus("Full source enabled and added under Request.");
+    handleUseFullSource();
   }
 
   function replaceSourceCaptureFromMaterialSelection() {
@@ -2601,6 +2814,26 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       setTtsStatus("Google Docs copy failed. Select the final text manually.");
     }
   }
+
+  const currentTopicMaterialFingerprint = computeSourceFingerprint(currentTopicFingerprintText());
+  const topicMaterialIsStale = isTopicMaterialStale(
+    topicMaterial,
+    topicMaterialFingerprint,
+    currentTopicMaterialFingerprint,
+  );
+  const topicMaterialWordCount = topicMaterial ? countWords(topicMaterial.content) : 0;
+  const topicSelectedRangeLabel = topicMaterial?.selectedRange
+    ? [
+        topicMaterial.selectedRange.startTime !== undefined
+          ? formatTimestamp(topicMaterial.selectedRange.startTime)
+          : undefined,
+        topicMaterial.selectedRange.endTime !== undefined
+          ? formatTimestamp(topicMaterial.selectedRange.endTime)
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(" - ")
+    : "";
 
   return (
     <EssayEngineProvider value={essayEngineController}>
@@ -3032,7 +3265,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               Transcript fetched. Apply the full transcript or selected sections to Source Capture before generating.
             </div>
           )}
-          <button type="button" className="primary" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
+          <button type="button" className="primary" onClick={generate} disabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}>
             {loading ? "Generating..." : runLabel}
           </button>
           {error && <p className="error">{error}</p>}
@@ -3341,6 +3574,60 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             ) : null}
           </div>
         </details>
+
+        <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
+          <div className="range-head">
+            <strong>题材 / TopicMaterial</strong>
+            <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材”时，才允许使用全文。</p>
+          </div>
+          <div className="range-actions cta-row ee-quick-action-grid">
+            <button type="button" className="primary" onClick={handleSaveAsTopic} disabled={!hasSelectedMaterialForTopic()}>
+              Save as Topic / 保存为题材
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={handleUseFullSource}
+              disabled={!resolveFullSourceTextForRequest()?.trim()}
+            >
+              Use Full Source / 使用完整素材
+            </button>
+            <button type="button" className="copy-action" onClick={handleClearTopic} disabled={!topicMaterial}>
+              Clear Topic
+            </button>
+          </div>
+          {topicMaterialStatus && <span className="range-status">{topicMaterialStatus}</span>}
+          {topicMaterial ? (
+            <div className="topic-material-preview">
+              {topicMaterialIsStale && <span className="range-status">题材可能已过期：素材已被修改，请重新保存题材。</span>}
+              <dl className="topic-material-metrics">
+                <div>
+                  <dt>Source type</dt>
+                  <dd>{topicMaterial.sourceType}</dd>
+                </div>
+                <div>
+                  <dt>Selected segments</dt>
+                  <dd>{topicMaterial.selectedSegmentIds.length}</dd>
+                </div>
+                <div>
+                  <dt>Selected range</dt>
+                  <dd>{topicSelectedRangeLabel || "-"}</dd>
+                </div>
+                <div>
+                  <dt>Words / characters</dt>
+                  <dd>{topicMaterialWordCount.toLocaleString()} / {topicMaterial.content.length.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt>Use full source</dt>
+                  <dd>{topicMaterial.useFullSource ? "true" : "false"}</dd>
+                </div>
+              </dl>
+              <textarea className="transcript-preview" readOnly rows={6} value={topicMaterial.content} />
+            </div>
+          ) : (
+            <p className="transcript-note">尚未保存题材。请先勾选素材并点击“Save as Topic / 保存为题材”。</p>
+          )}
+        </section>
 
         <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
           <summary>分析素材 / Analyze Source（仅已选）</summary>
@@ -3891,24 +4178,24 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
           onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
           onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
-          onCreateStructures={mobileWorkflow.createWorkflowStructures}
+          onCreateStructures={() => runWithTopicMaterialGuard(mobileWorkflow.createWorkflowStructures)}
           onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
           onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
-          onGenerateDraft={mobileWorkflow.generateStructuredDraft}
+          onGenerateDraft={() => runWithTopicMaterialGuard(mobileWorkflow.generateStructuredDraft)}
           onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
           onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
           onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
-          onRequestRevision={mobileWorkflow.reviseMarkedDraft}
-          onDiagnose={mobileWorkflow.diagnoseDraftQuality}
+          onRequestRevision={() => runWithTopicMaterialGuard(mobileWorkflow.reviseMarkedDraft)}
+          onDiagnose={() => runWithTopicMaterialGuard(mobileWorkflow.diagnoseDraftQuality)}
           onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
           selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
           onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
-          onCreatePolishVersions={mobileWorkflow.createPolishVersions}
+          onCreatePolishVersions={() => runWithTopicMaterialGuard(mobileWorkflow.createPolishVersions)}
           onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
           onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
           selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
           onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
-          onRepurpose={mobileWorkflow.createRepurposeOutputs}
+          onRepurpose={() => runWithTopicMaterialGuard(mobileWorkflow.createRepurposeOutputs)}
           onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
           mode={mobileWorkflowPanelMode}
           compactLabels={effectiveIsMobileLayout}
@@ -4340,7 +4627,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           activeStepIndex={mobileWorkflowStepIndex}
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
-          primaryWorkspaceDisabled={loading || !canRunMaterialOutputNow() || generateBlocked}
+          primaryWorkspaceDisabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}
           primaryWorkspaceLabel={loading ? "Generating…" : "Generate Workpiece"}
         />
 
@@ -4415,7 +4702,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <button type="button" onClick={replaceSourceWithCheckedSections} disabled={checkedChapterIds.length === 0}>
           Replace Source
         </button>
-        <button type="button" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
+        <button type="button" onClick={generate} disabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}>
           Generate
         </button>
       </div>
@@ -5276,6 +5563,45 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           border-radius: 12px;
           background: #f8fcfb;
           padding: 14px;
+        }
+        .topic-material-panel {
+          display: grid;
+          gap: 12px;
+          border: 1px solid #cfe3e1;
+          border-radius: 12px;
+          background: #f8fcfb;
+          padding: 14px;
+        }
+        .topic-material-preview {
+          display: grid;
+          gap: 10px;
+        }
+        .topic-material-metrics {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin: 0;
+        }
+        .topic-material-metrics div {
+          border: 1px solid #e3e9ef;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 8px;
+          min-width: 0;
+        }
+        .topic-material-metrics dt {
+          color: #617080;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .topic-material-metrics dd {
+          margin: 2px 0 0;
+          color: #17202a;
+          font-size: 13px;
+          font-weight: 760;
+          overflow-wrap: anywhere;
         }
         .library-grid {
           display: grid;
@@ -6419,6 +6745,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           .audio-grid,
           .library-grid,
           .library-inline-form,
+          .topic-material-metrics,
           .source-summary-card dl,
           .mobile-bottom-bar {
             grid-template-columns: 1fr;
