@@ -3053,11 +3053,6 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     }
   };
 
-  const handleWorkflowRibbonStep = (index: number) => {
-    if (index <= 4) selectWorkflowStep(index);
-    else scrollToEl("ee-advanced-export-anchor");
-  };
-
   const shellOpenMaterial = () => {
     setSourceMaterialPipeline("paste");
     scrollToAdvancedStudio();
@@ -3098,7 +3093,6 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         functionsMenuFocusSection={functionsMenuFocusSection}
         onFunctionsMenuFocusSectionChange={setFunctionsMenuFocusSection}
         activeWorkflowStepIndex={mobileWorkflowStepIndex}
-        onWorkflowRibbonStep={handleWorkflowRibbonStep}
         onMegaItemActivate={handleMegaMenuItem}
         trailingActions={navTrailing}
       />

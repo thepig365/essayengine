@@ -215,14 +215,10 @@ select,
   font: inherit;
   font-size: 11px;
   font-weight: 650;
-  cursor: pointer;
+  cursor: default;
   padding: 4px 3px;
   border-radius: 6px;
-}
-
-.ee-ribbon-step:hover {
-  color: #94a3b8;
-  background: rgba(51, 65, 85, 0.2);
+  user-select: none;
 }
 
 .ee-ribbon-step--active .ee-ribbon-label {
@@ -274,27 +270,30 @@ select,
 .ee-functions-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
-  background: rgba(2, 8, 14, 0.58);
-  backdrop-filter: blur(5px);
-  padding: 64px 18px 28px;
+  z-index: 1000;
+  background: rgba(2, 8, 14, 0.62);
+  backdrop-filter: blur(6px);
+  padding: 72px 18px 28px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow: auto;
+  overflow: hidden;
   box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
 }
 
 .ee-functions-panel {
-  width: min(1220px, 100%);
+  width: min(1220px, 88vw);
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(38, 55, 70, 0.95);
   border-radius: 18px;
   background: linear-gradient(180deg, #121a22, #0e141a);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
   padding: 22px 24px 28px;
   box-sizing: border-box;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .ee-functions-head {
@@ -365,6 +364,11 @@ select,
   background: rgba(15, 22, 30, 0.72);
   padding: 14px 16px 16px;
   box-sizing: border-box;
+}
+
+.ee-functions-section--focus {
+  border-color: rgba(125, 211, 192, 0.92);
+  box-shadow: 0 0 0 1px rgba(125, 211, 192, 0.14), 0 18px 46px rgba(45, 212, 191, 0.08);
 }
 
 .ee-functions-section-head {
@@ -467,21 +471,36 @@ select,
   }
 
   .ee-functions-overlay {
-    padding: 52px 12px 20px;
+    padding: 0;
     align-items: stretch;
   }
 
   .ee-functions-panel {
     width: 100%;
-    min-height: min(100dvh, 100vh);
+    max-height: 100dvh;
+    min-height: 100dvh;
     border-radius: 0;
+    border-left: 0;
+    border-right: 0;
     margin-bottom: 0;
     padding: 18px 16px 24px;
+  }
+
+  .ee-functions-head {
+    position: sticky;
+    top: -18px;
+    z-index: 1;
+    background: linear-gradient(180deg, #121a22 78%, rgba(18, 26, 34, 0));
+    padding-top: 4px;
   }
 }
 
 @media (max-width: 480px) {
-  .ee-functions-overlay {
-    padding: 48px 0 0;
+  .ee-functions-panel {
+    padding: 14px 12px 22px;
+  }
+
+  .ee-functions-head {
+    top: -14px;
   }
 }
