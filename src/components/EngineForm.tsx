@@ -40,6 +40,8 @@ import {
   segmentsFromSrtContent,
   segmentsFromVttContent,
   splitPlainTextIntoParagraphBlocks,
+  isStandaloneUrlText,
+  userFacingDetectedSourceKind,
 } from "@/lib/sourceMaterialUtils";
 import {
   type FinalResultSelection,
@@ -475,6 +477,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [materialCustomPrompt, setMaterialCustomPrompt] = useState("");
   const [materialAnalysisStatus, setMaterialAnalysisStatus] = useState<string | null>(null);
   const [materialAnalysisLoading, setMaterialAnalysisLoading] = useState(false);
+  /** Raw paste for URLs / long copy; never use as writing instruction. */
+  const [sourceMaterialRawInput, setSourceMaterialRawInput] = useState("");
+  const [autoExtractStatus, setAutoExtractStatus] = useState<string | null>(null);
+  const [lastQuickAction, setLastQuickAction] = useState<string | null>(null);
   const generateSectionRef = useRef<HTMLElement | null>(null);
   const setProjectStatusRef = useRef<(message: string | null) => void>(() => {});
 
@@ -656,6 +662,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       },
     ];
   }, [transcriptSegments, transcriptText, transcriptEnd]);
+  const effectiveYoutubeSource = useMemo(
+    () => YOUTUBE_RE.test(sourceMaterialRawInput.trim()) || isYouTubeUrl,
+    [sourceMaterialRawInput, isYouTubeUrl],
+  );
   const timestampChapterSections = useMemo(
     () => buildTimestampChapterSections(transcriptSegments, timestampChapters),
     [transcriptSegments, timestampChapters],
@@ -761,6 +771,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       materialUseFullExplicit,
       savedTopicMaterial,
       materialCustomPrompt,
+      sourceMaterialRawInput,
       mobileWorkflow.captureIdea,
       mobileWorkflow.coreValue,
       mobileWorkflow.clarifyIntent,
@@ -846,12 +857,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         };
     }
   }, [mobileWorkflowStepId]);
-
-  const applyQuickRequest = useCallback((def: QuickRequestButtonDef) => {
-    setTask(def.task);
-    setInstructionPreset("");
-    setCustomInstruction(def.instruction);
-  }, []);
 
   const selectWorkflowStep = useCallback(
     (index: number) => {
@@ -1018,6 +1023,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       materialCustomPrompt,
       linkCaptureUrlDraft: linkExtractUrl,
       pasteMaterialDraft: pasteBlockInput,
+      sourceMaterialRawInput,
       mobileWorkflow: mobileWorkflow.workflowState(),
     };
   }
@@ -1065,6 +1071,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setMaterialCustomPrompt(state.materialCustomPrompt ?? "");
     setLinkExtractUrl(state.linkCaptureUrlDraft ?? "");
     setPasteBlockInput(state.pasteMaterialDraft ?? "");
+    const migratedRaw =
+      (state.sourceMaterialRawInput?.trim() && state.sourceMaterialRawInput) ||
+      (isStandaloneUrlText(state.sourceText ?? "") ? (state.sourceText ?? "").trim() : "");
+    setSourceMaterialRawInput(migratedRaw);
+    setAutoExtractStatus(null);
+    setLastQuickAction(null);
     setLinkExtractStatus(null);
     setGenericWorkspaceNotice(null);
     setMaterialAnalysisStatus(null);
@@ -1093,6 +1105,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setGenericCheckedIds([]);
     setLinkExtractUrl("");
     setPasteBlockInput("");
+    setSourceMaterialRawInput("");
+    setAutoExtractStatus(null);
+    setLastQuickAction(null);
     setLinkExtractStatus(null);
     setGenericWorkspaceNotice(null);
     setLinkExtractLoading(false);
@@ -1146,15 +1161,26 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setLoading(true);
     setError(null);
     onResult(null);
+    if (!canRunMaterialOutputNow()) {
+      setLoading(false);
+      setError("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      return;
+    }
+    const payloadInput = (computeSelectedSourceMaterial()?.text ?? input).trim();
+    if (!payloadInput) {
+      setLoading(false);
+      setError("没有可发送的正文：请先勾选素材并点击「用所选替换 Source Capture」或完成选区。");
+      return;
+    }
     try {
       const req: EngineRequest = {
-        input,
+        input: payloadInput,
         task,
         outputMode,
         sourceLanguage: sourceLanguage || undefined,
         targetLanguage: targetLanguage || undefined,
         tone: tone || undefined,
-        userInstruction: combinedInstruction(),
+        userInstruction: [combinedInstruction(), buildGenerateSourceContract(payloadInput)].filter(Boolean).join("\n\n"),
         providers: providers.length > 0 ? providers : undefined,
       };
       const res = await fetch("/api/run", {
@@ -1176,10 +1202,15 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     }
   }
 
-  async function getTranscript() {
+  async function getTranscript(overrideUrl?: string) {
     setTranscriptLoading(true);
     setTranscriptStatus(null);
-    const sourceUrl = input.trim();
+    const sourceUrl = (overrideUrl ?? (sourceMaterialRawInput.trim() || input.trim())).trim();
+    if (!sourceUrl) {
+      setTranscriptStatus("缺少可提取的链接。");
+      setTranscriptLoading(false);
+      return;
+    }
     if (YOUTUBE_RE.test(sourceUrl)) {
       setYoutubeSourceUrl(sourceUrl);
     }
@@ -1386,7 +1417,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   function startFreshWritingPipeline() {
     if (
-      (sourceVersions.length > 0 || input.trim() || essayDraftContent.trim() || result || finalResult) &&
+      (sourceVersions.length > 0 || input.trim() || sourceMaterialRawInput.trim() || essayDraftContent.trim() || result || finalResult) &&
       !window.confirm("Start a fresh writing pipeline? This clears current Source Versions, Source, Result, Draft, and Final for this project.")
     ) {
       return;
@@ -1402,6 +1433,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setGenericCheckedIds([]);
     setLinkExtractUrl("");
     setPasteBlockInput("");
+    setSourceMaterialRawInput("");
+    setAutoExtractStatus(null);
+    setLastQuickAction(null);
     setLinkExtractStatus(null);
     setGenericWorkspaceNotice(null);
     setMaterialUseFullExplicit(false);
@@ -1957,6 +1991,52 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     return { ...g, analysisSourceType: genericMaterialKind };
   }
 
+  function canRunMaterialOutputNow(): boolean {
+    if (computeSelectedSourceMaterial()) return true;
+    const body = input.trim();
+    if (!body) return false;
+    if (sourceType === "youtube_url" && YOUTUBE_RE.test(body)) return false;
+    if (isStandaloneUrlText(body)) return false;
+    return true;
+  }
+
+  function clearMaterialSelection() {
+    setMaterialUseFullExplicit(false);
+    setCheckedChapterIds([]);
+    setCheckedFullSectionIds([]);
+    setCheckedTopicSectionIds([]);
+    setGenericCheckedIds([]);
+    setMaterialAnalysisStatus(null);
+  }
+
+  function applyQuickRequest(def: QuickRequestButtonDef) {
+    if (!canRunMaterialOutputNow()) {
+      setProjectStatus("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      return;
+    }
+    setLastQuickAction(def.label);
+    setTask(def.task);
+    setInstructionPreset("");
+    setCustomInstruction(def.instruction);
+  }
+
+  function buildGenerateSourceContract(payloadInput: string): string {
+    const sel = computeSelectedSourceMaterial();
+    const mat = sel?.text ?? payloadInput;
+    const st = sel?.analysisSourceType ?? genericMaterialKind;
+    return [
+      "SOURCE PAYLOAD (machine-readable)",
+      `sourceType: ${st}`,
+      `sourceMetadata: ${buildSourceMetadataForAnalysis()}`,
+      `selectedMaterial: ${mat}`,
+      `userRequest: ${[instructionPreset, customInstruction.trim()].filter(Boolean).join(" ").trim() || "(none)"}`,
+      `quickAction: ${lastQuickAction ?? "(none)"}`,
+      "",
+      "System rule: Only use selectedMaterial as factual source. Do not use the full source unless the user explicitly chose Use Full Source.",
+      "Do not treat a source URL as the writing instruction. Do not invent content outside selectedMaterial.",
+    ].join("\n");
+  }
+
   function buildSourceMetadataForAnalysis(): string {
     const lines: string[] = [];
     if (sourceMaterialPipeline === "transcript") {
@@ -2017,16 +2097,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     }
   }
 
-  async function runLinkMaterialExtract() {
-    const url = linkExtractUrl.trim();
-    if (!url) {
-      setLinkExtractStatus("请输入链接。");
-      return;
-    }
+  /**
+   * Fetch HTML page text and populate generic paragraph blocks. Returns false if YouTube or request failed.
+   */
+  async function fetchAndApplyGenericLink(url: string): Promise<boolean> {
     const kind = detectMaterialKindFromUrl(url);
     if (kind === "youtube") {
       setLinkExtractStatus("YouTube 请使用「转录 / 字幕」页签获取带时间戳字幕。");
-      return;
+      return false;
     }
     setLinkExtractLoading(true);
     setLinkExtractStatus(null);
@@ -2040,13 +2118,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       const data = (await res.json()) as { text?: string; title?: string; error?: string; siteName?: string };
       if (!res.ok) {
         setLinkExtractStatus(data.error ?? `提取失败（${res.status}）`);
-        return;
+        return false;
       }
       const raw = (data.text ?? "").trim();
       if (!raw) {
         setLinkExtractStatus("未能从页面提取正文，可改用手动粘贴。");
-        return;
+        return false;
       }
+      setLinkExtractUrl(url);
       setSourceMaterialPipeline("link");
       setGenericMaterialKind(kind);
       setGenericMaterialUrl(url);
@@ -2063,11 +2142,38 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       setGenericCheckedIds([]);
       setMaterialUseFullExplicit(false);
       setGenericWorkspaceNotice("正文已拆分为可选段落。请勾选需要的块。");
+      return true;
     } catch (err) {
       setLinkExtractStatus(err instanceof Error ? err.message : "提取失败");
+      return false;
     } finally {
       setLinkExtractLoading(false);
     }
+  }
+
+  async function runLinkMaterialExtract() {
+    const url = linkExtractUrl.trim();
+    if (!url) {
+      setLinkExtractStatus("请输入链接。");
+      return;
+    }
+    await fetchAndApplyGenericLink(url);
+  }
+
+  function applyPasteMaterialBlocksFromRaw(raw: string) {
+    const text = raw.trim();
+    if (!text) return;
+    setPasteBlockInput(text);
+    setSourceMaterialPipeline("paste");
+    setGenericMaterialKind("text");
+    setGenericMaterialUrl("");
+    setGenericMaterialTitle("粘贴长文");
+    setGenericAuthor("");
+    setGenericRawContent(text);
+    setGenericSegments(splitPlainTextIntoParagraphBlocks(text, "段落"));
+    setGenericCheckedIds([]);
+    setMaterialUseFullExplicit(false);
+    setGenericWorkspaceNotice("已拆分为段落块，请勾选需要的部分。");
   }
 
   function applyPasteMaterialBlocks() {
@@ -2076,16 +2182,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       setGenericWorkspaceNotice("请先粘贴长文。");
       return;
     }
-    setSourceMaterialPipeline("paste");
-    setGenericMaterialKind("text");
-    setGenericMaterialUrl("");
-    setGenericMaterialTitle("粘贴长文");
-    setGenericAuthor("");
-    setGenericRawContent(raw);
-    setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "段落"));
-    setGenericCheckedIds([]);
-    setMaterialUseFullExplicit(false);
-    setGenericWorkspaceNotice("已拆分为段落块，请勾选需要的部分。");
+    applyPasteMaterialBlocksFromRaw(raw);
   }
 
   async function transcribeAudioFile(file: File) {
@@ -2331,6 +2428,61 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     words: sourceWordCount,
     from: sourceFrom,
   };
+
+  const youtubeSourceUrlRef = useRef(youtubeSourceUrl);
+  youtubeSourceUrlRef.current = youtubeSourceUrl;
+  const transcriptTextRef = useRef(transcriptText);
+  transcriptTextRef.current = transcriptText;
+
+  useEffect(() => {
+    const raw = sourceMaterialRawInput.trim();
+    if (!raw) {
+      setAutoExtractStatus(null);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      void (async () => {
+        try {
+          if (YOUTUBE_RE.test(raw)) {
+            const vid = extractYouTubeVideoId(raw);
+            const curVid = extractYouTubeVideoId(youtubeSourceUrlRef.current);
+            if (vid && transcriptTextRef.current.length > 0 && curVid === vid) return;
+            setYoutubeSourceUrl(raw);
+            setSourceType("youtube_url");
+            setSourceMaterialPipeline("transcript");
+            setInput("");
+            setAutoExtractStatus("Extracting transcript… / 正在提取字幕…");
+            await getTranscript(raw);
+            setAutoExtractStatus(null);
+            return;
+          }
+          if (WEBPAGE_RE.test(raw) && /\.(mp3|wav|m4a|aac|ogg)(\?|$|#)/i.test(raw)) {
+            setAutoExtractStatus(
+              "Transcript not available for direct audio URL. Please paste transcript or upload audio. / 直连音频无法自动转写，请粘贴文稿或上传音频。",
+            );
+            return;
+          }
+          if (WEBPAGE_RE.test(raw)) {
+            setAutoExtractStatus("正在提取正文…");
+            const ok = await fetchAndApplyGenericLink(raw);
+            setAutoExtractStatus(ok ? null : "页面正文提取失败，请尝试手动粘贴。");
+            return;
+          }
+          const compact = raw.replace(/\s/g, "");
+          if (compact.length >= 80 && (raw.includes("\n") || raw.length >= 200)) {
+            applyPasteMaterialBlocksFromRaw(raw);
+            setAutoExtractStatus("已拆分为可选段落，请勾选需要的块。");
+          }
+        } catch {
+          setAutoExtractStatus("自动提取失败，请使用中间栏工具手动处理。");
+        }
+      })();
+    }, 750);
+    return () => window.clearTimeout(handle);
+    // Intentionally only re-run when the dedicated source field changes; handlers close over latest fns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceMaterialRawInput]);
+
   const primaryResultOutput = result?.outputs?.find((output) => output.output)?.output ?? result?.output ?? "";
   const finalOutput = finalResult?.output ?? "";
   const hasListeningEditContext = Boolean(currentSourceVersion) && audioPlayer.state !== "idle";
@@ -2418,25 +2570,205 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </button>
           {!controlsCollapsed && <span>Control Console</span>}
         </div>
-        <section className="layer request-layer">
+        <section className="layer source-input-layer">
           <div className="layer-head">
-            <p className="eyebrow">Request</p>
-            <h2>What to create from this source</h2>
-            <p>Use this source and write, analyze, or transform it into the shape you need. Pick a quick request or describe your own.</p>
+            <p className="eyebrow">Source / 素材来源</p>
+            <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
+            <p>此处只放素材，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
           </div>
           <label className="field">
-            <span>Your request (instruction)</span>
+            <span>Paste source URL or content / 粘贴素材链接或内容</span>
+            <textarea
+              rows={5}
+              className="instruction"
+              value={sourceMaterialRawInput}
+              onChange={(e) => setSourceMaterialRawInput(e.target.value)}
+              placeholder="Paste YouTube URL, podcast URL, LinkedIn post, article text, transcript, or social post here..."
+            />
+          </label>
+          <p>
+            <strong>Detected source type / 检测类型：</strong> {userFacingDetectedSourceKind(sourceMaterialRawInput)}
+          </p>
+          {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
+          {linkExtractLoading &&
+          sourceMaterialRawInput.trim() &&
+          WEBPAGE_RE.test(sourceMaterialRawInput.trim()) &&
+          !YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
+            <p className="range-status">Extracting page… / 正在提取正文…</p>
+          ) : null}
+          {transcriptLoading && YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
+            <p className="range-status">Extracting transcript… / 正在提取字幕…</p>
+          ) : null}
+
+          {transcriptText && sourceMaterialPipeline === "transcript" ? (
+            <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
+              <div className="range-head">
+                <strong>Extracted transcript / 已提取字幕（快速勾选）</strong>
+                <p>详细分段见中间栏。勾选后可用于「已选题材」或 「Generate」。</p>
+              </div>
+              <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
+                {fullTranscriptSections.map((section) => (
+                  <label className="chapter-row" key={section.id}>
+                    <input
+                      type="checkbox"
+                      checked={checkedFullSectionIds.includes(section.id)}
+                      onChange={() => toggleFullTranscriptSection(section.id)}
+                    />
+                    <span>
+                      <strong>[{formatTimestamp(section.start)}] </strong>
+                      {cleanSectionText(section).slice(0, 120)}
+                      {cleanSectionText(section).length > 120 ? "…" : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="manual-ranges" style={{ marginTop: "0.5rem" }}>
+                <div className="manual-range-row">
+                  <label className="field">
+                    <span>Start time</span>
+                    <input
+                      type="text"
+                      value={selectedRangeStart}
+                      onChange={(e) => setSelectedRangeStart(e.target.value)}
+                      placeholder="3:20"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>End time</span>
+                    <input
+                      type="text"
+                      value={selectedRangeEnd}
+                      onChange={(e) => setSelectedRangeEnd(e.target.value)}
+                      placeholder="7:45"
+                    />
+                  </label>
+                  <button type="button" className="secondary" onClick={useTranscriptRangeAsSource}>
+                    Use selected range / 使用此时间范围
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {genericSegments.length > 0 && sourceMaterialPipeline !== "transcript" ? (
+            <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
+              <div className="range-head">
+                <strong>Extracted blocks / 已提取段落或块</strong>
+              </div>
+              <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
+                {genericSegments.map((seg, idx) => (
+                  <label className="chapter-row" key={seg.id}>
+                    <input
+                      type="checkbox"
+                      checked={genericCheckedIds.includes(seg.id)}
+                      onChange={() => toggleGenericSegment(seg.id)}
+                    />
+                    <span>
+                      <strong>Paragraph / block {idx + 1} · </strong>
+                      {seg.text.slice(0, 100)}
+                      {seg.text.length > 100 ? "…" : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
+            <div className="range-head">
+              <strong>Selected Material / 已选题材</strong>
+            </div>
+            {computeSelectedSourceMaterial() ? (
+              <>
+                <p>
+                  <strong>Source type:</strong>{" "}
+                  {labelForMaterialKind(computeSelectedSourceMaterial()!.analysisSourceType, "en")}
+                </p>
+                <p>
+                  <strong>Range / 范围:</strong> {computeSelectedSourceMaterial()?.summary}
+                </p>
+                <textarea readOnly className="transcript-preview" rows={4} value={computeSelectedSourceMaterial()?.text ?? ""} />
+              </>
+            ) : (
+              <p className="transcript-note">尚未选择可用素材。请先勾选上方块或时间范围，或勾选「使用完整素材」。</p>
+            )}
+            <div className="range-actions cta-row">
+              <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
+                Save as Topic Material / 保存为题材
+              </button>
+              <button type="button" className="copy-action" onClick={clearMaterialSelection}>
+                Clear Selection / 清除选择
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  setMaterialUseFullExplicit(true);
+                  setProjectStatus("已启用「使用完整素材」。请注意：生成与分析将使用全文。");
+                }}
+                disabled={!transcriptText.trim() && !genericRawContent.trim()}
+              >
+                Use Full Source / 使用完整素材
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="layer request-layer">
+          <div className="layer-head">
+            <p className="eyebrow">Request / 创作请求</p>
+            <h2>What do you want to create from this selected material?</h2>
+            <p>请先完成左侧「已选题材」后再填写。不要把素材链接写在这里——链接应只在「素材来源」。</p>
+          </div>
+          <p className="transcript-note">
+            First extract and select source material before creating output. / 请先提取并选择素材，再进行写作或分析。
+          </p>
+          <label className="field">
+            <span>Your request / 你的创作要求</span>
             <textarea
               className="instruction"
               value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                const head = v.trim().split("\n")[0]?.trim() ?? "";
+                if (isStandaloneUrlText(v.trim())) {
+                  setSourceMaterialRawInput(v.trim());
+                  setCustomInstruction("");
+                  setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
+                  return;
+                }
+                if (head && isStandaloneUrlText(head) && (v.includes("\n") || v.length > head.length + 2)) {
+                  setSourceMaterialRawInput(head);
+                  setCustomInstruction(v.slice(v.indexOf("\n")).trim());
+                  setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
+                  return;
+                }
+                setCustomInstruction(v);
+              }}
               rows={4}
-              placeholder="Example: Use this transcript and write a 900-word essay that argues X, with a clearer structure and stronger transitions."
+              placeholder="Example: Turn this selected material into a healing essay, LinkedIn post, article outline, Mendbook chapter, or audiobook script."
             />
           </label>
           <div className="request-quick-picks" aria-label="Quick requests">
+            {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
+              <button
+                key={b.label}
+                type="button"
+                disabled={!canRunMaterialOutputNow() || materialAnalysisLoading}
+                onClick={() => runMaterialAnalysisTask(b.task)}
+                title={b.label}
+              >
+                {b.label}
+              </button>
+            ))}
             {QUICK_REQUEST_BUTTONS.map((def) => (
-              <button key={def.label} type="button" onClick={() => applyQuickRequest(def)} title={def.label}>
+              <button
+                key={def.label}
+                type="button"
+                disabled={!canRunMaterialOutputNow()}
+                onClick={() => applyQuickRequest(def)}
+                title={def.label}
+              >
                 {def.label}
               </button>
             ))}
@@ -2641,7 +2973,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               Transcript fetched. Apply the full transcript or selected sections to Source Capture before generating.
             </div>
           )}
-          <button type="button" className="primary" onClick={generate} disabled={loading || !input.trim() || generateBlocked}>
+          <button type="button" className="primary" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
             {loading ? "Generating..." : runLabel}
           </button>
           {error && <p className="error">{error}</p>}
@@ -2993,14 +3325,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
         {sourceMaterialPipeline === "transcript" && !transcriptText && (
           <div className="transcript-empty">
-            <strong>{isYouTubeUrl ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
+            <strong>{effectiveYoutubeSource ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
             <p>
-              {isYouTubeUrl
+              {effectiveYoutubeSource
                 ? "点击提取素材，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
                 : "在 Source 粘贴 YouTube 链接并切回本页签，或使用「链接抓取 / 粘贴 / 音频」处理其他来源。"}
             </p>
-            {isYouTubeUrl && (
-              <button type="button" className="primary transcript-fetch" onClick={getTranscript} disabled={transcriptLoading}>
+            {effectiveYoutubeSource && (
+              <button type="button" className="primary transcript-fetch" onClick={() => void getTranscript()} disabled={transcriptLoading}>
                 {transcriptLoading ? "提取中…" : "提取素材"}
               </button>
             )}
@@ -3583,7 +3915,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               </button>
             ))}
             {isWebpageUrl && <strong>Webpage detected</strong>}
-            {isYouTubeUrl && <strong>YouTube detected</strong>}
+            {effectiveYoutubeSource && <strong>YouTube detected</strong>}
           </div>
 
           <div className={input.trim() ? "source-helper active" : "source-helper"}>
@@ -3619,7 +3951,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               Clear source
             </button>
           </div>
-          <div className="input-label">Source text — what you capture here becomes the engine&apos;s material after you confirm it in Source.</div>
+          <div className="input-label">
+            Engine source (confirmed text sent to Generate) — 请从左侧完成选材后点击「用所选替换 Source Capture」，或在此微调已确认的文本。
+          </div>
 
           <textarea
             value={input}
@@ -3628,7 +3962,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             placeholder={sourceChip.placeholder}
           />
 
-          {isYouTubeUrl && !transcriptText && (
+          {effectiveYoutubeSource && !transcriptText && (
             <div className="transcript-box source-fetch">
               <div>
                 <strong>YouTube / podcast URL</strong>
@@ -3643,7 +3977,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
                   Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
                 </p>
               </div>
-              <button type="button" className="secondary" onClick={getTranscript} disabled={transcriptLoading}>
+              <button type="button" className="secondary" onClick={() => void getTranscript()} disabled={transcriptLoading}>
                 {transcriptLoading ? "Fetching…" : "Fetch transcript"}
               </button>
               {transcriptStatus && <span className="status">{transcriptStatus}</span>}
@@ -3947,7 +4281,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           activeStepIndex={mobileWorkflowStepIndex}
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
-          primaryWorkspaceDisabled={loading || !input.trim() || generateBlocked}
+          primaryWorkspaceDisabled={loading || !canRunMaterialOutputNow() || generateBlocked}
           primaryWorkspaceLabel={loading ? "Generating…" : "Generate Workpiece"}
         />
 
@@ -4022,7 +4356,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <button type="button" onClick={replaceSourceWithCheckedSections} disabled={checkedChapterIds.length === 0}>
           Replace Source
         </button>
-        <button type="button" onClick={generate} disabled={loading || !input.trim() || generateBlocked}>
+        <button type="button" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
           Generate
         </button>
       </div>

@@ -170,6 +170,8 @@ export type SavedEssayEngineProjectState = {
   materialCustomPrompt?: string;
   linkCaptureUrlDraft?: string;
   pasteMaterialDraft?: string;
+  /** Dedicated raw source paste field (URLs and long copy); separate from writing instructions. */
+  sourceMaterialRawInput?: string;
 };
 
 export type SavedEssayEngineProject = {
@@ -228,6 +230,7 @@ function defaultState(): SavedEssayEngineProjectState {
     materialCustomPrompt: "",
     linkCaptureUrlDraft: "",
     pasteMaterialDraft: "",
+    sourceMaterialRawInput: "",
     mobileWorkflow: {
       captureIdea: "",
       voiceCapture: null,

@@ -1,4 +1,5 @@
 import type { SourceMaterialType, SourceSegment } from "@/types/sourceMaterial";
+import { WEBPAGE_RE, YOUTUBE_RE } from "@/essay-engine/constants";
 
 export function makeSourceSegmentId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -6,8 +7,6 @@ export function makeSourceSegmentId(): string {
   }
   return `seg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
-
-const YOUTUBE_RE = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?[^ ]*v=|shorts\/)|youtu\.be\/)[\w-]{11}/i;
 
 export function detectMaterialKindFromUrl(url: string): SourceMaterialType {
   const trimmed = url.trim();
@@ -55,6 +54,42 @@ export function detectMaterialKindFromUrl(url: string): SourceMaterialType {
   }
 
   return "article";
+}
+
+/** True when the whole pasted value is a single http(s) URL (not multiline prose). */
+export function isStandaloneUrlText(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  const firstLine = t.split(/\n/)[0]?.trim() ?? "";
+  if (firstLine.length !== t.length) return false;
+  return WEBPAGE_RE.test(t);
+}
+
+/** Short label for "Detected source type" UI. */
+export function userFacingDetectedSourceKind(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "—";
+  if (YOUTUBE_RE.test(t)) return "YouTube";
+  if (WEBPAGE_RE.test(t) && /\.(mp3|wav|m4a|aac|ogg)(\?|$|#)/i.test(t)) {
+    return "Podcast / Audio file";
+  }
+  if (WEBPAGE_RE.test(t)) {
+    const k = detectMaterialKindFromUrl(t);
+    const map: Record<SourceMaterialType, string> = {
+      youtube: "YouTube",
+      podcast: "Podcast page",
+      audio: "Audio upload",
+      linkedin: "LinkedIn",
+      stackback: "Forum / Thread",
+      social_post: "Social post",
+      article: "Article / Webpage",
+      text: "Text",
+      document: "Document",
+    };
+    return map[k] ?? "Webpage";
+  }
+  if (t.replace(/\s/g, "").length >= 80) return "Article / Text";
+  return "Text";
 }
 
 export function labelForMaterialKind(kind: SourceMaterialType, locale: "en" | "zh" = "zh"): string {
