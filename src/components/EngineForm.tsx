@@ -3059,19 +3059,27 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellOpenMaterial = () => {
-    setSourceMaterialPipeline("paste");
-    scrollToAdvancedStudio();
+    handleMegaMenuItem({
+      actionId: "material-paste",
+      icon: "📋",
+      title: "Paste Source",
+      description: "Long-form paste and plain-text capture.",
+      tier: "live",
+    });
   };
 
   const shellExtractSource = () => {
-    setSourceMaterialPipeline("transcript");
-    scrollToAdvancedStudio();
-    afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
+    handleMegaMenuItem({
+      actionId: "extract-transcript-blocks",
+      icon: "☑",
+      title: "Select Transcript Blocks",
+      description: "Open the block checklist in the extractor.",
+      tier: "live",
+    });
   };
 
   const shellProcessSavedTopic = () => {
-    scrollToAdvancedStudio();
-    afterAdvancedStudioOpen(() => selectWorkflowStep(3));
+    handleWorkflowRibbonStep(3);
   };
 
   const shellOpenDraftEditor = () => {
@@ -3080,13 +3088,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellOpenReview = () => {
-    scrollToAdvancedStudio();
-    afterAdvancedStudioOpen(() => selectWorkflowStep(4));
+    handleWorkflowRibbonStep(4);
   };
 
   const shellExportFinal = () => {
-    scrollToAdvancedStudio();
-    afterAdvancedStudioOpen(() => scrollToEl("ee-advanced-export-anchor"));
+    handleWorkflowRibbonStep(5);
   };
 
   return (
