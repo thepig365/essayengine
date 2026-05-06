@@ -10,8 +10,6 @@ import { createContext, useContext } from "react";
 export type EssayEngineController = Record<string, unknown> & {
   mobileWorkflowStepIndex: number;
   setMobileWorkflowStepIndex: (n: number) => void;
-  mobileShellTab: "workspace" | "tools" | "sources";
-  setMobileShellTab: (t: "workspace" | "tools" | "sources") => void;
   mobileToolsDrawerOpen: boolean;
   setMobileToolsDrawerOpen: (open: boolean) => void;
   /**

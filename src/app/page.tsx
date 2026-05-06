@@ -6,6 +6,7 @@ import { UserGuide } from "@/components/UserGuide";
 import {
   CONSOLE_VIEW_STORAGE_KEY,
   DESKTOP_MIN,
+  MOBILE_PREVIEW_PHONE_WIDTH_PX,
   type ViewMode,
 } from "@/essay-engine/breakpoints";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -45,6 +46,9 @@ export default function HomePage() {
   const effectiveIsMobileLayout =
     !viewportIsDesktop || (viewportIsDesktop && viewMode === "mobile");
 
+  /** Wide screen + user forced Mobile Friendly View — show phone-width preview, not full-bleed faux mobile. */
+  const isForcedMobilePreviewOnDesktop = viewMode === "mobile" && viewportIsDesktop;
+
   return (
     <main className="page">
       <header className="hero">
@@ -67,7 +71,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      <EngineForm result={result} onResult={setResult} viewMode={viewMode} />
+      <div className={isForcedMobilePreviewOnDesktop ? "mobile-preview-frame" : "engine-slot"}>
+        <div className={isForcedMobilePreviewOnDesktop ? "mobile-preview-shell" : "engine-slot-inner"}>
+          <EngineForm result={result} onResult={setResult} viewMode={viewMode} />
+        </div>
+      </div>
 
       <style jsx>{`
         .page {
@@ -167,6 +175,27 @@ export default function HomePage() {
         .console-view-toggle:hover {
           border-color: var(--accent-primary);
           background: var(--accent-soft);
+        }
+        .engine-slot,
+        .engine-slot-inner {
+          display: contents;
+        }
+        /* Centered device-width preview when Mobile Friendly View is forced on desktop (>=1024). Real narrow viewports stay full-width. */
+        .mobile-preview-shell {
+          max-width: ${MOBILE_PREVIEW_PHONE_WIDTH_PX}px;
+          width: min(${MOBILE_PREVIEW_PHONE_WIDTH_PX}px, 100%);
+          margin: 0 auto;
+          box-sizing: border-box;
+          min-width: 0;
+        }
+        @media (min-width: ${DESKTOP_MIN}px) {
+          .mobile-preview-frame {
+            max-width: ${MOBILE_PREVIEW_PHONE_WIDTH_PX}px;
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            box-sizing: border-box;
+          }
         }
         :global(body),
         :global(button),

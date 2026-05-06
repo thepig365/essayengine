@@ -355,7 +355,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"source" | "draft" | "result">("draft");
   const [mobileWorkflowStepIndex, setMobileWorkflowStepIndex] = useState(0);
-  const [mobileShellTab, setMobileShellTab] = useState<"workspace" | "tools" | "sources">("workspace");
   const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
   const [outputMode, setOutputMode] = useState<OutputMode>("auto");
   const [sourceLanguage, setSourceLanguage] = useState("");
@@ -676,28 +675,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   const mobileWorkflowPanelMode = useMemo(() => {
     if (effectiveIsDesktopConsole) return "support-rail" as const;
-    if (mobileShellTab === "sources") return "slice-source" as const;
     return resolveMobileWorkflowPanelMode(false, mobileWorkflowStepId);
-  }, [effectiveIsDesktopConsole, mobileShellTab, mobileWorkflowStepId]);
+  }, [effectiveIsDesktopConsole, mobileWorkflowStepId]);
 
   const essayEngineController = useMemo(
     () => ({
       mobileWorkflowStepIndex,
       setMobileWorkflowStepIndex,
-      mobileShellTab,
-      setMobileShellTab,
       mobileToolsDrawerOpen,
       setMobileToolsDrawerOpen,
       isDesktopLayout: effectiveIsDesktopConsole,
       viewportIsDesktop,
     }),
-    [
-      effectiveIsDesktopConsole,
-      viewportIsDesktop,
-      mobileShellTab,
-      mobileToolsDrawerOpen,
-      mobileWorkflowStepIndex,
-    ],
+    [effectiveIsDesktopConsole, viewportIsDesktop, mobileToolsDrawerOpen, mobileWorkflowStepIndex],
   );
 
   function toggleProvider(p: LLMProvider) {
@@ -1797,7 +1787,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   return (
     <EssayEngineProvider value={essayEngineController}>
     <div
-      className={`workspace${effectiveIsMobileLayout ? ` ee-narrow ee-shell-${mobileShellTab}` : ""}`}
+      className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}`}
       data-mobile-step={effectiveIsMobileLayout && mobileWorkflowStepId ? mobileWorkflowStepId : undefined}
     >
       <DesktopConsoleLayout>
@@ -2116,7 +2106,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       </aside>
 
       <section id="ee-panel-transcript" className="layer transcript-column">
-        <TranscriptWorkspacePanel className="ee-narrow-step-transcript ee-narrow-tab-sources">
+        <TranscriptWorkspacePanel className="ee-narrow-step-transcript">
         <div className="layer-head">
           <p className="eyebrow">Transcript Workspace</p>
           <h2>Transcript Workspace</h2>
@@ -2520,20 +2510,22 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       </section>
 
       <div id="ee-panel-workspace" className="work-column">
-        <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-step-assemble">
-        <WorkflowTimeline
-          versions={sourceVersions}
-          currentSourceVersionId={currentSourceVersionId}
-          finalVersionId={finalVersionId}
-          onView={viewSourceVersion}
-          onUseCurrent={useSourceVersionAsCurrent}
-          onDuplicate={duplicateSourceVersion}
-          onMarkFinal={markSourceVersionAsFinal}
-          onStartFresh={startFreshWritingPipeline}
-        />
-        </SourceMaterialPanel>
+        {effectiveIsDesktopConsole ? (
+          <SourceMaterialPanel>
+            <WorkflowTimeline
+              versions={sourceVersions}
+              currentSourceVersionId={currentSourceVersionId}
+              finalVersionId={finalVersionId}
+              onView={viewSourceVersion}
+              onUseCurrent={useSourceVersionAsCurrent}
+              onDuplicate={duplicateSourceVersion}
+              onMarkFinal={markSourceVersionAsFinal}
+              onStartFresh={startFreshWritingPipeline}
+            />
+          </SourceMaterialPanel>
+        ) : null}
 
-        <StructureBuilderPanel className="ee-narrow-step-source ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-tab-sources">
+        <StructureBuilderPanel className="ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble">
         <MobileWorkflowPanel
           captureIdea={mobileWorkflow.captureIdea}
           voiceCapture={mobileWorkflow.voiceCapture}
@@ -2586,7 +2578,22 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         />
         </StructureBuilderPanel>
 
-        <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-tab-sources">
+        <SourceMaterialPanel className="ee-narrow-step-source">
+        {effectiveIsMobileLayout ? (
+          <details className="ee-mobile-writing-pipeline">
+            <summary className="ee-mobile-writing-pipeline-summary">Writing pipeline</summary>
+            <WorkflowTimeline
+              versions={sourceVersions}
+              currentSourceVersionId={currentSourceVersionId}
+              finalVersionId={finalVersionId}
+              onView={viewSourceVersion}
+              onUseCurrent={useSourceVersionAsCurrent}
+              onDuplicate={duplicateSourceVersion}
+              onMarkFinal={markSourceVersionAsFinal}
+              onStartFresh={startFreshWritingPipeline}
+            />
+          </details>
+        ) : null}
         <section className="layer source-layer">
           <div className="layer-head">
             <p className="eyebrow">Source → Generate</p>
@@ -3028,7 +3035,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </section>
         </SourceMaterialPanel>
 
-        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate ee-narrow-step-assemble">
+        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate">
         <OutputPanel
           result={result}
           task={task}
@@ -3045,7 +3052,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         />
         </ResultValidationPanel>
 
-        <DraftGeneratorPanel className="ee-narrow-step-draft ee-narrow-step-assemble">
+        <DraftGeneratorPanel className="ee-narrow-step-assemble">
         <EssayDraftWorkspace
           title={essayDraftTitle}
           content={essayDraftContent}
@@ -3073,11 +3080,61 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </DraftGeneratorPanel>
 
         <ListenAndMarkPanel className="ee-narrow-step-mark">
+        {effectiveIsMobileLayout ? (
+          <details className="ee-mobile-read-aloud-settings">
+            <summary className="ee-mobile-read-aloud-summary">Read aloud settings</summary>
+            <section className="layer read-layer ee-mobile-read-layer-duplicate">
+              <div className="layer-head">
+                <p className="eyebrow">9. Read Aloud Layer</p>
+                <h2>Read aloud</h2>
+                <p>
+                  Listen to the source or generated results before deciding what to use. Long text will be read in parts
+                  automatically. You can download parts or one merged MP3.
+                </p>
+              </div>
+              <div className="field-grid">
+                <label className="field">
+                  <span>Voice</span>
+                  <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
+                    {TTS_VOICES.map((voice) => (
+                      <option key={voice} value={voice}>
+                        {voice}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Speed</span>
+                  <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
+                    {TTS_SPEEDS.map((speed) => (
+                      <option key={speed} value={speed}>
+                        {speed.toFixed(1)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="field">
+                <span>Style</span>
+                <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
+                  {TTS_STYLES.map((style) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </section>
+          </details>
+        ) : null}
         <section className="layer audio-panel">
           <div className="layer-head">
             <p className="eyebrow">Listen</p>
             <h2>Audio</h2>
-            <p>Listen after selecting source, result, or final output. Voice settings live in the left controls.</p>
+            <p>
+              Listen after selecting source, result, or final output.
+              {effectiveIsMobileLayout ? " Voice settings are in Read aloud settings above." : " Voice settings live in the left controls."}
+            </p>
           </div>
           <div className={`media-player state-${audioPlayer.state}`}>
             <div className="player-topline">
@@ -3209,6 +3266,50 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </ListenAndMarkPanel>
 
         <EssayAssemblyPanel className="ee-narrow-step-assemble">
+        {effectiveIsMobileLayout ? (
+          <section className="layer project-layer ee-mobile-project-assemble">
+            <div className="layer-head">
+              <p className="eyebrow">10. Project Save Layer</p>
+              <h2>Project save</h2>
+              <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
+            </div>
+            <label className="field">
+              <span>Project name</span>
+              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+            </label>
+            <div className="project-actions">
+              <button type="button" onClick={() => saveCurrentProject()}>
+                Save project
+              </button>
+              <button type="button" onClick={startNewProject}>
+                New Project
+              </button>
+            </div>
+            <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+            <label className="field">
+              <span>Load project</span>
+              <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="project-actions">
+              <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
+                Duplicate project
+              </button>
+              <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
+                Delete project
+              </button>
+            </div>
+            <div className="project-meta">
+              <span>Status: {resultStatus}</span>
+              {projectStatus && <strong>{projectStatus}</strong>}
+            </div>
+          </section>
+        ) : null}
         <FinalPanel
           finalVersion={finalVersion}
           onCopyFinal={copyFinalArticle}
@@ -3226,8 +3327,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <MobileWorkflowLayout
           activeStepIndex={mobileWorkflowStepIndex}
           onActiveStepIndexChange={setMobileWorkflowStepIndex}
-          mobileShellTab={mobileShellTab}
-          onMobileShellTabChange={setMobileShellTab}
           onPrimaryWorkspaceAction={() => void generate()}
           primaryWorkspaceDisabled={loading || !input.trim() || generateBlocked}
           primaryWorkspaceLabel={loading ? "Generating…" : runLabel}
@@ -4737,6 +4836,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           max-width: 100%;
         }
 
+          .workspace.ee-narrow.ee-shell-workspace[data-mobile-step="engines"] .control-column .run-layer,
+          .workspace.ee-narrow.ee-shell-workspace .control-column .read-layer,
+          .workspace.ee-narrow.ee-shell-workspace .control-column .project-layer {
+            display: none !important;
+          }
+
           .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > aside,
           .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > section.transcript-column,
           .workspace.ee-narrow.ee-shell-workspace .desktop-console-layout > .work-column {
@@ -4813,29 +4918,6 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             .desktop-console-layout
             > .work-column
             > .ee-narrow-step-assemble {
-            display: block !important;
-          }
-
-          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > aside,
-          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > section.transcript-column,
-          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > .work-column {
-            display: none !important;
-          }
-          .workspace.ee-narrow.ee-shell-tools .desktop-console-layout > aside {
-            display: block !important;
-          }
-
-          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > aside {
-            display: none !important;
-          }
-          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > section.transcript-column,
-          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column {
-            display: block !important;
-          }
-          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column > * {
-            display: none !important;
-          }
-          .workspace.ee-narrow.ee-shell-sources .desktop-console-layout > .work-column > .ee-narrow-tab-sources {
             display: block !important;
           }
 

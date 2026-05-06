@@ -2,13 +2,9 @@
 
 import { MOBILE_WORKFLOW_STEPS } from "@/essay-engine/mobileWorkflowSteps";
 
-export type MobileShellTab = "workspace" | "tools" | "sources";
-
 type Props = {
   activeStepIndex: number;
   onActiveStepIndexChange: (index: number) => void;
-  mobileShellTab: MobileShellTab;
-  onMobileShellTabChange: (tab: MobileShellTab) => void;
   /** Shown on the Draft step — runs the main engine generate action. */
   onPrimaryWorkspaceAction?: () => void;
   primaryWorkspaceDisabled?: boolean;
@@ -17,13 +13,11 @@ type Props = {
 };
 
 /**
- * Sticky shell for narrow viewports: step chips, Workspace/Tools/Sources, Back/Next + optional primary action.
+ * Sticky shell for narrow viewports: step chips, Back/Next + optional primary action on Draft.
  */
 export function MobileWorkflowLayout({
   activeStepIndex,
   onActiveStepIndexChange,
-  mobileShellTab,
-  onMobileShellTabChange,
   onPrimaryWorkspaceAction,
   primaryWorkspaceDisabled,
   primaryWorkspaceLabel,
@@ -34,9 +28,7 @@ export function MobileWorkflowLayout({
   const canBack = activeStepIndex > 0;
   const canNext = activeStepIndex < MOBILE_WORKFLOW_STEPS.length - 1;
   const showPrimary =
-    mobileShellTab === "workspace" &&
-    stepId === "draft" &&
-    typeof onPrimaryWorkspaceAction === "function";
+    stepId === "draft" && typeof onPrimaryWorkspaceAction === "function";
 
   return (
     <div className="mobile-workflow-shell" aria-label="Mobile workflow">
@@ -46,27 +38,6 @@ export function MobileWorkflowLayout({
           {step?.label ?? "Step"}
         </span>
       </header>
-
-      <div className="mobile-shell-tabs" role="tablist" aria-label="Workspace or tools">
-        {(
-          [
-            { id: "workspace" as const, label: "Workspace" },
-            { id: "tools" as const, label: "Tools" },
-            { id: "sources" as const, label: "Sources" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={mobileShellTab === t.id}
-            className={mobileShellTab === t.id ? "mobile-shell-tab active" : "mobile-shell-tab"}
-            onClick={() => onMobileShellTabChange(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
 
       <div className="mobile-workflow-step-chips" role="tablist" aria-label="Workflow steps">
         {MOBILE_WORKFLOW_STEPS.map((s, i) => (
@@ -84,8 +55,8 @@ export function MobileWorkflowLayout({
       </div>
 
       <p className="mobile-workflow-hint">
-        Below {desktopMinWidth}px use steps for one screen at a time. <strong>Tools</strong> opens engine controls;
-        <strong> Sources</strong> opens transcript + capture. Resize the browser or use device emulation to preview.
+        Below {desktopMinWidth}px (or Mobile Friendly View) each step shows one main screen. Use the chips or Back / Next
+        to move through Source → Assemble. Resize or toggle view mode to preview.
       </p>
 
       <nav
@@ -158,37 +129,14 @@ export function MobileWorkflowLayout({
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .mobile-shell-tabs {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
-        }
-        .mobile-shell-tab {
-          border: 1px solid #cfd8e3;
-          border-radius: 12px;
-          background: #f8fafc;
-          color: #22303f;
-          padding: 10px 8px;
-          font: inherit;
-          font-size: 13px;
-          font-weight: 800;
-          min-height: 44px;
-          cursor: pointer;
-        }
-        .mobile-shell-tab.active {
-          border-color: #1d5f63;
-          background: #1d5f63;
-          color: #ffffff;
-        }
         .mobile-workflow-step-chips {
           display: flex;
+          flex-wrap: wrap;
           gap: 8px;
-          overflow-x: auto;
+          overflow-x: hidden;
           padding-bottom: 4px;
-          scrollbar-width: thin;
           min-height: 48px;
           align-items: center;
-          overscroll-behavior-x: contain;
         }
         .mobile-step-chip {
           flex: 0 0 auto;
