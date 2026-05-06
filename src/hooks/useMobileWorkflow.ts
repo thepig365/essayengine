@@ -46,7 +46,7 @@ type UseMobileWorkflowParams = {
   replaceEssayDraftDirect: (text: string, message: string) => void;
   setEssayDraftStatus: (message: string | null) => void;
   runTtsAction: (action: "play" | "parts" | "merged", text: string, baseFilename: string, mergedFilename: string) => void;
-  setMobileActiveTab: (tab: "source" | "draft" | "result") => void;
+  setMobileActiveTab: (tab: "draft" | "result") => void;
 };
 
 const DEFAULT_WORKFLOW: MobileWorkflowState = {

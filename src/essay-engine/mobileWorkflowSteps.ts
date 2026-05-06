@@ -1,18 +1,15 @@
+/** Single shared workflow spine (desktop + mobile). */
 export const MOBILE_WORKFLOW_STEPS = [
-  { id: "source", label: "Source", short: "① Source" },
-  { id: "engines", label: "Engines", short: "② Engines" },
-  { id: "transcript", label: "Transcript", short: "③ Transcript" },
-  { id: "structure", label: "Structure", short: "④ Structure" },
-  { id: "draft", label: "Draft", short: "⑤ Draft" },
-  { id: "mark", label: "Mark", short: "⑥ Mark" },
-  { id: "revise", label: "Revise", short: "⑦ Revise" },
-  { id: "validate", label: "Validate", short: "⑧ Validate" },
-  { id: "assemble", label: "Assemble", short: "⑨ Assemble" },
+  { id: "source", label: "Source", short: "Source" },
+  { id: "request", label: "Request", short: "Request" },
+  { id: "workpiece", label: "Workpiece", short: "Workpiece" },
+  { id: "refine", label: "Refine", short: "Refine" },
+  { id: "publish", label: "Publish / Repurpose", short: "Publish" },
 ] as const;
 
 export type MobileWorkflowStepId = (typeof MOBILE_WORKFLOW_STEPS)[number]["id"];
 
-/** How much of the workflow strip to show on each mobile step (desktop console uses `support-rail`). */
+/** How much of the workflow strip to show per step in narrow view (`support-rail` on desktop). */
 export type MobileWorkflowPanelMode =
   | "support-rail"
   | "full"
@@ -21,8 +18,10 @@ export type MobileWorkflowPanelMode =
   | "slice-structure"
   | "slice-structure-builder"
   | "slice-draft-generate"
+  | "slice-workpiece"
   | "slice-mark"
   | "slice-revise"
+  | "slice-refine"
   | "slice-diagnose"
   | "slice-polish";
 
@@ -34,17 +33,13 @@ export function resolveMobileWorkflowPanelMode(
   switch (stepId) {
     case "source":
       return "slice-source";
-    case "structure":
-      return "slice-structure-builder";
-    case "draft":
-      return "slice-draft-generate";
-    case "mark":
-      return "slice-mark";
-    case "revise":
-      return "slice-revise";
-    case "validate":
-      return "slice-diagnose";
-    case "assemble":
+    case "request":
+      return "slice-off";
+    case "workpiece":
+      return "slice-workpiece";
+    case "refine":
+      return "slice-refine";
+    case "publish":
       return "slice-polish";
     default:
       return "slice-off";

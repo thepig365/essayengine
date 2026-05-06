@@ -136,9 +136,9 @@ export function MobileWorkflowPanel({
     return (
       <section className="mobile-workflow-panel ee-support-rail" aria-label="Workspace aids and capture tools">
         <div className="panel-head compact">
-          <p className="eyebrow">Workspace aids</p>
-          <h2>Capture &amp; context</h2>
-          <p className="helper">Same tools as mobile layout — expand a section when you need it. Main engine steps stay in the center column.</p>
+          <p className="eyebrow">Context</p>
+          <h2>Source &amp; capture</h2>
+          <p className="helper">Optional quick capture and link notes. Main work for each step stays in the center column.</p>
         </div>
         {supportRailSourceSummary ? (
           <div className="support-source-summary">
@@ -276,167 +276,6 @@ export function MobileWorkflowPanel({
           </div>
         </details>
 
-        <details className="ee-support-details">
-          <summary>AI outline, polish &amp; repurpose (optional)</summary>
-          <div className="workflow-grid single-col">
-            <article className="workflow-step">
-              <h3>Structure Builder</h3>
-              <button type="button" onClick={onCreateStructures} disabled={busy || (!captureIdea.trim() && !coreValue.trim())}>
-                {busy ? "Creating structures..." : "Create AI structures"}
-              </button>
-              <div className="structure-list">
-                {structures.map((structure) => (
-                  <button
-                    type="button"
-                    className={structure.id === selectedStructureId ? "structure selected" : "structure"}
-                    key={structure.id}
-                    onClick={() => onSelectStructure(structure.id)}
-                  >
-                    <strong>{structure.title}</strong>
-                    <small>{structure.angle}</small>
-                    <ol>
-                      {structure.outline.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ol>
-                  </button>
-                ))}
-              </div>
-              <button type="button" onClick={onCopySelectedStructureOutline} disabled={!selectedStructure}>
-                Copy selected outline
-              </button>
-            </article>
-            <article className="workflow-step">
-              <h3>Generate from structure</h3>
-              <p className="helper">
-                {selectedStructure
-                  ? `Selected: ${selectedStructure.title}.`
-                  : "Choose a structure before generating a structured draft."}
-              </p>
-              <button type="button" onClick={onGenerateDraft} disabled={busy || !selectedStructureId || (!captureIdea.trim() && !coreValue.trim())}>
-                {busy ? "Generating..." : "Generate draft to Essay Draft"}
-              </button>
-            </article>
-            <article className="workflow-step wide">
-              <h3>Mark paragraphs</h3>
-              <button type="button" onClick={onEnterListenMode} disabled={!draftContent.trim() || busy}>
-                Start marking
-              </button>
-              {draftParagraphs.length > 0 ? (
-                <div className="paragraph-list">
-                  {draftParagraphs.map((paragraph, index) => (
-                    <button
-                      type="button"
-                      key={`${index}-${paragraph.slice(0, 24)}`}
-                      className={markedParagraphs.includes(index) ? "paragraph marked" : "paragraph"}
-                      onClick={() => onToggleParagraphMark(index)}
-                    >
-                      <strong>Paragraph {index + 1}</strong>
-                      <span>{paragraph}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="helper">No draft yet. Generate or paste a draft first.</p>
-              )}
-            </article>
-            <article className="workflow-step">
-              <h3>Revision request</h3>
-              <textarea
-                value={revisionInstruction}
-                onChange={(event) => onRevisionInstructionChange(event.target.value)}
-                rows={3}
-                placeholder="Instructions for revising marked paragraphs."
-              />
-              <button type="button" onClick={onRequestRevision} disabled={!canReviseMarkedDraft}>
-                {busy ? "Revising..." : "Revise marked paragraphs"}
-              </button>
-            </article>
-            <article className="workflow-step">
-              <h3>Draft quality</h3>
-              <button type="button" onClick={onDiagnose} disabled={!draftContent.trim() || busy}>
-                Diagnose draft
-              </button>
-              {diagnosis.length > 0 ? (
-                <>
-                  <ul className="diagnosis">
-                    {diagnosis.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                  <button type="button" onClick={onCopyDiagnosis}>
-                    Copy diagnosis
-                  </button>
-                </>
-              ) : null}
-            </article>
-            <article className="workflow-step">
-              <h3>Polish versions</h3>
-              <div className="choice-list" aria-label="Polish directions">
-                {POLISH_DIRECTIONS.map((direction) => (
-                  <label key={direction} className="choice">
-                    <input
-                      type="checkbox"
-                      checked={selectedPolishDirections.includes(direction)}
-                      onChange={() => onTogglePolishDirection(direction)}
-                    />
-                    {direction}
-                  </label>
-                ))}
-              </div>
-              <button type="button" onClick={onCreatePolishVersions} disabled={!draftContent.trim() || busy}>
-                {busy ? "Creating polish versions..." : "Create polish versions"}
-              </button>
-              <div className="version-list">
-                {polishVersions.map((version) => (
-                  <div className="mini-card" key={version.id}>
-                    <strong>{version.label}</strong>
-                    <p>{version.content}</p>
-                    <div className="button-row">
-                      <button type="button" onClick={() => onUsePolishVersion(version)}>
-                        Use as Essay Draft
-                      </button>
-                      <button type="button" onClick={() => onCopyPolishVersion(version)}>
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
-            <article className="workflow-step">
-              <h3>Repurpose outputs</h3>
-              <div className="choice-list" aria-label="Repurpose formats">
-                {REPURPOSE_FORMATS.map((format) => (
-                  <label key={format} className="choice">
-                    <input
-                      type="checkbox"
-                      checked={selectedRepurposeFormats.includes(format)}
-                      onChange={() => onToggleRepurposeFormat(format)}
-                    />
-                    {format}
-                  </label>
-                ))}
-              </div>
-              <button type="button" onClick={onRepurpose} disabled={!draftContent.trim() || busy}>
-                {busy ? "Creating formats..." : "Create selected formats"}
-              </button>
-              <div className="version-list">
-                {repurposeOutputs.map((output) => (
-                  <div className="mini-card" key={output.id}>
-                    <strong>{output.format}</strong>
-                    {output.title && <small>{output.title}</small>}
-                    <p>{output.content}</p>
-                    <button type="button" onClick={() => onCopyRepurposeOutput(output)}>
-                      Copy
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </details>
-
         {status ? <div className="workflow-status">{status}</div> : null}
 
         <style jsx>{`
@@ -509,12 +348,18 @@ export function MobileWorkflowPanel({
   const showFull = mode === "full";
   const showSource = showFull || mode === "slice-source";
   const showStructureBuilder =
-    showFull || mode === "slice-structure" || mode === "slice-structure-builder";
+    showFull ||
+    mode === "slice-structure" ||
+    mode === "slice-structure-builder" ||
+    mode === "slice-workpiece";
   const showDraftFromStructure =
-    showFull || mode === "slice-structure" || mode === "slice-draft-generate";
-  const showMark = showFull || mode === "slice-mark";
-  const showRevise = showFull || mode === "slice-revise";
-  const showDiagnose = showFull || mode === "slice-diagnose";
+    showFull ||
+    mode === "slice-structure" ||
+    mode === "slice-draft-generate" ||
+    mode === "slice-workpiece";
+  const showMark = showFull || mode === "slice-mark" || mode === "slice-refine";
+  const showRevise = showFull || mode === "slice-revise" || mode === "slice-refine";
+  const showDiagnose = showFull || mode === "slice-diagnose" || mode === "slice-refine";
   const showPolish = showFull || mode === "slice-polish";
 
   return (
@@ -712,8 +557,8 @@ export function MobileWorkflowPanel({
 
         {showDraftFromStructure ? (
         <article className="workflow-step">
-          <span>4. Draft</span>
-          <h3>Generate From Structure</h3>
+          <span>Workpiece</span>
+          <h3>Generate Workpiece</h3>
           <p className="helper">
             {selectedStructure
               ? `Selected: ${selectedStructure.title}. Generating will replace Essay Draft; the previous draft is preserved as a source version.`

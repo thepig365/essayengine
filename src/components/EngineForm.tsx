@@ -907,7 +907,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   function combinedInstruction(): string | undefined {
     const parts = [instructionPreset, customInstruction.trim(), mobileWorkflow.workflowInstruction].filter(Boolean);
     if (savedTopicMaterial.trim()) {
-      parts.push(`Saved topic material (已存题材):\n${savedTopicMaterial.trim()}`);
+      const sm = savedTopicMaterial.trim();
+      const ci = customInstruction;
+      if (!ci.includes(sm)) {
+        parts.push(`Saved topic material:\n${sm}`);
+      }
     }
     const base = parts.length ? parts.join(". ") : undefined;
     return [base, MATERIAL_WRITING_SUPPLEMENT].filter(Boolean).join("\n\n");
@@ -1163,7 +1167,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     onResult(null);
     if (!canRunMaterialOutputNow()) {
       setLoading(false);
-      setError("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      setError("Extract and select source material first, then generate or analyze.");
       return;
     }
     const payloadInput = (computeSelectedSourceMaterial()?.text ?? input).trim();
@@ -1827,12 +1831,18 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setRangeStatus(`${blocks.length} transcript range${blocks.length === 1 ? "" : "s"} are now used as source.`);
   }
 
-  function manualRangeBlocks(): { start: number; end: number; title: string; text: string }[] | null {
+  /**
+   * Build manual timestamp ranges into transcript slices.
+   * When `silent` is true, skip status updates (used from render-time helpers like `transcriptSelectedMaterialText`;
+   * calling setState there causes "Too many re-renders").
+   */
+  function manualRangeBlocks(options: { silent?: boolean } = {}): { start: number; end: number; title: string; text: string }[] | null {
+    const silent = options.silent ?? false;
     const blocks: { start: number; end: number; title: string; text: string }[] = [];
     const populatedRanges = manualRanges.filter((range) => range.start.trim() || range.end.trim());
 
     if (populatedRanges.length === 0) {
-      setRangeStatus("Add at least one transcript range.");
+      if (!silent) setRangeStatus("Add at least one transcript range.");
       return null;
     }
 
@@ -1842,16 +1852,16 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       const endSeconds = parseTimestampToSeconds(range.end);
       const label = `Range ${i + 1}`;
       if (startSeconds === null || endSeconds === null) {
-        setRangeStatus(`${label} has an invalid timestamp. Use MM:SS or H:MM:SS.`);
+        if (!silent) setRangeStatus(`${label} has an invalid timestamp. Use MM:SS or H:MM:SS.`);
         return null;
       }
       if (endSeconds <= startSeconds) {
-        setRangeStatus(`${label} end time must be later than start time.`);
+        if (!silent) setRangeStatus(`${label} end time must be later than start time.`);
         return null;
       }
       const text = extractTranscriptRangeFromSegments(transcriptSegments, startSeconds, endSeconds);
       if (!text) {
-        setRangeStatus(`${label} has no transcript segments. Check the timestamp range.`);
+        if (!silent) setRangeStatus(`${label} has no transcript segments. Check the timestamp range.`);
         return null;
       }
       blocks.push({
@@ -1939,7 +1949,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         summary: `主题筛选 · 已选 ${topic.length} 段`,
       };
     }
-    const manual = manualRangeBlocks();
+    const manual = manualRangeBlocks({ silent: true });
     if (manual && manual.length > 0) {
       return {
         text: formatManualRangesForSource(manual),
@@ -1950,13 +1960,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   }
 
   function genericSelectedMaterialText(): { text: string; summary: string } | null {
-    if (!genericRawContent.trim() && genericSegments.length === 0) return null;
     if (materialUseFullExplicit) {
-      return {
-        text: genericRawContent.trim(),
-        summary: "使用完整素材（全文）",
-      };
+      const raw = genericRawContent.trim();
+      if (raw) {
+        return { text: raw, summary: "Full source (document)" };
+      }
+      if (genericSegments.length > 0) {
+        const body = genericSegments
+          .map((s) => s.text)
+          .join("\n\n")
+          .trim();
+        if (body) {
+          return { text: body, summary: "Full source (blocks)" };
+        }
+      }
+      return null;
     }
+    if (!genericRawContent.trim() && genericSegments.length === 0) return null;
     const picked = genericSegments.filter((s) => genericCheckedIds.includes(s.id));
     if (picked.length === 0) return null;
     const hasTs = picked.some((s) => s.startTime !== undefined);
@@ -1981,6 +2001,13 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     summary: string;
     analysisSourceType: SourceMaterialType;
   } | null {
+    if (materialUseFullExplicit && transcriptText.trim()) {
+      return {
+        text: formatTranscriptText(transcriptText),
+        summary: "Full transcript",
+        analysisSourceType: "youtube",
+      };
+    }
     if (sourceMaterialPipeline === "transcript") {
       const t = transcriptSelectedMaterialText();
       if (!t) return null;
@@ -2011,7 +2038,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   function applyQuickRequest(def: QuickRequestButtonDef) {
     if (!canRunMaterialOutputNow()) {
-      setProjectStatus("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      setProjectStatus("Extract and select source material first, then choose a quick request.");
       return;
     }
     setLastQuickAction(def.label);
@@ -2054,7 +2081,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   async function runMaterialAnalysisTask(userTask: string) {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("请先勾选素材块、章节，或勾选「使用完整素材」后再分析。");
+      setMaterialAnalysisStatus("Select material blocks, chapters, or turn on Use Full Source first.");
       return;
     }
     setMaterialAnalysisLoading(true);
@@ -2084,14 +2111,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMaterialAnalysisStatus(data.error ?? `分析失败（${res.status}）`);
+        setMaterialAnalysisStatus(data.error ?? `Request failed (${res.status}).`);
         return;
       }
       onResult(data as EngineResponse);
       setResultStatus("Draft");
-      setMaterialAnalysisStatus("分析完成，结果已显示在 Workpiece。");
+      setMaterialAnalysisStatus("Analysis finished. See Workpiece for the result.");
     } catch (err) {
-      setMaterialAnalysisStatus(err instanceof Error ? err.message : "分析失败");
+      setMaterialAnalysisStatus(err instanceof Error ? err.message : "Analysis failed.");
     } finally {
       setMaterialAnalysisLoading(false);
     }
@@ -2259,14 +2286,49 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     );
   }
 
+  function appendBlockToCustomInstruction(heading: string, body: string) {
+    const block = `[${heading}]\n${body}`;
+    setCustomInstruction((prev) => (prev.trim() ? `${prev.trim()}\n\n${block}` : block));
+  }
+
+  /** Plain text for "use full source" in Request; prefers transcript when present. */
+  function resolveFullSourceTextForRequest(): string | null {
+    if (transcriptText.trim()) {
+      return formatTranscriptText(transcriptText);
+    }
+    const raw = genericRawContent.trim();
+    if (raw) return raw;
+    if (genericSegments.length > 0) {
+      const body = genericSegments
+        .map((s) => s.text)
+        .join("\n\n")
+        .trim();
+      if (body) return body;
+    }
+    return null;
+  }
+
   function appendTopicMaterialFromSelection() {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("没有可保存的已选素材。");
+      setMaterialAnalysisStatus("No selected material to save.");
       return;
     }
     setSavedTopicMaterial((prev) => (prev.trim() ? `${prev.trim()}\n\n---\n\n${sel.text}` : sel.text));
-    setMaterialAnalysisStatus("已追加到「已存题材」。");
+    appendBlockToCustomInstruction("Saved topic material", sel.text);
+    setMaterialAnalysisStatus("Saved to topic stash and appended to Request.");
+  }
+
+  function enableFullSourceAndAppendToRequest() {
+    const text = resolveFullSourceTextForRequest();
+    if (!text) {
+      setMaterialAnalysisStatus("No transcript or document text available as full source.");
+      return;
+    }
+    setMaterialUseFullExplicit(true);
+    appendBlockToCustomInstruction("Full source material", text);
+    setMaterialAnalysisStatus("Full source is on; material was appended to Request.");
+    setProjectStatus("Full source enabled and added under Request.");
   }
 
   function replaceSourceCaptureFromMaterialSelection() {
@@ -2692,23 +2754,20 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             ) : (
               <p className="transcript-note">尚未选择可用素材。请先勾选上方块或时间范围，或勾选「使用完整素材」。</p>
             )}
-            <div className="range-actions cta-row">
+            <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
-                Save as Topic Material / 保存为题材
+                Save as Topic
               </button>
               <button type="button" className="copy-action" onClick={clearMaterialSelection}>
-                Clear Selection / 清除选择
+                Clear Selection
               </button>
               <button
                 type="button"
                 className="secondary"
-                onClick={() => {
-                  setMaterialUseFullExplicit(true);
-                  setProjectStatus("已启用「使用完整素材」。请注意：生成与分析将使用全文。");
-                }}
-                disabled={!transcriptText.trim() && !genericRawContent.trim()}
+                onClick={enableFullSourceAndAppendToRequest}
+                disabled={!transcriptText.trim() && !genericRawContent.trim() && genericSegments.length === 0}
               >
-                Use Full Source / 使用完整素材
+                Use Full Source
               </button>
             </div>
           </div>
@@ -2749,7 +2808,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               placeholder="Example: Turn this selected material into a healing essay, LinkedIn post, article outline, Mendbook chapter, or audiobook script."
             />
           </label>
-          <div className="request-quick-picks" aria-label="Quick requests">
+          <div className="request-quick-picks ee-quick-action-grid" aria-label="Quick requests">
             {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
               <button
                 key={b.label}
@@ -3255,9 +3314,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             ) : (
               <p className="transcript-note">尚未选择可用素材。请勾选章节/段落，或勾选「使用完整素材」。</p>
             )}
-            <div className="range-actions cta-row">
+            <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
-                保存为题材（追加）
+                Save as Topic
               </button>
               <button
                 type="button"
@@ -3265,18 +3324,18 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
                 onClick={replaceSourceCaptureFromMaterialSelection}
                 disabled={!computeSelectedSourceMaterial()}
               >
-                用所选替换 Source Capture
+                Replace Source with selection
               </button>
               <button type="button" className="secondary" onClick={useFullTranscriptAsSource} disabled={!transcriptText.trim()}>
-                使用完整素材替换 Source（仅转录）
+                Use full transcript in Source
               </button>
             </div>
             {savedTopicMaterial.trim() ? (
               <label className="field">
-                <span>已存题材（将带入生成指令）</span>
+                <span>Saved topic (also merged into prompts when not duplicated in Request)</span>
                 <textarea className="transcript-preview" readOnly rows={4} value={savedTopicMaterial} />
                 <button type="button" className="copy-action" onClick={() => setSavedTopicMaterial("")}>
-                  清空已存题材
+                  Clear saved topic
                 </button>
               </label>
             ) : null}
@@ -3287,7 +3346,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           <summary>分析素材 / Analyze Source（仅已选）</summary>
           <div className="timestamp-chapters">
             <p className="transcript-note">以下按钮只对「已选题材」中的文本生效，不会默认使用全文。</p>
-            <div className="range-actions cta-row" style={{ flexWrap: "wrap" }}>
+            <div className="range-actions cta-row ee-quick-action-grid">
               {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
                 <button
                   key={b.label}
@@ -5055,16 +5114,21 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           font-weight: 750;
         }
         .request-quick-picks {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
           margin-top: 12px;
         }
-        .request-quick-picks button {
-          padding: 8px 11px;
+        .ee-quick-action-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+          gap: 8px;
+          align-items: stretch;
+        }
+        .ee-quick-action-grid button {
+          min-height: 44px;
+          padding: 8px 10px;
           font-size: 12px;
           font-weight: 750;
           line-height: 1.25;
+          text-align: center;
         }
         .source-footer {
           display: flex;
@@ -5331,6 +5395,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+        .range-actions.ee-quick-action-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          align-items: stretch;
         }
         .range-status {
           border: 1px solid #d7e3ee;

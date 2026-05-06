@@ -116,7 +116,7 @@ function ResultCard({
       <div className="output-text selectable-output" data-selectable-output="true">{result.output || "(no output)"}</div>
 
       <div className="suggested-action">Suggested: {suggestion}</div>
-      <div className="flow-hint">Original source → Result → Next step</div>
+      <div className="flow-hint">Source → Workpiece → Refine / Publish</div>
 
       <section className="assessment">
         <h4>Assessment notes</h4>
@@ -595,14 +595,14 @@ export function OutputPanel({
   return (
     <section className="result-layer">
       <div className="layer-head">
-        <p className="eyebrow">8. Result / Validation Layer</p>
+        <p className="eyebrow">Workpiece</p>
         <div className="title-row">
           <div>
-            <h2>Result / Validation</h2>
+            <h2>Workpiece</h2>
             <p>
               {isMulti
-                ? "Compare provider outputs side by side, then choose the best version to use or refine."
-                : "Read the generated result, review validation notes, then use or refine it."}
+                ? "Compare engine outputs side by side, then choose the best Workpiece to refine or publish."
+                : "Review the generated Workpiece, validation notes, then refine or move to Publish / Repurpose."}
             </p>
           </div>
           {(isMulti || selectedIsMulti) && <span className="comparison-mode">Comparison Mode Active</span>}
@@ -610,7 +610,7 @@ export function OutputPanel({
       </div>
 
       <div className="result-explainer">
-        Generated outputs appear here. Select multiple engines to compare OpenAI, DeepSeek, and Qwen side by side.
+        Workpiece outputs appear here. Select multiple engines to compare OpenAI, DeepSeek, and Qwen side by side.
       </div>
       {finalResult && (
         <div className="final-result">
@@ -667,7 +667,7 @@ export function OutputPanel({
                     onAddResultToDraft={onAddResultToDraft}
                     onReplaceDraftWithResult={onReplaceDraftWithResult}
                     onMarkFinal={onMarkFinal}
-                    stepLabel={`Step ${resultStep} result`}
+                    stepLabel="Workpiece"
                     compactLabels={compactLabels}
                   />
                 </div>
@@ -687,7 +687,7 @@ export function OutputPanel({
                   onAddResultToDraft={onAddResultToDraft}
                   onReplaceDraftWithResult={onReplaceDraftWithResult}
                   onMarkFinal={onMarkFinal}
-                  stepLabel={`Step ${resultStep} result`}
+                  stepLabel="Workpiece"
                   compactLabels={compactLabels}
                 />
               ))}
