@@ -8,6 +8,7 @@ import type {
 } from "@/types/engine";
 
 import type { PersistedGenericMaterialState, SourceMaterialPipelineTab } from "@/types/sourceMaterial";
+import type { TopicMaterial } from "@/types/workflow";
 
 export const PROJECTS_KEY = "essayengine.projects";
 export const ACTIVE_PROJECT_KEY = "essayengine.activeProjectId";
@@ -172,6 +173,10 @@ export type SavedEssayEngineProjectState = {
   pasteMaterialDraft?: string;
   /** Dedicated raw source paste field (URLs and long copy); separate from writing instructions. */
   sourceMaterialRawInput?: string;
+  /** V2 workflow: canonical topic payload (optional for older saves). */
+  topicMaterial?: TopicMaterial | null;
+  /** Fingerprint of source text when topic was saved; optional for older saves. */
+  topicMaterialFingerprint?: string | null;
 };
 
 export type SavedEssayEngineProject = {
@@ -231,6 +236,8 @@ function defaultState(): SavedEssayEngineProjectState {
     linkCaptureUrlDraft: "",
     pasteMaterialDraft: "",
     sourceMaterialRawInput: "",
+    topicMaterial: null,
+    topicMaterialFingerprint: null,
     mobileWorkflow: {
       captureIdea: "",
       voiceCapture: null,

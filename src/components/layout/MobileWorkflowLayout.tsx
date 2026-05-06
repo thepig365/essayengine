@@ -1,19 +1,19 @@
 "use client";
 
+import { WorkflowStepChips } from "@/components/layout/WorkflowStepChips";
 import { MOBILE_WORKFLOW_STEPS } from "@/essay-engine/mobileWorkflowSteps";
 
 type Props = {
   activeStepIndex: number;
   onActiveStepIndexChange: (index: number) => void;
-  /** Shown on the Draft step — runs the main engine generate action. */
+  /** Shown on Topic or Processing step — sticky shortcut for the main Generate action. */
   onPrimaryWorkspaceAction?: () => void;
   primaryWorkspaceDisabled?: boolean;
   primaryWorkspaceLabel?: string;
-  desktopMinWidth: number;
 };
 
 /**
- * Sticky shell for narrow viewports: step chips, Back/Next + optional primary action on Draft.
+ * Sticky shell for narrow viewports: step chips (primary nav) + optional Draft generate.
  */
 export function MobileWorkflowLayout({
   activeStepIndex,
@@ -21,14 +21,11 @@ export function MobileWorkflowLayout({
   onPrimaryWorkspaceAction,
   primaryWorkspaceDisabled,
   primaryWorkspaceLabel,
-  desktopMinWidth,
 }: Props) {
   const step = MOBILE_WORKFLOW_STEPS[activeStepIndex];
   const stepId = step?.id;
-  const canBack = activeStepIndex > 0;
-  const canNext = activeStepIndex < MOBILE_WORKFLOW_STEPS.length - 1;
   const showPrimary =
-    stepId === "draft" && typeof onPrimaryWorkspaceAction === "function";
+    (stepId === "workpiece" || stepId === "refine") && typeof onPrimaryWorkspaceAction === "function";
 
   return (
     <div className="mobile-workflow-shell" aria-label="Mobile workflow">
@@ -39,47 +36,14 @@ export function MobileWorkflowLayout({
         </span>
       </header>
 
-      <div className="mobile-workflow-step-chips" role="tablist" aria-label="Workflow steps">
-        {MOBILE_WORKFLOW_STEPS.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            aria-selected={i === activeStepIndex}
-            className={i === activeStepIndex ? "mobile-step-chip active" : "mobile-step-chip"}
-            onClick={() => onActiveStepIndexChange(i)}
-          >
-            {s.short}
-          </button>
-        ))}
-      </div>
+      <WorkflowStepChips
+        variant="mobile"
+        activeStepIndex={activeStepIndex}
+        onStepIndexChange={onActiveStepIndexChange}
+      />
 
-      <p className="mobile-workflow-hint">
-        Below {desktopMinWidth}px (or Mobile Friendly View) each step shows one main screen. Use the chips or Back / Next
-        to move through Source → Assemble. Resize or toggle view mode to preview.
-      </p>
-
-      <nav
-        className={showPrimary ? "mobile-workflow-bottom-actions three-col" : "mobile-workflow-bottom-actions"}
-        aria-label="Step navigation"
-      >
-        <button
-          type="button"
-          className="mobile-step-back"
-          disabled={!canBack}
-          onClick={() => onActiveStepIndexChange(activeStepIndex - 1)}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          className="mobile-step-next"
-          disabled={!canNext}
-          onClick={() => onActiveStepIndexChange(activeStepIndex + 1)}
-        >
-          Next
-        </button>
-        {showPrimary ? (
+      {showPrimary ? (
+        <div className="mobile-workflow-primary-row">
           <button
             type="button"
             className="mobile-step-primary"
@@ -89,8 +53,8 @@ export function MobileWorkflowLayout({
           >
             {primaryWorkspaceLabel ?? "Generate"}
           </button>
-        ) : null}
-      </nav>
+        </div>
+      ) : null}
 
       <style jsx>{`
         .mobile-workflow-shell {
@@ -129,82 +93,18 @@ export function MobileWorkflowLayout({
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .mobile-workflow-step-chips {
+        .mobile-workflow-primary-row {
           display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          overflow-x: hidden;
-          padding-bottom: 4px;
-          min-height: 48px;
-          align-items: center;
+          min-width: 0;
         }
-        .mobile-step-chip {
-          flex: 0 0 auto;
-          border: 1px solid #cfd8e3;
-          border-radius: 999px;
-          background: #f8fafc;
-          color: #22303f;
-          padding: 10px 14px;
-          font: inherit;
-          font-size: 12px;
-          font-weight: 800;
-          min-height: 44px;
-          cursor: pointer;
-        }
-        .mobile-step-chip.active {
-          border-color: #1d5f63;
-          background: #1d5f63;
-          color: #ffffff;
-        }
-        .mobile-workflow-hint {
-          margin: 0;
-          color: #617080;
-          font-size: 13px;
-          line-height: 1.45;
-        }
-        .mobile-workflow-hint strong {
-          color: #285b5d;
-          font-weight: 850;
-        }
-        .mobile-workflow-bottom-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          position: sticky;
-          bottom: 0;
-          padding-top: 6px;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 18%);
-        }
-        .mobile-workflow-bottom-actions.three-col {
-          grid-template-columns: 1fr 1fr 1fr;
-        }
-        .mobile-workflow-bottom-actions button {
+        .mobile-step-primary {
+          flex: 1;
           min-height: 48px;
           border-radius: 12px;
           font: inherit;
           font-weight: 800;
           font-size: 14px;
           cursor: pointer;
-        }
-        .mobile-step-back {
-          border: 1px solid #cfd8e3;
-          background: #f8fafc;
-          color: #22303f;
-        }
-        .mobile-step-back:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .mobile-step-next {
-          border: 1px solid #1d5f63;
-          background: #1d5f63;
-          color: #ffffff;
-        }
-        .mobile-step-next:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .mobile-step-primary {
           border: 1px solid #174447;
           background: #174447;
           color: #ffffff;

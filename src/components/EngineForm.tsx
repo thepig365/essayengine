@@ -1,23 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EssayDraftWorkspace } from "@/components/EssayDraftWorkspace";
-import { FinalPanel } from "@/components/FinalPanel";
 import { DesktopConsoleLayout } from "@/components/layout/DesktopConsoleLayout";
 import { MobileWorkflowLayout } from "@/components/layout/MobileWorkflowLayout";
-import { WorkflowStepChips } from "@/components/layout/WorkflowStepChips";
 import { MobileWorkflowPanel } from "@/components/MobileWorkflowPanel";
-import { OutputPanel } from "@/components/OutputPanel";
 import {
-  DraftGeneratorPanel,
   EngineSelectionPanel,
-  EssayAssemblyPanel,
-  ListenAndMarkPanel,
-  ResultValidationPanel,
   SourceMaterialPanel,
   StructureBuilderPanel,
   TranscriptWorkspacePanel,
 } from "@/components/essay-engine/panels";
+import { ReviewProductWorkspace } from "@/components/workflow/ReviewProductWorkspace";
+import { EssayEngineNav } from "@/components/navigation/EssayEngineNav";
+import type { MegaMenuCategorySpec, MegaMenuItemSpec } from "@/components/navigation/megaMenuData";
+import { ProcessingWorkspace } from "@/components/workflow/ProcessingWorkspace";
+import { MaterialWorkspace } from "@/components/workflow/MaterialWorkspace";
+import { ExtractionWorkspace } from "@/components/workflow/ExtractionWorkspace";
+import { TopicWorkspace } from "@/components/workflow/TopicWorkspace";
+import { StudioWorkspaceShell } from "@/components/studio/StudioWorkspaceShell";
+import { TopicMaterialStatusStrip } from "@/components/studio/TopicMaterialStatusStrip";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -44,6 +45,12 @@ import {
   userFacingDetectedSourceKind,
 } from "@/lib/sourceMaterialUtils";
 import {
+  canProcessTopicMaterial,
+  computeSourceFingerprint,
+  isTopicMaterialStale,
+} from "@/lib/topicMaterialGuard";
+import { isProbablyUrl } from "@/lib/workflowAdapters";
+import {
   type FinalResultSelection,
   type ResultStatus,
   type SavedEssayEngineProjectState,
@@ -57,17 +64,13 @@ import type {
   TranscriptSegment,
 } from "@/types/engine";
 import type { SourceMaterialPipelineTab, SourceMaterialType, SourceSegment } from "@/types/sourceMaterial";
+import type { TopicMaterial } from "@/types/workflow";
 
 import {
-  INSTRUCTION_PRESETS,
   MODES,
-  PROVIDER_OPTIONS,
   SOURCE_CHIPS,
-  SOURCE_LANGUAGES,
-  TARGET_LANGUAGES,
   TASKS,
   TASK_ICONS,
-  TONES,
   TTS_SPEEDS,
   TTS_STYLES,
   TTS_VOICES,
@@ -436,6 +439,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [mobileActiveTab, setMobileActiveTab] = useState<"draft" | "result">("draft");
   const [mobileWorkflowStepIndex, setMobileWorkflowStepIndex] = useState(0);
   const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
+  const [megaMenuCategoryId, setMegaMenuCategoryId] = useState<MegaMenuCategorySpec["id"] | null>(null);
   useEffect(() => {
     setMobileWorkflowStepIndex((i) => (i < MOBILE_WORKFLOW_STEPS.length ? i : 0));
   }, []);
@@ -474,6 +478,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [audioUploadLoading, setAudioUploadLoading] = useState(false);
   const [materialUseFullExplicit, setMaterialUseFullExplicit] = useState(false);
   const [savedTopicMaterial, setSavedTopicMaterial] = useState("");
+  const [topicMaterial, setTopicMaterial] = useState<TopicMaterial | null>(null);
+  const [topicMaterialFingerprint, setTopicMaterialFingerprint] = useState<string | null>(null);
+  const [topicMaterialStatus, setTopicMaterialStatus] = useState("");
   const [materialCustomPrompt, setMaterialCustomPrompt] = useState("");
   const [materialAnalysisStatus, setMaterialAnalysisStatus] = useState<string | null>(null);
   const [materialAnalysisLoading, setMaterialAnalysisLoading] = useState(false);
@@ -482,6 +489,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   const [autoExtractStatus, setAutoExtractStatus] = useState<string | null>(null);
   const [lastQuickAction, setLastQuickAction] = useState<string | null>(null);
   const generateSectionRef = useRef<HTMLElement | null>(null);
+  const advancedStudioDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const setProjectStatusRef = useRef<(message: string | null) => void>(() => {});
 
   const {
@@ -770,6 +778,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       pasteBlockInput,
       materialUseFullExplicit,
       savedTopicMaterial,
+      topicMaterial,
+      topicMaterialFingerprint,
+      topicMaterialStatus,
       materialCustomPrompt,
       sourceMaterialRawInput,
       mobileWorkflow.captureIdea,
@@ -808,19 +819,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           panelEyebrow: "Listen",
           panelHeadline: "Listen to Source",
           panelBody:
-            "Use the audio strip on Source or Request. Voice settings are in the left controls (or Read aloud settings on mobile).",
+            "Use the audio strip on Source or Extract. Voice settings are in the left controls (or Read aloud settings on mobile).",
           mobileToolbarListen: "Listen: source",
         };
       case "workpiece":
         return {
-          asideHeadline: "Listen to Workpiece",
+          asideHeadline: "Listen to AI output",
           asideBody:
-            "Hear the latest generated Workpiece (engine output) before revising. Long text is split into parts automatically.",
+            "Hear the latest generated AI output before revising. Long text is split into parts automatically.",
           panelEyebrow: "Listen",
-          panelHeadline: "Listen to Workpiece",
+          panelHeadline: "Listen to AI output",
           panelBody:
             "Playback uses the result or draft you select. Voice settings are in the left controls (or Read aloud settings on mobile).",
-          mobileToolbarListen: "Listen: workpiece",
+          mobileToolbarListen: "Listen: AI output",
         };
       case "refine":
         return {
@@ -852,7 +863,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           panelEyebrow: "Listen",
           panelHeadline: "Audio",
           panelBody:
-            "Listen after selecting source, Workpiece, or publish output. Voice settings are in the left controls (or Read aloud settings on mobile).",
+            "Listen after selecting source, AI output, or publish output. Voice settings are in the left controls (or Read aloud settings on mobile).",
           mobileToolbarListen: "Listen",
         };
     }
@@ -869,6 +880,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         }
         if (stepId === "request") {
           document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (stepId === "refine") {
+          document.getElementById("ee-processing-studio-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
         }
         if (stepId === "source") {
@@ -907,7 +922,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   function combinedInstruction(): string | undefined {
     const parts = [instructionPreset, customInstruction.trim(), mobileWorkflow.workflowInstruction].filter(Boolean);
     if (savedTopicMaterial.trim()) {
-      parts.push(`Saved topic material (已存题材):\n${savedTopicMaterial.trim()}`);
+      const sm = savedTopicMaterial.trim();
+      const ci = customInstruction;
+      if (!ci.includes(sm)) {
+        parts.push(`Saved topic material:\n${sm}`);
+      }
     }
     const base = parts.length ? parts.join(". ") : undefined;
     return [base, MATERIAL_WRITING_SUPPLEMENT].filter(Boolean).join("\n\n");
@@ -1020,6 +1039,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       },
       materialUseFullExplicit,
       savedTopicMaterial,
+      topicMaterial,
+      topicMaterialFingerprint,
       materialCustomPrompt,
       linkCaptureUrlDraft: linkExtractUrl,
       pasteMaterialDraft: pasteBlockInput,
@@ -1068,6 +1089,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     }
     setMaterialUseFullExplicit(state.materialUseFullExplicit ?? false);
     setSavedTopicMaterial(state.savedTopicMaterial ?? "");
+    setTopicMaterial(state.topicMaterial ?? null);
+    setTopicMaterialFingerprint(state.topicMaterialFingerprint ?? null);
+    setTopicMaterialStatus("");
     setMaterialCustomPrompt(state.materialCustomPrompt ?? "");
     setLinkExtractUrl(state.linkCaptureUrlDraft ?? "");
     setPasteBlockInput(state.pasteMaterialDraft ?? "");
@@ -1114,6 +1138,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setAudioUploadLoading(false);
     setMaterialUseFullExplicit(false);
     setSavedTopicMaterial("");
+    setTopicMaterial(null);
+    setTopicMaterialFingerprint(null);
+    setTopicMaterialStatus("");
     setMaterialCustomPrompt("");
     setMaterialAnalysisStatus(null);
     setMaterialAnalysisLoading(false);
@@ -1161,18 +1188,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setLoading(true);
     setError(null);
     onResult(null);
-    if (!canRunMaterialOutputNow()) {
+    if (!canProcessTopicMaterial(topicMaterial)) {
       setLoading(false);
-      setError("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      setError(
+        isProbablyUrl(customInstruction, { anywhere: true })
+          ? "这看起来是素材链接。请先放到“素材”阶段提取并保存为题材。"
+          : "请先在“题材”阶段保存题材，再进行加工。",
+      );
       return;
     }
-    const payloadInput = (computeSelectedSourceMaterial()?.text ?? input).trim();
+    const payloadInput = topicMaterial.content.trim();
     if (!payloadInput) {
       setLoading(false);
-      setError("没有可发送的正文：请先勾选素材并点击「用所选替换 Source Capture」或完成选区。");
+      setError("请先在“题材”阶段保存题材，再进行加工。");
       return;
     }
     try {
+      // Processing must use TopicMaterial.content only. Full source is allowed only when topicMaterial.useFullSource is true.
       const req: EngineRequest = {
         input: payloadInput,
         task,
@@ -1827,12 +1859,18 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setRangeStatus(`${blocks.length} transcript range${blocks.length === 1 ? "" : "s"} are now used as source.`);
   }
 
-  function manualRangeBlocks(): { start: number; end: number; title: string; text: string }[] | null {
+  /**
+   * Build manual timestamp ranges into transcript slices.
+   * When `silent` is true, skip status updates (used from render-time helpers like `transcriptSelectedMaterialText`;
+   * calling setState there causes "Too many re-renders").
+   */
+  function manualRangeBlocks(options: { silent?: boolean } = {}): { start: number; end: number; title: string; text: string }[] | null {
+    const silent = options.silent ?? false;
     const blocks: { start: number; end: number; title: string; text: string }[] = [];
     const populatedRanges = manualRanges.filter((range) => range.start.trim() || range.end.trim());
 
     if (populatedRanges.length === 0) {
-      setRangeStatus("Add at least one transcript range.");
+      if (!silent) setRangeStatus("Add at least one transcript range.");
       return null;
     }
 
@@ -1842,16 +1880,16 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       const endSeconds = parseTimestampToSeconds(range.end);
       const label = `Range ${i + 1}`;
       if (startSeconds === null || endSeconds === null) {
-        setRangeStatus(`${label} has an invalid timestamp. Use MM:SS or H:MM:SS.`);
+        if (!silent) setRangeStatus(`${label} has an invalid timestamp. Use MM:SS or H:MM:SS.`);
         return null;
       }
       if (endSeconds <= startSeconds) {
-        setRangeStatus(`${label} end time must be later than start time.`);
+        if (!silent) setRangeStatus(`${label} end time must be later than start time.`);
         return null;
       }
       const text = extractTranscriptRangeFromSegments(transcriptSegments, startSeconds, endSeconds);
       if (!text) {
-        setRangeStatus(`${label} has no transcript segments. Check the timestamp range.`);
+        if (!silent) setRangeStatus(`${label} has no transcript segments. Check the timestamp range.`);
         return null;
       }
       blocks.push({
@@ -1939,7 +1977,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         summary: `主题筛选 · 已选 ${topic.length} 段`,
       };
     }
-    const manual = manualRangeBlocks();
+    const manual = manualRangeBlocks({ silent: true });
     if (manual && manual.length > 0) {
       return {
         text: formatManualRangesForSource(manual),
@@ -1950,13 +1988,23 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   }
 
   function genericSelectedMaterialText(): { text: string; summary: string } | null {
-    if (!genericRawContent.trim() && genericSegments.length === 0) return null;
     if (materialUseFullExplicit) {
-      return {
-        text: genericRawContent.trim(),
-        summary: "使用完整素材（全文）",
-      };
+      const raw = genericRawContent.trim();
+      if (raw) {
+        return { text: raw, summary: "Full source (document)" };
+      }
+      if (genericSegments.length > 0) {
+        const body = genericSegments
+          .map((s) => s.text)
+          .join("\n\n")
+          .trim();
+        if (body) {
+          return { text: body, summary: "Full source (blocks)" };
+        }
+      }
+      return null;
     }
+    if (!genericRawContent.trim() && genericSegments.length === 0) return null;
     const picked = genericSegments.filter((s) => genericCheckedIds.includes(s.id));
     if (picked.length === 0) return null;
     const hasTs = picked.some((s) => s.startTime !== undefined);
@@ -1981,6 +2029,13 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     summary: string;
     analysisSourceType: SourceMaterialType;
   } | null {
+    if (materialUseFullExplicit && transcriptText.trim()) {
+      return {
+        text: formatTranscriptText(transcriptText),
+        summary: "Full transcript",
+        analysisSourceType: "youtube",
+      };
+    }
     if (sourceMaterialPipeline === "transcript") {
       const t = transcriptSelectedMaterialText();
       if (!t) return null;
@@ -1989,6 +2044,208 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     const g = genericSelectedMaterialText();
     if (!g) return null;
     return { ...g, analysisSourceType: genericMaterialKind };
+  }
+
+  function makeTopicId(prefix = "topic"): string {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function topicSourceId(): string {
+    if (sourceMaterialPipeline === "transcript") {
+      return youtubeSourceUrl || sourceMaterialRawInput.trim() || input.trim() || "transcript-source";
+    }
+    return genericMaterialUrl || genericMaterialTitle || sourceMaterialRawInput.trim() || input.trim() || "material-source";
+  }
+
+  function topicSourceType(): string {
+    return sourceMaterialPipeline === "transcript" ? "youtube" : genericMaterialKind;
+  }
+
+  function currentTopicFingerprintText(): string {
+    if (sourceMaterialPipeline === "transcript" && transcriptText.trim()) {
+      return formatTranscriptText(transcriptText);
+    }
+    if (genericRawContent.trim()) return genericRawContent;
+    if (genericSegments.length > 0) {
+      return genericSegments.map((segment) => segment.text).join("\n\n");
+    }
+    return input;
+  }
+
+  function selectedTranscriptMaterialForTopic(): {
+    text: string;
+    summary: string;
+    selectedSegmentIds: string[];
+    selectedRange?: TopicMaterial["selectedRange"];
+  } | null {
+    if (!transcriptText.trim()) return null;
+    const ch = checkedWorkspaceSections();
+    if (ch.length > 0) {
+      return {
+        text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
+        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        selectedSegmentIds: ch.map((section) => section.id),
+      };
+    }
+    const full = checkedFullTranscriptSections();
+    if (full.length > 0) {
+      return {
+        text: cleanSectionsText(full, true, includeTranscriptTimestamps),
+        summary: `粗分段 · 已选 ${full.length} 段`,
+        selectedSegmentIds: full.map((section) => section.id),
+      };
+    }
+    const topic = checkedTopicSections();
+    if (topic.length > 0) {
+      return {
+        text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
+        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        selectedSegmentIds: topic.map((section) => section.id),
+      };
+    }
+    const manual = manualRangeBlocks({ silent: true });
+    if (manual && manual.length > 0) {
+      const first = manual[0];
+      const last = manual[manual.length - 1];
+      return {
+        text: formatManualRangesForSource(manual),
+        summary: `手动时间范围 · ${manual.length} 段`,
+        selectedSegmentIds: manual.map((block, index) => `manual-range-${index + 1}-${block.start}-${block.end}`),
+        selectedRange: {
+          startTime: first.start,
+          endTime: last.end,
+        },
+      };
+    }
+    return null;
+  }
+
+  function selectedGenericMaterialForTopic(): {
+    text: string;
+    summary: string;
+    selectedSegmentIds: string[];
+    selectedRange?: TopicMaterial["selectedRange"];
+  } | null {
+    const picked = genericSegments.filter((segment) => genericCheckedIds.includes(segment.id));
+    if (picked.length === 0) return null;
+    const hasTs = picked.some((segment) => segment.startTime !== undefined);
+    const body = picked
+      .map((segment) => {
+        if (hasTs && segment.startTime !== undefined) {
+          const start = formatSecondsTimestamp(segment.startTime);
+          const end = segment.endTime !== undefined ? formatSecondsTimestamp(segment.endTime) : "";
+          return end ? `[${start}-${end}]\n${segment.text}` : `[${start}]\n${segment.text}`;
+        }
+        return segment.text;
+      })
+      .join("\n\n");
+    const timed = picked.filter((segment) => segment.startTime !== undefined);
+    return {
+      text: body,
+      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      selectedSegmentIds: picked.map((segment) => segment.id),
+      selectedRange: timed.length
+        ? {
+            startTime: timed[0].startTime,
+            endTime: timed[timed.length - 1].endTime,
+          }
+        : undefined,
+    };
+  }
+
+  function createTopicMaterialFromCurrentSelection(): TopicMaterial | null {
+    const selected = sourceMaterialPipeline === "transcript"
+      ? selectedTranscriptMaterialForTopic()
+      : selectedGenericMaterialForTopic();
+    const content = selected?.text.trim() ?? "";
+    if (!selected || !content) return null;
+    return {
+      id: makeTopicId(),
+      sourceId: topicSourceId(),
+      sourceType: topicSourceType(),
+      selectedSegmentIds: selected.selectedSegmentIds,
+      selectedRange: selected.selectedRange,
+      content,
+      title: selected.summary,
+      useFullSource: false,
+      saved: true,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function hasSelectedMaterialForTopic(): boolean {
+    return sourceMaterialPipeline === "transcript"
+      ? Boolean(selectedTranscriptMaterialForTopic()?.text.trim())
+      : Boolean(selectedGenericMaterialForTopic()?.text.trim());
+  }
+
+  function createTopicMaterialFromFullSource(): TopicMaterial | null {
+    const content = resolveFullSourceTextForRequest()?.trim() ?? "";
+    if (!content) return null;
+    return {
+      id: makeTopicId("topic-full"),
+      sourceId: topicSourceId(),
+      sourceType: topicSourceType(),
+      selectedSegmentIds: [],
+      content,
+      title: sourceMaterialPipeline === "transcript"
+        ? transcriptLibraryTitle || "Full transcript"
+        : genericMaterialTitle || "Full source",
+      useFullSource: true,
+      saved: true,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function saveTopicMaterial(nextTopicMaterial: TopicMaterial, message: string) {
+    setTopicMaterial(nextTopicMaterial);
+    setTopicMaterialFingerprint(computeSourceFingerprint(currentTopicFingerprintText()));
+    setTopicMaterialStatus(message);
+  }
+
+  function handleSaveAsTopic() {
+    const nextTopicMaterial = createTopicMaterialFromCurrentSelection();
+    if (!nextTopicMaterial) {
+      setTopicMaterialStatus("请先选择素材。");
+      setMaterialAnalysisStatus("No selected material to save.");
+      return;
+    }
+    setSavedTopicMaterial((prev) =>
+      prev.trim() ? `${prev.trim()}\n\n---\n\n${nextTopicMaterial.content}` : nextTopicMaterial.content,
+    );
+    appendBlockToCustomInstruction("Saved topic material", nextTopicMaterial.content);
+    saveTopicMaterial(nextTopicMaterial, "题材已保存。");
+    setMaterialAnalysisStatus("Saved to topic stash and appended to your task instruction.");
+  }
+
+  function handleUseFullSource() {
+    const nextTopicMaterial = createTopicMaterialFromFullSource();
+    if (!nextTopicMaterial) {
+      setTopicMaterialStatus("没有可用的完整素材。");
+      setMaterialAnalysisStatus("No transcript or document text available as full source.");
+      return;
+    }
+    setMaterialUseFullExplicit(true);
+    appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
+    saveTopicMaterial(nextTopicMaterial, "已使用完整素材保存题材。");
+    setMaterialAnalysisStatus("Full source is on; material was appended to your task instruction.");
+    setProjectStatus("Full source enabled and saved as topic material.");
+  }
+
+  function handleClearTopic() {
+    setTopicMaterial(null);
+    setTopicMaterialFingerprint(null);
+    setTopicMaterialStatus("题材已清除。");
+  }
+
+  function runWithTopicMaterialGuard(action: () => void | Promise<void>) {
+    if (!canProcessTopicMaterial(topicMaterial)) {
+      setError("请先在“题材”阶段保存题材，再进行加工。");
+      setTopicMaterialStatus("请先在“题材”阶段保存题材，再进行加工。");
+      setProjectStatus("请先在“题材”阶段保存题材，再进行加工。");
+      return;
+    }
+    void action();
   }
 
   function canRunMaterialOutputNow(): boolean {
@@ -2011,13 +2268,30 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
   function applyQuickRequest(def: QuickRequestButtonDef) {
     if (!canRunMaterialOutputNow()) {
-      setProjectStatus("请先提取并选择素材，再进行写作或分析。 / First extract and select source material before creating output.");
+      setProjectStatus("Extract and select source material first, then choose a quick request.");
       return;
     }
     setLastQuickAction(def.label);
     setTask(def.task);
     setInstructionPreset("");
     setCustomInstruction(def.instruction);
+  }
+
+  function handleCustomInstructionChange(value: string) {
+    const head = value.trim().split("\n")[0]?.trim() ?? "";
+    if (isStandaloneUrlText(value.trim())) {
+      setSourceMaterialRawInput(value.trim());
+      setCustomInstruction("");
+      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
+      return;
+    }
+    if (head && isStandaloneUrlText(head) && (value.includes("\n") || value.length > head.length + 2)) {
+      setSourceMaterialRawInput(head);
+      setCustomInstruction(value.slice(value.indexOf("\n")).trim());
+      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
+      return;
+    }
+    setCustomInstruction(value);
   }
 
   function buildGenerateSourceContract(payloadInput: string): string {
@@ -2054,7 +2328,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
   async function runMaterialAnalysisTask(userTask: string) {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("请先勾选素材块、章节，或勾选「使用完整素材」后再分析。");
+      setMaterialAnalysisStatus("Select material blocks, chapters, or turn on Use Full Source first.");
       return;
     }
     setMaterialAnalysisLoading(true);
@@ -2084,14 +2358,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMaterialAnalysisStatus(data.error ?? `分析失败（${res.status}）`);
+        setMaterialAnalysisStatus(data.error ?? `Request failed (${res.status}).`);
         return;
       }
       onResult(data as EngineResponse);
       setResultStatus("Draft");
-      setMaterialAnalysisStatus("分析完成，结果已显示在 Workpiece。");
+      setMaterialAnalysisStatus("Analysis finished. See AI output for the result.");
     } catch (err) {
-      setMaterialAnalysisStatus(err instanceof Error ? err.message : "分析失败");
+      setMaterialAnalysisStatus(err instanceof Error ? err.message : "Analysis failed.");
     } finally {
       setMaterialAnalysisLoading(false);
     }
@@ -2259,14 +2533,34 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     );
   }
 
-  function appendTopicMaterialFromSelection() {
-    const sel = computeSelectedSourceMaterial();
-    if (!sel) {
-      setMaterialAnalysisStatus("没有可保存的已选素材。");
-      return;
+  function appendBlockToCustomInstruction(heading: string, body: string) {
+    const block = `[${heading}]\n${body}`;
+    setCustomInstruction((prev) => (prev.trim() ? `${prev.trim()}\n\n${block}` : block));
+  }
+
+  /** Plain text for "use full source" in Request; prefers transcript when present. */
+  function resolveFullSourceTextForRequest(): string | null {
+    if (transcriptText.trim()) {
+      return formatTranscriptText(transcriptText);
     }
-    setSavedTopicMaterial((prev) => (prev.trim() ? `${prev.trim()}\n\n---\n\n${sel.text}` : sel.text));
-    setMaterialAnalysisStatus("已追加到「已存题材」。");
+    const raw = genericRawContent.trim();
+    if (raw) return raw;
+    if (genericSegments.length > 0) {
+      const body = genericSegments
+        .map((s) => s.text)
+        .join("\n\n")
+        .trim();
+      if (body) return body;
+    }
+    return null;
+  }
+
+  function appendTopicMaterialFromSelection() {
+    handleSaveAsTopic();
+  }
+
+  function enableFullSourceAndAppendToRequest() {
+    handleUseFullSource();
   }
 
   function replaceSourceCaptureFromMaterialSelection() {
@@ -2428,6 +2722,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     words: sourceWordCount,
     from: sourceFrom,
   };
+  const selectedSourceMaterial = computeSelectedSourceMaterial();
 
   const youtubeSourceUrlRef = useRef(youtubeSourceUrl);
   youtubeSourceUrlRef.current = youtubeSourceUrl;
@@ -2540,21 +2835,253 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     }
   }
 
+  const currentTopicMaterialFingerprint = computeSourceFingerprint(currentTopicFingerprintText());
+  const topicMaterialIsStale = isTopicMaterialStale(
+    topicMaterial,
+    topicMaterialFingerprint,
+    currentTopicMaterialFingerprint,
+  );
+  const topicMaterialWordCount = topicMaterial ? countWords(topicMaterial.content) : 0;
+  const topicSelectedRangeLabel = topicMaterial?.selectedRange
+    ? [
+        topicMaterial.selectedRange.startTime !== undefined
+          ? formatTimestamp(topicMaterial.selectedRange.startTime)
+          : undefined,
+        topicMaterial.selectedRange.endTime !== undefined
+          ? formatTimestamp(topicMaterial.selectedRange.endTime)
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(" - ")
+    : "";
+
+  const scrollToEl = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToAdvancedStudio = () => {
+    const details =
+      advancedStudioDetailsRef.current ??
+      (document.getElementById("ee-advanced-studio") as HTMLDetailsElement | null);
+    if (!details) return;
+    details.open = true;
+    requestAnimationFrame(() => {
+      details.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const handleMegaMenuItem = (item: MegaMenuItemSpec) => {
+    if (item.tier === "advanced") {
+      scrollToAdvancedStudio();
+      return;
+    }
+    if (item.tier === "disabled") return;
+
+    const runAnalysisByLabel = (label: string) => {
+      const entry = MATERIAL_ANALYSIS_BUTTONS.find((b) => b.label === label);
+      if (entry) void runMaterialAnalysisTask(entry.task);
+      else scrollToAdvancedStudio();
+    };
+
+    const runQuickByLabel = (label: string) => {
+      const def = QUICK_REQUEST_BUTTONS.find((b) => b.label === label);
+      if (def) applyQuickRequest(def);
+      else scrollToAdvancedStudio();
+    };
+
+    switch (item.actionId) {
+      case "material-paste":
+        setSourceMaterialPipeline("paste");
+        scrollToAdvancedStudio();
+        break;
+      case "material-youtube":
+        setSourceMaterialPipeline("transcript");
+        scrollToAdvancedStudio();
+        break;
+      case "material-web":
+        setSourceMaterialPipeline("link");
+        scrollToAdvancedStudio();
+        break;
+      case "material-transcript":
+        setSourceMaterialPipeline("transcript");
+        scrollToEl("ee-panel-transcript");
+        break;
+      case "material-audio":
+        setSourceMaterialPipeline("audio");
+        scrollToAdvancedStudio();
+        break;
+      case "extract-transcript-blocks":
+        setSourceMaterialPipeline("transcript");
+        scrollToEl("ee-panel-transcript");
+        break;
+      case "extract-time-range":
+        scrollToEl("ee-extract-time-tools");
+        break;
+      case "extract-paragraph-blocks":
+        setSourceMaterialPipeline("document");
+        scrollToAdvancedStudio();
+        break;
+      case "extract-topic-filter":
+        findTopicSections();
+        scrollToEl("ee-panel-transcript");
+        break;
+      case "process-story-beats":
+        runAnalysisByLabel("Story beats");
+        break;
+      case "process-examples":
+        runAnalysisByLabel("Examples & cases");
+        break;
+      case "topic-save":
+        appendTopicMaterialFromSelection();
+        scrollToAdvancedStudio();
+        break;
+      case "topic-full-source":
+        handleUseFullSource();
+        break;
+      case "topic-clear":
+        handleClearTopic();
+        break;
+      case "process-main-claims":
+        runAnalysisByLabel("Main claims");
+        break;
+      case "process-core-summary":
+        runAnalysisByLabel("Core summary");
+        break;
+      case "process-topic-card":
+        runAnalysisByLabel("Topic card");
+        break;
+      case "process-writing-directions":
+        runAnalysisByLabel("Writing directions");
+        break;
+      case "process-write-article":
+        runQuickByLabel("Write article");
+        break;
+      case "process-write-essay":
+        runQuickByLabel("Write 500-word essay");
+        break;
+      case "process-linkedin":
+        runQuickByLabel("Turn into post");
+        break;
+      case "process-mendbook":
+        runQuickByLabel("Turn into Mendbook chapter");
+        break;
+      case "process-audiobook":
+        runQuickByLabel("Turn into audiobook script");
+        break;
+      case "process-translate":
+        runQuickByLabel("Translate");
+        break;
+      case "process-rewrite":
+        if (primaryResultOutput) continueFromResult(primaryResultOutput, "rewrite");
+        else scrollToAdvancedStudio();
+        break;
+      case "review-listen-source":
+        if (input.trim()) void runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3");
+        break;
+      case "review-listen-draft":
+        if (essayDraftContent.trim()) void runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3");
+        break;
+      case "review-listen-final":
+        if (finalVersion?.content) void runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3");
+        break;
+      case "review-revise":
+        mobileWorkflow.enterListenAndMarkMode();
+        scrollToAdvancedStudio();
+        break;
+      case "review-rewrite-selection":
+        if (primaryResultOutput) continueFromResult(primaryResultOutput, "rewrite");
+        else scrollToAdvancedStudio();
+        break;
+      case "export-save-draft":
+        saveEssayDraft();
+        break;
+      case "export-save-final":
+        if (essayDraftContent.trim()) markEssayDraftAsFinal();
+        break;
+      case "export-copy":
+        void copyEssayDraft();
+        break;
+      case "settings-ai-engine":
+      case "settings-language":
+      case "settings-tone":
+      case "settings-output-style":
+      case "settings-tts-voice":
+      case "settings-project":
+        setControlsCollapsed(false);
+        scrollToEl("ee-panel-engines");
+        break;
+      default:
+        scrollToAdvancedStudio();
+    }
+  };
+
+  const handleWorkflowRibbonStep = (index: number) => {
+    if (index <= 4) selectWorkflowStep(index);
+    else scrollToEl("ee-advanced-export-anchor");
+  };
+
   return (
     <EssayEngineProvider value={essayEngineController}>
+    <div className="ee-engine-v2-shell">
+      <EssayEngineNav
+        megaCategoryId={megaMenuCategoryId}
+        onMegaCategoryChange={setMegaMenuCategoryId}
+        activeWorkflowStepIndex={mobileWorkflowStepIndex}
+        onWorkflowRibbonStep={handleWorkflowRibbonStep}
+        onMegaItemActivate={handleMegaMenuItem}
+      />
+      <StudioWorkspaceShell
+        topicStrip={
+          <TopicMaterialStatusStrip
+            variant={!topicMaterial ? "missing" : topicMaterialIsStale ? "stale" : "saved"}
+            sourceTypeLabel={topicMaterial ? String(topicMaterial.sourceType) : "—"}
+            wordCount={topicMaterialWordCount}
+            fullSourceAvailable={Boolean(topicMaterial?.useFullSource)}
+            preview={topicMaterial?.content ?? ""}
+            statusNote={topicMaterialStatus || undefined}
+          />
+        }
+        sourcePanel={
+          <div className="ee-studio-canvas">
+            <p className="ee-studio-canvas-lead">Transcript and captured source (read-only preview).</p>
+            <pre className="ee-studio-canvas-body">
+              {(transcriptText || input).trim()
+                ? `${(transcriptText || input).trim().slice(0, 900)}${(transcriptText || input).trim().length > 900 ? "…" : ""}`
+                : "No source text yet. Add material from the top menu or open Advanced Studio."}
+            </pre>
+          </div>
+        }
+        draftPanel={
+          <div className="ee-studio-canvas">
+            <p className="ee-studio-canvas-lead">AI output / draft (read-only preview).</p>
+            <pre className="ee-studio-canvas-body">
+              {(primaryResultOutput || essayDraftContent).trim()
+                ? `${(primaryResultOutput || essayDraftContent).trim().slice(0, 900)}${(primaryResultOutput || essayDraftContent).trim().length > 900 ? "…" : ""}`
+                : "Generate or edit the essay draft in Advanced Studio to see content here."}
+            </pre>
+          </div>
+        }
+        finalPanel={
+          <div className="ee-studio-canvas">
+            <p className="ee-studio-canvas-lead">Final product (read-only preview).</p>
+            <pre className="ee-studio-canvas-body">
+              {finalVersion?.content?.trim()
+                ? `${finalVersion.content.trim().slice(0, 900)}${finalVersion.content.trim().length > 900 ? "…" : ""}`
+                : "Mark a final version in Advanced Studio to preview here."}
+            </pre>
+          </div>
+        }
+      />
+      <details ref={advancedStudioDetailsRef} className="ee-advanced-studio" id="ee-advanced-studio">
+        <summary className="ee-advanced-studio-summary">
+          <span className="ee-advanced-summary-title">Open Advanced Studio</span>
+          <span className="ee-advanced-summary-sub">Full engine controls are available here.</span>
+        </summary>
+        <div className="ee-advanced-studio-body">
     <div
-      className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}`}
+      className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}${effectiveIsDesktopConsole ? " ee-desktop-triptych" : ""}`}
       data-workflow-step={mobileWorkflowStepId}
     >
-      {effectiveIsDesktopConsole ? (
-        <div className="ee-desktop-workflow-nav">
-          <WorkflowStepChips
-            variant="desktop"
-            activeStepIndex={mobileWorkflowStepIndex}
-            onStepIndexChange={selectWorkflowStep}
-          />
-        </div>
-      ) : null}
       <DesktopConsoleLayout>
       <aside id="ee-panel-engines" className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
         <EngineSelectionPanel>
@@ -2563,42 +3090,29 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             type="button"
             className="collapse-toggle"
             onClick={() => setControlsCollapsed((value) => !value)}
-            aria-label={controlsCollapsed ? "Expand control panel" : "Collapse control panel"}
-            title={controlsCollapsed ? "Expand controls" : "Collapse controls"}
+            aria-label={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
+            title={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
           >
             ☰
           </button>
-          {!controlsCollapsed && <span>Control Console</span>}
+          {!controlsCollapsed && <span>引擎与设置</span>}
         </div>
-        <section className="layer source-input-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Source / 素材来源</p>
-            <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
-            <p>此处只放素材，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
-          </div>
-          <label className="field">
-            <span>Paste source URL or content / 粘贴素材链接或内容</span>
-            <textarea
-              rows={5}
-              className="instruction"
-              value={sourceMaterialRawInput}
-              onChange={(e) => setSourceMaterialRawInput(e.target.value)}
-              placeholder="Paste YouTube URL, podcast URL, LinkedIn post, article text, transcript, or social post here..."
-            />
-          </label>
-          <p>
-            <strong>Detected source type / 检测类型：</strong> {userFacingDetectedSourceKind(sourceMaterialRawInput)}
-          </p>
-          {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
-          {linkExtractLoading &&
-          sourceMaterialRawInput.trim() &&
-          WEBPAGE_RE.test(sourceMaterialRawInput.trim()) &&
-          !YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
-            <p className="range-status">Extracting page… / 正在提取正文…</p>
-          ) : null}
-          {transcriptLoading && YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
-            <p className="range-status">Extracting transcript… / 正在提取字幕…</p>
-          ) : null}
+        <MaterialWorkspace
+          active
+          variant="rawInput"
+          sourceMaterialRawInput={sourceMaterialRawInput}
+          onSourceMaterialRawInputChange={setSourceMaterialRawInput}
+          detectedSourceKind={userFacingDetectedSourceKind(sourceMaterialRawInput)}
+          autoExtractStatus={autoExtractStatus}
+          showLinkExtracting={
+            linkExtractLoading &&
+            Boolean(sourceMaterialRawInput.trim()) &&
+            WEBPAGE_RE.test(sourceMaterialRawInput.trim()) &&
+            !YOUTUBE_RE.test(sourceMaterialRawInput.trim())
+          }
+          showTranscriptExtracting={transcriptLoading && YOUTUBE_RE.test(sourceMaterialRawInput.trim())}
+          omitRawInputChildren={effectiveIsDesktopConsole}
+        >
 
           {transcriptText && sourceMaterialPipeline === "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
@@ -2676,7 +3190,10 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
           <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
             <div className="range-head">
-              <strong>Selected Material / 已选题材</strong>
+              <strong>Extraction &amp; selection / 提取与勾选</strong>
+              <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
+                Live preview of what you checked in <strong>Source Material Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
+              </p>
             </div>
             {computeSelectedSourceMaterial() ? (
               <>
@@ -2692,896 +3209,381 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             ) : (
               <p className="transcript-note">尚未选择可用素材。请先勾选上方块或时间范围，或勾选「使用完整素材」。</p>
             )}
-            <div className="range-actions cta-row">
+            <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
-                Save as Topic Material / 保存为题材
+                Save as Topic
               </button>
               <button type="button" className="copy-action" onClick={clearMaterialSelection}>
-                Clear Selection / 清除选择
+                Clear Selection
               </button>
               <button
                 type="button"
                 className="secondary"
-                onClick={() => {
-                  setMaterialUseFullExplicit(true);
-                  setProjectStatus("已启用「使用完整素材」。请注意：生成与分析将使用全文。");
-                }}
-                disabled={!transcriptText.trim() && !genericRawContent.trim()}
+                onClick={enableFullSourceAndAppendToRequest}
+                disabled={!transcriptText.trim() && !genericRawContent.trim() && genericSegments.length === 0}
               >
-                Use Full Source / 使用完整素材
+                Use Full Source
               </button>
             </div>
           </div>
-        </section>
+        </MaterialWorkspace>
 
-        <section className="layer request-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Request / 创作请求</p>
-            <h2>What do you want to create from this selected material?</h2>
-            <p>请先完成左侧「已选题材」后再填写。不要把素材链接写在这里——链接应只在「素材来源」。</p>
-          </div>
-          <p className="transcript-note">
-            First extract and select source material before creating output. / 请先提取并选择素材，再进行写作或分析。
-          </p>
-          <label className="field">
-            <span>Your request / 你的创作要求</span>
-            <textarea
-              className="instruction"
-              value={customInstruction}
-              onChange={(e) => {
-                const v = e.target.value;
-                const head = v.trim().split("\n")[0]?.trim() ?? "";
-                if (isStandaloneUrlText(v.trim())) {
-                  setSourceMaterialRawInput(v.trim());
-                  setCustomInstruction("");
-                  setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材来源」，正在提取。");
-                  return;
-                }
-                if (head && isStandaloneUrlText(head) && (v.includes("\n") || v.length > head.length + 2)) {
-                  setSourceMaterialRawInput(head);
-                  setCustomInstruction(v.slice(v.indexOf("\n")).trim());
-                  setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材来源」。");
-                  return;
-                }
-                setCustomInstruction(v);
-              }}
-              rows={4}
-              placeholder="Example: Turn this selected material into a healing essay, LinkedIn post, article outline, Mendbook chapter, or audiobook script."
-            />
-          </label>
-          <div className="request-quick-picks" aria-label="Quick requests">
-            {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
-              <button
-                key={b.label}
-                type="button"
-                disabled={!canRunMaterialOutputNow() || materialAnalysisLoading}
-                onClick={() => runMaterialAnalysisTask(b.task)}
-                title={b.label}
-              >
-                {b.label}
-              </button>
-            ))}
-            {QUICK_REQUEST_BUTTONS.map((def) => (
-              <button
-                key={def.label}
-                type="button"
-                disabled={!canRunMaterialOutputNow()}
-                onClick={() => applyQuickRequest(def)}
-                title={def.label}
-              >
-                {def.label}
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">2. Engine Selection Layer</p>
-            <h2>Engine selection</h2>
-            <p>Select one engine for normal mode, or multiple engines for real comparison.</p>
-          </div>
-          <div className={comparisonActive ? "mode-badge comparison" : "mode-badge"}>
-            {comparisonActive
-              ? "Comparison mode active. Results will appear side-by-side in the Result / Validation workspace."
-              : "Single engine mode. One result will be generated."}
-          </div>
-          <div className="engine-list">
-            {PROVIDER_OPTIONS.map((p) => (
-              <label key={p.value} className={providers.includes(p.value) ? "engine selected" : "engine"}>
-                <input
-                  type="checkbox"
-                  checked={providers.includes(p.value)}
-                  onChange={() => toggleProvider(p.value)}
-                />
-                <span>
-                  <strong>{p.label}</strong>
-                  <small>{p.note}</small>
-                </span>
+        {mobileWorkflowStepId !== "refine" ? (
+          <ProcessingWorkspace
+            active
+            variant="controls"
+            topicMaterial={topicMaterial}
+            customInstruction={customInstruction}
+            onCustomInstructionChange={handleCustomInstructionChange}
+            canRunMaterialOutput={canRunMaterialOutputNow()}
+            materialAnalysisLoading={materialAnalysisLoading}
+            materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+            onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+            quickRequestButtons={QUICK_REQUEST_BUTTONS}
+            onApplyQuickRequest={applyQuickRequest}
+            providers={providers}
+            comparisonActive={comparisonActive}
+            onToggleProvider={toggleProvider}
+            controlsCollapsed={controlsCollapsed}
+            task={task}
+            onTaskChange={setTask}
+            activeTask={activeTask}
+            showWritingPresetHint={showWritingPresetHint}
+            sourceLanguage={sourceLanguage}
+            onSourceLanguageChange={setSourceLanguage}
+            targetLanguage={targetLanguage}
+            onTargetLanguageChange={setTargetLanguage}
+            outputMode={outputMode}
+            onOutputModeChange={setOutputMode}
+            activeMode={activeMode}
+            tone={tone}
+            onToneChange={setTone}
+            instructionPreset={instructionPreset}
+            onInstructionPresetChange={setInstructionPreset}
+            sourceSummary={sourceSummary}
+            generateBlocked={generateBlocked}
+            loading={loading}
+            canGenerate={canProcessTopicMaterial(topicMaterial)}
+            runLabel={runLabel}
+            error={error}
+            onGenerate={generate}
+            generateSectionRef={(node) => {
+              generateSectionRef.current = node;
+            }}
+            hideToolGrid={effectiveIsDesktopConsole}
+          />
+        ) : null}
+
+        {effectiveIsDesktopConsole ? (
+          <details className="ee-rail-secondary" style={{ marginTop: "0.5rem" }}>
+            <summary style={{ cursor: "pointer", fontWeight: 800, fontSize: "0.88rem" }}>
+              Audio · Read aloud · Project save
+            </summary>
+            <div style={{ marginTop: "0.65rem", display: "grid", gap: "14px" }}>
+              <section className="layer read-layer">
+                <div className="layer-head">
+                  <p className="eyebrow">9. Read Aloud Layer</p>
+                  <h2>{workflowListenGuide.asideHeadline}</h2>
+                  <p>{workflowListenGuide.asideBody}</p>
+                </div>
+                <div className="field-grid">
+                  <label className="field">
+                    <span>Voice</span>
+                    <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
+                      {TTS_VOICES.map((voice) => (
+                        <option key={voice} value={voice}>
+                          {voice}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Speed</span>
+                    <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
+                      {TTS_SPEEDS.map((speed) => (
+                        <option key={speed} value={speed}>
+                          {speed.toFixed(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <label className="field">
+                  <span>Style</span>
+                  <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
+                    {TTS_STYLES.map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </section>
+
+              <section className="layer project-layer">
+                <div className="layer-head">
+                  <p className="eyebrow">10. Project Save Layer</p>
+                  <h2>Project save</h2>
+                  <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
+                </div>
+                <label className="field">
+                  <span>Project name</span>
+                  <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+                </label>
+                <div className="project-actions">
+                  <button type="button" onClick={() => saveCurrentProject()}>
+                    Save project
+                  </button>
+                  <button type="button" onClick={startNewProject}>
+                    New Project
+                  </button>
+                </div>
+                <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+                <label className="field">
+                  <span>Load project</span>
+                  <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="project-actions">
+                  <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
+                    Duplicate project
+                  </button>
+                  <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
+                    Delete project
+                  </button>
+                </div>
+                <div className="project-meta">
+                  <span>Status: {resultStatus}</span>
+                  {projectStatus && <strong>{projectStatus}</strong>}
+                </div>
+              </section>
+            </div>
+          </details>
+        ) : (
+          <>
+            <section className="layer read-layer">
+              <div className="layer-head">
+                <p className="eyebrow">9. Read Aloud Layer</p>
+                <h2>{workflowListenGuide.asideHeadline}</h2>
+                <p>{workflowListenGuide.asideBody}</p>
+              </div>
+              <div className="field-grid">
+                <label className="field">
+                  <span>Voice</span>
+                  <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
+                    {TTS_VOICES.map((voice) => (
+                      <option key={voice} value={voice}>
+                        {voice}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Speed</span>
+                  <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
+                    {TTS_SPEEDS.map((speed) => (
+                      <option key={speed} value={speed}>
+                        {speed.toFixed(1)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="field">
+                <span>Style</span>
+                <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
+                  {TTS_STYLES.map((style) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
+                </select>
               </label>
-            ))}
-          </div>
-        </section>
+            </section>
 
-        <section className="layer task-layer">
-          <div className="layer-head">
-            <p className="eyebrow">3. Task Layer</p>
-            <h2>Transformation task</h2>
-            <p>Choose what the engine should do with the captured source.</p>
-          </div>
-          <div className="task-icon-bar" aria-label="Transformation task">
-            {TASKS.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                className={task === t.value ? "task-icon-button active" : "task-icon-button"}
-                onClick={() => setTask(t.value)}
-                aria-label={t.label}
-                title={t.label}
-                data-tooltip={t.label}
-              >
-                <span className="task-icon" aria-hidden="true">{TASK_ICONS[t.value]}</span>
-                {!controlsCollapsed && <span className="task-label">{t.label}</span>}
-              </button>
-            ))}
-          </div>
-          {!controlsCollapsed && <div className="selected-description">
-            <strong>{activeTask.label}</strong>
-            <p>{activeTask.helper}</p>
-          </div>}
-          {!controlsCollapsed && showWritingPresetHint && (
-            <div className="writing-hint">
-              For English human rewriting, use Humanize English or Author-style rewrite. For Chinese rewriting, use Natural Chinese rewrite.
-            </div>
-          )}
-        </section>
+            <section className="layer project-layer">
+              <div className="layer-head">
+                <p className="eyebrow">10. Project Save Layer</p>
+                <h2>Project save</h2>
+                <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
+              </div>
+              <label className="field">
+                <span>Project name</span>
+                <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+              </label>
+              <div className="project-actions">
+                <button type="button" onClick={() => saveCurrentProject()}>
+                  Save project
+                </button>
+                <button type="button" onClick={startNewProject}>
+                  New Project
+                </button>
+              </div>
+              <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+              <label className="field">
+                <span>Load project</span>
+                <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="project-actions">
+                <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
+                  Duplicate project
+                </button>
+                <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
+                  Delete project
+                </button>
+              </div>
+              <div className="project-meta">
+                <span>Status: {resultStatus}</span>
+                {projectStatus && <strong>{projectStatus}</strong>}
+              </div>
+            </section>
+          </>
+        )}
 
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">4. Language Layer</p>
-            <h2>Language direction</h2>
-            <p>Use controlled language choices for predictable translation and rewriting.</p>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>Source Language</span>
-              <select value={sourceLanguage} onChange={(e) => setSourceLanguage(e.target.value)}>
-                {SOURCE_LANGUAGES.map((language) => (
-                  <option key={language.label} value={language.value}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Target Language</span>
-              <select value={targetLanguage} onChange={(e) => setTargetLanguage(e.target.value)}>
-                {TARGET_LANGUAGES.map((language) => (
-                  <option key={language.label} value={language.value}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="quick-picks" aria-label="Common target languages">
-            <button type="button" onClick={() => setTargetLanguage("Chinese Simplified")}>
-              Chinese Simplified
-            </button>
-            <button type="button" onClick={() => setTargetLanguage("English")}>
-              English
-            </button>
-            <button type="button" onClick={() => setTargetLanguage("Chinese Traditional")}>
-              Chinese Traditional
-            </button>
-          </div>
-        </section>
-
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">5. Output Behavior Layer</p>
-            <h2>Output behavior</h2>
-            <p>Choose how strictly the result should preserve or reshape the source.</p>
-          </div>
-          <label className="field">
-            <span>Output Behavior</span>
-            <select value={outputMode} onChange={(e) => setOutputMode(e.target.value as OutputMode)}>
-              {MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="selected-description">
-            <strong>{activeMode.label}</strong>
-            <p>{activeMode.helper}</p>
-          </div>
-        </section>
-
-        <section className="layer">
-          <div className="layer-head">
-            <p className="eyebrow">6. Advanced Control Layer</p>
-            <h2>Tone and instruction</h2>
-            <p>Use presets for common rules, then add precise constraints only when needed.</p>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>Tone</span>
-              <select value={tone} onChange={(e) => setTone(e.target.value)}>
-                {TONES.map((t) => (
-                  <option key={t.label} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Instruction Preset</span>
-              <select value={instructionPreset} onChange={(e) => setInstructionPreset(e.target.value)}>
-                {INSTRUCTION_PRESETS.map((preset) => (
-                  <option key={preset.label} value={preset.value}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="writing-hint">
-            Custom requests and quick picks live in the Request block above. Use tone and presets here for voice-level shaping.
-          </div>
-          <div className="writing-hint">
-            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any specific writer.
-          </div>
-        </section>
-
-        <section className="layer run-layer" ref={generateSectionRef}>
-          <div className="layer-head">
-            <p className="eyebrow">7. Generate / Run Layer</p>
-            <h2>Run workspace</h2>
-            <p>Generate output from the current source, engine selection, and transformation settings.</p>
-          </div>
-          <div className="ready-summary">
-            <strong>Before Generate</strong>
-            <p>{sourceSummary}</p>
-            <ul>
-              <li>{providers.length} engine{providers.length === 1 ? "" : "s"}</li>
-              <li>Task: {task}</li>
-              <li>Target: {targetLanguage}</li>
-              <li>Behavior: {outputMode}</li>
-            </ul>
-          </div>
-          <dl className="run-summary">
-            <div>
-              <dt>Task</dt>
-              <dd>{activeTask.label}</dd>
-            </div>
-            <div>
-              <dt>Target</dt>
-              <dd>{targetLanguage}</dd>
-            </div>
-            <div>
-              <dt>Providers</dt>
-              <dd>{providers.length}</dd>
-            </div>
-            <div>
-              <dt>Behavior</dt>
-              <dd>{activeMode.label}</dd>
-            </div>
-          </dl>
-          {generateBlocked && (
-            <div className="run-blocked">
-              Transcript fetched. Apply the full transcript or selected sections to Source Capture before generating.
-            </div>
-          )}
-          <button type="button" className="primary" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
-            {loading ? "Generating..." : runLabel}
-          </button>
-          {error && <p className="error">{error}</p>}
-        </section>
-
-        <section className="layer read-layer">
-          <div className="layer-head">
-            <p className="eyebrow">9. Read Aloud Layer</p>
-            <h2>{workflowListenGuide.asideHeadline}</h2>
-            <p>{workflowListenGuide.asideBody}</p>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>Voice</span>
-              <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
-                {TTS_VOICES.map((voice) => (
-                  <option key={voice} value={voice}>
-                    {voice}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Speed</span>
-              <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
-                {TTS_SPEEDS.map((speed) => (
-                  <option key={speed} value={speed}>
-                    {speed.toFixed(1)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label className="field">
-            <span>Style</span>
-            <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
-              {TTS_STYLES.map((style) => (
-                <option key={style} value={style}>
-                  {style}
-                </option>
-              ))}
-            </select>
-          </label>
-        </section>
-
-        <section className="layer project-layer">
-          <div className="layer-head">
-            <p className="eyebrow">10. Project Save Layer</p>
-            <h2>Project save</h2>
-            <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
-          </div>
-          <label className="field">
-            <span>Project name</span>
-            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
-          </label>
-          <div className="project-actions">
-            <button type="button" onClick={() => saveCurrentProject()}>
-              Save project
-            </button>
-            <button type="button" onClick={startNewProject}>
-              New Project
-            </button>
-          </div>
-          <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
-          <label className="field">
-            <span>Load project</span>
-            <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="project-actions">
-            <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
-              Duplicate project
-            </button>
-            <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
-              Delete project
-            </button>
-          </div>
-          <div className="project-meta">
-            <span>Status: {resultStatus}</span>
-            {projectStatus && <strong>{projectStatus}</strong>}
-          </div>
-        </section>
         </EngineSelectionPanel>
       </aside>
 
+      <div
+        className={effectiveIsDesktopConsole ? "ee-grid-source ee-canvas-source-col" : undefined}
+        style={effectiveIsDesktopConsole ? undefined : { display: "contents" }}
+      >
       <section id="ee-panel-transcript" className="layer transcript-column">
         <TranscriptWorkspacePanel className="ee-narrow-step-transcript">
-        <div className="layer-head">
-          <p className="eyebrow">Source Material Extractor / 素材提取器</p>
-          <h2>Content Source Analyzer / 内容素材分析器</h2>
-          <p>所有来源都先变成「可选的文本块」，再分析与写入；默认不使用全文。</p>
-        </div>
-
-        <div className="range-actions cta-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
-          {(
-            [
-              { id: "transcript" as const, label: "转录 / 字幕" },
-              { id: "link" as const, label: "链接抓取" },
-              { id: "paste" as const, label: "粘贴长文" },
-              { id: "audio" as const, label: "上传音频" },
-              { id: "document" as const, label: "文本 / 字幕稿" },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={sourceMaterialPipeline === tab.id ? "primary" : "secondary"}
-              onClick={() => {
-                setSourceMaterialPipeline(tab.id);
-                setMaterialAnalysisStatus(null);
-              }}
-            >
-              {tab.label}
+        <ExtractionWorkspace
+          active
+          hideMaterialAnalysisPanel={effectiveIsDesktopConsole}
+          sourceMaterialPipeline={sourceMaterialPipeline}
+          onSourceMaterialPipelineChange={(tab) => {
+            setSourceMaterialPipeline(tab);
+            setMaterialAnalysisStatus(null);
+          }}
+          materialUseFullExplicit={materialUseFullExplicit}
+          onMaterialUseFullExplicitChange={setMaterialUseFullExplicit}
+          linkExtractUrl={linkExtractUrl}
+          onLinkExtractUrlChange={setLinkExtractUrl}
+          linkExtractLoading={linkExtractLoading}
+          onRunLinkMaterialExtract={runLinkMaterialExtract}
+          linkExtractStatus={linkExtractStatus}
+          pasteBlockInput={pasteBlockInput}
+          onPasteBlockInputChange={setPasteBlockInput}
+          onApplyPasteMaterialBlocks={applyPasteMaterialBlocks}
+          audioUploadLoading={audioUploadLoading}
+          onTranscribeAudioFile={(file) => void transcribeAudioFile(file)}
+          onIngestDocumentFile={(file) => void ingestDocumentFile(file)}
+          genericWorkspaceNotice={genericWorkspaceNotice}
+          genericSegments={genericSegments}
+          genericCheckedIds={genericCheckedIds}
+          onToggleGenericSegment={toggleGenericSegment}
+          genericMaterialKind={genericMaterialKind}
+          genericMaterialTitle={genericMaterialTitle}
+          selectedMaterial={selectedSourceMaterial}
+          onReplaceSourceCaptureFromMaterialSelection={replaceSourceCaptureFromMaterialSelection}
+          onUseFullTranscriptAsSource={useFullTranscriptAsSource}
+          transcriptText={transcriptText}
+          effectiveYoutubeSource={effectiveYoutubeSource}
+          transcriptLoading={transcriptLoading}
+          onFetchTranscript={() => void getTranscript()}
+          transcriptStatus={transcriptStatus}
+          timestampChapterInput={timestampChapterInput}
+          onTimestampChapterInputChange={setTimestampChapterInput}
+          onTimestampChapterInputTouched={() => {
+            setChapterSectionsGenerated(false);
+            setCheckedChapterIds([]);
+            setChapterStatus(null);
+          }}
+          onApplyTimestampChapters={applyTimestampChapters}
+          onReplaceSourceWithCheckedSections={replaceSourceWithCheckedSections}
+          onAddCheckedSectionsToSource={addCheckedSectionsToSource}
+          onAddCheckedSectionsToDraft={addCheckedSectionsToDraft}
+          onCopyCheckedSectionsCleanText={copyCheckedSectionsCleanText}
+          chapterSectionsGenerated={chapterSectionsGenerated}
+          timestampChapterSections={timestampChapterSections}
+          checkedChapterIds={checkedChapterIds}
+          onToggleTimestampChapter={toggleTimestampChapter}
+          chapterStatus={chapterStatus}
+          topicInput={topicInput}
+          onTopicInputChange={setTopicInput}
+          onFindTopicSections={findTopicSections}
+          onReplaceSourceWithMatchedSections={replaceSourceWithMatchedSections}
+          onAddMatchedSectionsToSource={addMatchedSectionsToSource}
+          onAddMatchedSectionsToDraft={addMatchedSectionsToDraft}
+          onCopyMatchedSections={copyMatchedSections}
+          onClearTopicMatches={clearTopicMatches}
+          topicMatches={topicMatches}
+          checkedTopicSectionIds={checkedTopicSectionIds}
+          onToggleTopicSection={toggleTopicSection}
+          topicStatus={topicStatus}
+          manualRanges={manualRanges}
+          onUpdateManualRange={updateManualRange}
+          onRemoveManualRange={removeManualRange}
+          onAddManualRange={addManualRange}
+          onReplaceSourceWithManualRanges={replaceSourceWithManualRanges}
+          onAddManualRangesToSource={addManualRangesToSource}
+          onAddManualRangesToDraft={addManualRangesToDraft}
+          onClearManualRanges={clearManualRanges}
+          rangeStatus={rangeStatus}
+          includeTranscriptTimestamps={includeTranscriptTimestamps}
+          onIncludeTranscriptTimestampsChange={setIncludeTranscriptTimestamps}
+          onReplaceSourceWithCheckedFullTranscriptSections={replaceSourceWithCheckedFullTranscriptSections}
+          onAddCheckedFullTranscriptSectionsToSource={addCheckedFullTranscriptSectionsToSource}
+          onAddCheckedFullTranscriptSectionsToDraft={addCheckedFullTranscriptSectionsToDraft}
+          onCopyCheckedFullTranscriptSections={copyCheckedFullTranscriptSections}
+          fullTranscriptSections={fullTranscriptSections}
+          checkedFullSectionIds={checkedFullSectionIds}
+          onToggleFullTranscriptSection={toggleFullTranscriptSection}
+          fullSectionStatus={fullSectionStatus}
+          formatTimestamp={formatTimestamp}
+          cleanSectionText={cleanSectionText}
+          materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+          materialAnalysisLoading={materialAnalysisLoading}
+          onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+          materialCustomPrompt={materialCustomPrompt}
+          onMaterialCustomPromptChange={setMaterialCustomPrompt}
+          materialAnalysisStatus={materialAnalysisStatus}
+          selectedMaterialActions={
+            <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!selectedSourceMaterial}>
+              Save as Topic
             </button>
-          ))}
-        </div>
-
-        <label className="organize-option" style={{ marginTop: "0.75rem" }}>
-          <input
-            type="checkbox"
-            checked={materialUseFullExplicit}
-            onChange={(e) => setMaterialUseFullExplicit(e.target.checked)}
-          />
-          <span>使用完整素材（仅显式勾选时启用全文）</span>
-        </label>
-        <p className="transcript-note">
-          未勾选时：分析、自定义提取与「已选题材」仅使用你勾选的章节/段落块。口头摘要整段视频/全文需要先勾选此项或使用下方「使用完整素材替换 Source」。
-        </p>
-
-        {sourceMaterialPipeline === "link" && (
-          <div className="topic-filter" style={{ marginTop: "1rem" }}>
-            <div className="range-head">
-              <strong>链接抓取（LinkedIn / 社媒 / 论坛 / 播客页等）</strong>
-              <p>抓取可读的页面正文并拆成段落。YouTube 请用「转录 / 字幕」页签。</p>
-            </div>
-            <label className="field">
-              <span>页面 URL</span>
-              <input
-                value={linkExtractUrl}
-                onChange={(e) => setLinkExtractUrl(e.target.value)}
-                placeholder="https://"
-              />
-            </label>
-            <div className="range-actions cta-row">
-              <button type="button" className="primary" disabled={linkExtractLoading} onClick={runLinkMaterialExtract}>
-                {linkExtractLoading ? "提取中…" : "提取素材"}
-              </button>
-            </div>
-            {linkExtractStatus && <span className="range-status">{linkExtractStatus}</span>}
-          </div>
-        )}
-
-        {sourceMaterialPipeline === "paste" && (
-          <div className="topic-filter" style={{ marginTop: "1rem" }}>
-            <div className="range-head">
-              <strong>粘贴文章或长文</strong>
-              <p>按空行拆成段落块，再勾选需要的部分。</p>
-            </div>
-            <label className="field">
-              <span>长文本</span>
-              <textarea
-                rows={8}
-                value={pasteBlockInput}
-                onChange={(e) => setPasteBlockInput(e.target.value)}
-                placeholder="粘贴公众号文章、笔记、Thread 全文等…"
-              />
-            </label>
-            <div className="range-actions cta-row">
-              <button type="button" className="primary" onClick={applyPasteMaterialBlocks}>
-                拆分段落
-              </button>
-            </div>
-          </div>
-        )}
-
-        {sourceMaterialPipeline === "audio" && (
-          <div className="topic-filter" style={{ marginTop: "1rem" }}>
-            <div className="range-head">
-              <strong>上传音频转写</strong>
-              <p>服务器端转写为文本后再拆段（需要配置 OPENAI_API_KEY）。</p>
-            </div>
-            <label className="field">
-              <span>音频文件</span>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void transcribeAudioFile(f);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-            {audioUploadLoading && <span className="range-status">正在转写…</span>}
-          </div>
-        )}
-
-        {sourceMaterialPipeline === "document" && (
-          <div className="topic-filter" style={{ marginTop: "1rem" }}>
-            <div className="range-head">
-              <strong>上传文本 / 字幕稿</strong>
-              <p>支持 .txt / .md / .srt / .vtt；带时间轴的文件会显示为时间块。</p>
-            </div>
-            <label className="field">
-              <span>文件</span>
-              <input
-                type="file"
-                accept=".txt,.md,.srt,.vtt,text/plain"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void ingestDocumentFile(f);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          </div>
-        )}
-
-        {genericWorkspaceNotice && <p className="range-status">{genericWorkspaceNotice}</p>}
-
-        {genericSegments.length > 0 && sourceMaterialPipeline !== "transcript" && (
-          <div className="section-workspace" style={{ marginTop: "1rem" }}>
-            <div className="range-head">
-              <strong>
-                {labelForMaterialKind(genericMaterialKind, "zh")}
-                {genericMaterialTitle ? ` · ${genericMaterialTitle}` : ""}
-              </strong>
-              <p>勾选要参与分析与写入的块（论坛/帖子会尽量保持段落结构）。</p>
-            </div>
-            <div className="chapter-list compact">
-              {genericSegments.map((seg, idx) => (
-                <label className="chapter-row" key={seg.id}>
-                  <input
-                    type="checkbox"
-                    checked={genericCheckedIds.includes(seg.id)}
-                    onChange={() => toggleGenericSegment(seg.id)}
-                  />
-                  <span>
-                    <strong>
-                      {seg.startTime !== undefined
-                        ? `[${formatSecondsTimestamp(seg.startTime)}${
-                            seg.endTime !== undefined ? `–${formatSecondsTimestamp(seg.endTime)}` : ""
-                          }] `
-                        : `段落 ${idx + 1} `}
-                    </strong>
-                    {seg.label ? `${seg.label} · ` : ""}
-                    {seg.text.length > 220 ? `${seg.text.slice(0, 220)}…` : seg.text}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <details open className="priority-section" style={{ marginTop: "1rem" }}>
-          <summary>已选题材 / Selected Material</summary>
-          <div className="timestamp-chapters">
-            <p className="transcript-note">
-              当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材"}</strong> · 类型：
-              <strong>
-                {" "}
-                {sourceMaterialPipeline === "transcript"
-                  ? labelForMaterialKind("youtube", "zh")
-                  : labelForMaterialKind(genericMaterialKind, "zh")}
-              </strong>
-            </p>
-            {computeSelectedSourceMaterial() ? (
-              <>
-                <p>
-                  <strong>范围：</strong> {computeSelectedSourceMaterial()?.summary}
-                </p>
-                <textarea className="transcript-preview" readOnly rows={6} value={computeSelectedSourceMaterial()?.text ?? ""} />
-              </>
-            ) : (
-              <p className="transcript-note">尚未选择可用素材。请勾选章节/段落，或勾选「使用完整素材」。</p>
-            )}
-            <div className="range-actions cta-row">
-              <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
-                保存为题材（追加）
-              </button>
-              <button
-                type="button"
-                className="primary"
-                onClick={replaceSourceCaptureFromMaterialSelection}
-                disabled={!computeSelectedSourceMaterial()}
-              >
-                用所选替换 Source Capture
-              </button>
-              <button type="button" className="secondary" onClick={useFullTranscriptAsSource} disabled={!transcriptText.trim()}>
-                使用完整素材替换 Source（仅转录）
-              </button>
-            </div>
-            {savedTopicMaterial.trim() ? (
+          }
+          savedTopicCompatibility={
+            savedTopicMaterial.trim() ? (
               <label className="field">
-                <span>已存题材（将带入生成指令）</span>
+                <span>Saved topic (also merged into prompts when not duplicated in your task)</span>
                 <textarea className="transcript-preview" readOnly rows={4} value={savedTopicMaterial} />
                 <button type="button" className="copy-action" onClick={() => setSavedTopicMaterial("")}>
-                  清空已存题材
+                  Clear saved topic
                 </button>
               </label>
-            ) : null}
-          </div>
-        </details>
-
-        <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
-          <summary>分析素材 / Analyze Source（仅已选）</summary>
-          <div className="timestamp-chapters">
-            <p className="transcript-note">以下按钮只对「已选题材」中的文本生效，不会默认使用全文。</p>
-            <div className="range-actions cta-row" style={{ flexWrap: "wrap" }}>
-              {MATERIAL_ANALYSIS_BUTTONS.map((b) => (
-                <button
-                  key={b.label}
-                  type="button"
-                  className="secondary"
-                  disabled={materialAnalysisLoading || !computeSelectedSourceMaterial()}
-                  onClick={() => runMaterialAnalysisTask(b.task)}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
-            <label className="field">
-              <span>你想从这段素材里提取什么？</span>
-              <textarea
-                rows={3}
-                value={materialCustomPrompt}
-                onChange={(e) => setMaterialCustomPrompt(e.target.value)}
-                placeholder="例如：帮我找出里面最适合写疗愈文章的部分；从这段 podcast 转录提取主要观点…"
-              />
-            </label>
-            <div className="range-actions cta-row">
-              <button
-                type="button"
-                className="primary"
-                disabled={materialAnalysisLoading || !materialCustomPrompt.trim() || !computeSelectedSourceMaterial()}
-                onClick={() => runMaterialAnalysisTask(materialCustomPrompt.trim())}
-              >
-                {materialAnalysisLoading ? "分析中…" : "开始分析"}
-              </button>
-            </div>
-            {materialAnalysisStatus && <span className="range-status">{materialAnalysisStatus}</span>}
-          </div>
-        </details>
-
-        {sourceMaterialPipeline === "transcript" && !transcriptText && (
-          <div className="transcript-empty">
-            <strong>{effectiveYoutubeSource ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
-            <p>
-              {effectiveYoutubeSource
-                ? "点击提取素材，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
-                : "在 Source 粘贴 YouTube 链接并切回本页签，或使用「链接抓取 / 粘贴 / 音频」处理其他来源。"}
-            </p>
-            {effectiveYoutubeSource && (
-              <button type="button" className="primary transcript-fetch" onClick={() => void getTranscript()} disabled={transcriptLoading}>
-                {transcriptLoading ? "提取中…" : "提取素材"}
-              </button>
-            )}
-            {transcriptStatus && <span className="range-status">{transcriptStatus}</span>}
-          </div>
-        )}
-
-        {sourceMaterialPipeline === "transcript" && transcriptText && (
-          <div className="transcript-tools">
-            <details open className="priority-section">
-              <summary>1. Timestamp Chapters</summary>
-              <div className="timestamp-chapters">
-                <div className="range-head">
-                  <strong>Recommended: use timestamp chapters for precise selection</strong>
-                  <p>Convert pasted timestamps into selectable transcript sections.</p>
-                </div>
-                <div className="workspace-subhead">A. Timestamp Input</div>
-                <label className="field">
-                  <span>Timestamp chapters</span>
-                  <textarea
-                    className="chapter-input"
-                    value={timestampChapterInput}
-                    onChange={(e) => {
-                      setTimestampChapterInput(e.target.value);
-                    setChapterSectionsGenerated(false);
-                    setCheckedChapterIds([]);
-                      setChapterStatus(null);
-                    }}
-                    rows={7}
-                  placeholder={`Paste timestamps like:
-
-00:00 The hook
-01:30 The problem
-02:15 Planning the rebuild`}
-                  />
-                </label>
-                <div className="range-actions cta-row">
-                  <button type="button" className="secondary" onClick={applyTimestampChapters}>
-                    Generate chapter sections
-                  </button>
-                  <button type="button" className="primary" onClick={replaceSourceWithCheckedSections}>
-                    Replace source with checked chapters
-                  </button>
-                  <button type="button" className="secondary" onClick={addCheckedSectionsToSource}>
-                    Add checked chapters to source
-                  </button>
-                <button type="button" className="secondary" onClick={addCheckedSectionsToDraft}>
-                  Add checked chapters to Essay Draft
-                </button>
-                  <button type="button" className="copy-action" onClick={copyCheckedSectionsCleanText}>
-                    Copy checked clean text
-                  </button>
-                </div>
-                {chapterSectionsGenerated ? (
-                  <>
-                    <div className="workspace-subhead">B. Parsed Sections</div>
-                    <div className="chapter-list compact">
-                      {timestampChapterSections.map((section) => (
-                        <label className="chapter-row" key={section.id}>
-                          <input
-                            type="checkbox"
-                            checked={checkedChapterIds.includes(section.id)}
-                            onChange={() => toggleTimestampChapter(section.id)}
-                          />
-                          <span>
-                            <strong>{formatTimestamp(section.start)}-{formatTimestamp(section.end)}</strong>
-                            {section.title}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="transcript-note">Parsed sections will appear after you click Generate chapter sections.</p>
-                )}
-                {chapterStatus && <span className="range-status">{chapterStatus}</span>}
-              </div>
-            </details>
-
-            <details open>
-              <summary>2. Topic Filter</summary>
-              <div className="topic-filter">
-                <div className="range-head">
-                  <strong>Topic Filter</strong>
-                  <p>Search within transcript sections locally. This selects relevant sections; it does not summarize.</p>
-                </div>
-                <label className="field">
-                  <span>Topic keywords or phrases</span>
-                  <input
-                    value={topicInput}
-                    onChange={(e) => setTopicInput(e.target.value)}
-                    placeholder="anxiety, depression, social contagion, ADHD, body budget"
-                  />
-                </label>
-                <div className="range-actions cta-row">
-                  <button type="button" className="secondary" onClick={findTopicSections}>
-                    Find matches
-                  </button>
-                  <button type="button" className="primary" onClick={replaceSourceWithMatchedSections}>
-                    Replace source with matched sections
-                  </button>
-                  <button type="button" className="secondary" onClick={addMatchedSectionsToSource}>
-                    Add matched sections to source
-                  </button>
-                  <button type="button" className="secondary" onClick={addMatchedSectionsToDraft}>
-                    Add matched sections to Essay Draft
-                  </button>
-                  <button type="button" className="copy-action" onClick={copyMatchedSections}>
-                    Copy matched clean text
-                  </button>
-                  <button type="button" className="copy-action" onClick={clearTopicMatches}>
-                    Clear matches
-                  </button>
-                </div>
-                <div className="workspace-section-list compact">
-                  {topicMatches.map((match) => (
-                    <article className="workspace-section" key={match.section.id}>
-                      <label className="workspace-section-head">
-                        <input
-                          type="checkbox"
-                          checked={checkedTopicSectionIds.includes(match.section.id)}
-                          onChange={() => toggleTopicSection(match.section.id)}
-                        />
-                        <span>
-                          <strong>
-                            {formatTimestamp(match.section.start)}-{formatTimestamp(match.section.end)} — {match.section.title}
-                          </strong>
-                          <em>Keyword score: {match.score}</em>
-                        </span>
-                      </label>
-                    </article>
-                  ))}
-                </div>
-                {topicStatus && <span className="range-status">{topicStatus}</span>}
-              </div>
-            </details>
-
-            <details>
-              <summary>3. Advanced: Manual Time Ranges</summary>
-              <div className="range-selector">
-                <div className="range-head">
-                  <strong>Advanced: Manual Time Ranges</strong>
-                  <p>Use this only when you already know the exact start and end times.</p>
-                </div>
-                <div className="manual-ranges">
-                  {manualRanges.map((range, index) => (
-                    <div className="manual-range-row" key={range.id}>
-                      <label className="field">
-                        <span>Start time</span>
-                        <input
-                          type="text"
-                          value={range.start}
-                          onChange={(e) => updateManualRange(range.id, "start", e.target.value)}
-                          placeholder={index === 0 ? "49:47" : "1:08:23"}
-                        />
-                      </label>
-                      <label className="field">
-                        <span>End time</span>
-                        <input
-                          type="text"
-                          value={range.end}
-                          onChange={(e) => updateManualRange(range.id, "end", e.target.value)}
-                          placeholder={index === 0 ? "54:06" : "1:15:00"}
-                        />
-                      </label>
-                      <button type="button" className="copy-action" onClick={() => removeManualRange(range.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="range-actions cta-row">
-                  <button type="button" className="secondary" onClick={addManualRange}>
-                    Add range
-                  </button>
-                  <button type="button" className="primary" onClick={replaceSourceWithManualRanges}>
-                    Replace source with ranges
-                  </button>
-                  <button type="button" className="secondary" onClick={addManualRangesToSource}>
-                    Add ranges to source
-                  </button>
-                  <button type="button" className="secondary" onClick={addManualRangesToDraft}>
-                    Add ranges to Essay Draft
-                  </button>
-                  <button type="button" className="copy-action" onClick={clearManualRanges}>
-                    Clear ranges
-                  </button>
-                </div>
-                {rangeStatus && <span className="range-status">{rangeStatus}</span>}
-              </div>
-            </details>
-
-            <details>
-              <summary>4. Rough transcript sections for browsing</summary>
-              <div className="section-workspace">
-                <div className="rough-warning">Headings are approximate and may be inaccurate.</div>
-                <label className="organize-option">
-                  <input
-                    type="checkbox"
-                    checked={includeTranscriptTimestamps}
-                    onChange={(e) => setIncludeTranscriptTimestamps(e.target.checked)}
-                  />
-                  <span>Include timestamps in copied headings</span>
-                </label>
-                <div className="range-actions cta-row">
-                  <button type="button" className="primary" onClick={replaceSourceWithCheckedFullTranscriptSections}>
-                    Replace source with checked rough sections
-                  </button>
-                  <button type="button" className="secondary" onClick={addCheckedFullTranscriptSectionsToSource}>
-                    Add checked rough sections to source
-                  </button>
-                  <button type="button" className="secondary" onClick={addCheckedFullTranscriptSectionsToDraft}>
-                    Add checked rough sections to Essay Draft
-                  </button>
-                  <button type="button" className="copy-action" onClick={copyCheckedFullTranscriptSections}>
-                    Copy checked rough sections
-                  </button>
-                </div>
-                <div className="workspace-section-list">
-                  {fullTranscriptSections.map((section) => (
-                    <article className="workspace-section" key={section.id}>
-                      <label className="workspace-section-head">
-                        <input
-                          type="checkbox"
-                          checked={checkedFullSectionIds.includes(section.id)}
-                          onChange={() => toggleFullTranscriptSection(section.id)}
-                        />
-                        <span>
-                          <strong>
-                            {formatTimestamp(section.start)}-{formatTimestamp(section.end)} — {section.title}
-                          </strong>
-                          <em>Approximate section</em>
-                        </span>
-                      </label>
-                      <div className="workspace-section-text">{cleanSectionText(section)}</div>
-                    </article>
-                  ))}
-                </div>
-                {fullSectionStatus && <span className="range-status">{fullSectionStatus}</span>}
-              </div>
-            </details>
-
-            <details>
-              <summary>5. Raw Transcript</summary>
-              <p className="transcript-note">Preview only. Source is not updated unless you use Add or Replace.</p>
-              <textarea className="transcript-preview" value={transcriptText} readOnly rows={8} />
-            </details>
-          </div>
-        )}
+            ) : null
+          }
+          afterSelectedMaterial={
+            <TopicWorkspace
+              compact={effectiveIsDesktopConsole}
+              active
+              topicMaterial={topicMaterial}
+              topicMaterialStatus={topicMaterialStatus}
+              isCurrentTopicStale={topicMaterialIsStale}
+              topicMaterialWordCount={topicMaterialWordCount}
+              topicSelectedRangeLabel={topicSelectedRangeLabel}
+              canSaveAsTopic={hasSelectedMaterialForTopic()}
+              canUseFullSource={Boolean(resolveFullSourceTextForRequest()?.trim())}
+              onSaveAsTopic={handleSaveAsTopic}
+              onUseFullSource={handleUseFullSource}
+              onClearTopic={handleClearTopic}
+            />
+          }
+        />
 
         <details className="ee-transcript-library-drawer" open={effectiveIsDesktopConsole}>
           <summary className="ee-transcript-library-summary">
@@ -3719,148 +3721,293 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </TranscriptWorkspacePanel>
       </section>
 
-      <div id="ee-panel-workspace" className="work-column">
-        <section
-          className="layer ee-request-workspace-desktop"
-          aria-label="Request workspace overview"
-        >
-          <div className="layer-head">
-            <p className="eyebrow">Request</p>
-            <h2>Request workspace</h2>
-            <p>
-              Tell the engine what to create from your source: use the <strong>Control Console</strong> (left) for your
-              custom request, quick request buttons, engines, task, languages, output behavior, and tone. Then run{" "}
-              <strong>Generate</strong> to produce your Workpiece.
-            </p>
-          </div>
-          <div className="request-workspace-summary">
-            <strong>Current setup (read-only)</strong>
-            <dl>
-              <div>
-                <dt>Task</dt>
-                <dd>{activeTask.label}</dd>
-              </div>
-              <div>
-                <dt>Engines</dt>
-                <dd>
-                  {providers.length === 0
-                    ? "None selected"
-                    : providers
-                        .map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p)
-                        .join(", ")}
-                </dd>
-              </div>
-              <div>
-                <dt>Target language</dt>
-                <dd>{targetLanguage}</dd>
-              </div>
-              <div>
-                <dt>Output behavior</dt>
-                <dd>{activeMode.label}</dd>
-              </div>
-              <div>
-                <dt>Tone</dt>
-                <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
-              </div>
-              <div>
-                <dt>Custom request</dt>
-                <dd>
-                  {customInstruction.trim()
-                    ? customInstruction.trim().length > 220
-                      ? `${customInstruction.trim().slice(0, 220)}…`
-                      : customInstruction.trim()
-                    : "—"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div className="request-workspace-actions">
-            <button
-              type="button"
-              onClick={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              Open Control Console
-            </button>
-            <button
-              type="button"
-              onClick={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              Jump to Generate
-            </button>
-          </div>
-        </section>
         {effectiveIsDesktopConsole ? (
-          <SourceMaterialPanel className="ee-narrow-step-source ee-narrow-step-publish">
-            <WorkflowTimeline
-              versions={sourceVersions}
+          <SourceMaterialPanel className="ee-narrow-step-source ee-canvas-source-material">
+            <MaterialWorkspace
+              active
+              variant="sourceCapture"
+              effectiveIsMobileLayout={effectiveIsMobileLayout}
+              timeline={
+                <WorkflowTimeline
+                  versions={sourceVersions}
+                  currentSourceVersionId={currentSourceVersionId}
+                  finalVersionId={finalVersionId}
+                  onView={viewSourceVersion}
+                  onUseCurrent={useSourceVersionAsCurrent}
+                  onDuplicate={duplicateSourceVersion}
+                  onMarkFinal={markSourceVersionAsFinal}
+                  onStartFresh={startFreshWritingPipeline}
+                />
+              }
+              sourceSummaryDetails={sourceSummaryDetails}
+              sourceChip={sourceChip}
+              onSourceChipChange={setSourceChip}
+              isWebpageUrl={isWebpageUrl}
+              effectiveYoutubeSource={effectiveYoutubeSource}
+              input={input}
+              onInputChange={updateInput}
+              sourceHelper={sourceHelper}
+              currentSourceVersion={currentSourceVersion}
+              viewedSourceVersion={viewedSourceVersion}
               currentSourceVersionId={currentSourceVersionId}
-              finalVersionId={finalVersionId}
-              onView={viewSourceVersion}
-              onUseCurrent={useSourceVersionAsCurrent}
-              onDuplicate={duplicateSourceVersion}
-              onMarkFinal={markSourceVersionAsFinal}
-              onStartFresh={startFreshWritingPipeline}
+              sourceKind={sourceKind}
+              sourceActionStatus={sourceActionStatus}
+              onSaveSource={() => replaceSource(input, sourceType, "Source saved as current source version.")}
+              onListenToSource={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+              onClearSource={clearSourceOnly}
+              ttsLoading={ttsLoading}
+              transcriptText={transcriptText}
+              transcriptLoading={transcriptLoading}
+              transcriptStatus={transcriptStatus}
+              onFetchTranscript={() => void getTranscript()}
             />
           </SourceMaterialPanel>
         ) : null}
+      </div>
 
-        <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
-        <MobileWorkflowPanel
-          captureIdea={mobileWorkflow.captureIdea}
-          voiceCapture={mobileWorkflow.voiceCapture}
-          voiceRecorder={mobileWorkflow.voiceRecorder}
-          linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
-          linkCapture={mobileWorkflow.linkCapture}
-          coreValue={mobileWorkflow.coreValue}
-          structures={mobileWorkflow.workflowStructures}
-          selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
-          draftContent={essayDraftContent}
-          markedParagraphs={mobileWorkflow.markedParagraphs}
-          revisionInstruction={mobileWorkflow.revisionInstruction}
-          diagnosis={mobileWorkflow.workflowDiagnosis}
-          polishVersions={mobileWorkflow.polishVersions}
-          repurposeOutputs={mobileWorkflow.repurposeOutputs}
-          busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
-          status={mobileWorkflow.mobileWorkflowStatus}
-          onCaptureChange={mobileWorkflow.setCaptureIdea}
-          onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
-          onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
-          onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
-          onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
-          onExtractValue={mobileWorkflow.extractCoreWritingValue}
-          onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
-          onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
-          onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
-          onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
-          onCreateStructures={mobileWorkflow.createWorkflowStructures}
-          onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
-          onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
-          onGenerateDraft={mobileWorkflow.generateStructuredDraft}
-          onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
-          onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
-          onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
-          onRequestRevision={mobileWorkflow.reviseMarkedDraft}
-          onDiagnose={mobileWorkflow.diagnoseDraftQuality}
-          onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
-          selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
-          onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
-          onCreatePolishVersions={mobileWorkflow.createPolishVersions}
-          onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
-          onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
-          selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
-          onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
-          onRepurpose={mobileWorkflow.createRepurposeOutputs}
-          onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
-          mode={mobileWorkflowPanelMode}
-          compactLabels={effectiveIsMobileLayout}
-          supportRailSourceSummary={sourceSummaryDetails}
-        />
-        </StructureBuilderPanel>
+      <div id="ee-panel-workspace" className={`work-column${effectiveIsDesktopConsole ? " ee-triptych-work" : ""}`}>
+        <span id="ee-advanced-export-anchor" className="ee-anchor-target" aria-hidden />
+        {effectiveIsDesktopConsole ? (
+          <div className="ee-triptych-mid">
+            {mobileWorkflowStepId === "refine" ? (
+              <div id="ee-processing-studio-main" className="ee-processing-studio-main ee-narrow-step-processing">
+                <ProcessingWorkspace
+                  active
+                  variant="controls"
+                  topicMaterial={topicMaterial}
+                  customInstruction={customInstruction}
+                  onCustomInstructionChange={handleCustomInstructionChange}
+                  canRunMaterialOutput={canRunMaterialOutputNow()}
+                  materialAnalysisLoading={materialAnalysisLoading}
+                  materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+                  onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+                  quickRequestButtons={QUICK_REQUEST_BUTTONS}
+                  onApplyQuickRequest={applyQuickRequest}
+                  providers={providers}
+                  comparisonActive={comparisonActive}
+                  onToggleProvider={toggleProvider}
+                  controlsCollapsed={controlsCollapsed}
+                  task={task}
+                  onTaskChange={setTask}
+                  activeTask={activeTask}
+                  showWritingPresetHint={showWritingPresetHint}
+                  sourceLanguage={sourceLanguage}
+                  onSourceLanguageChange={setSourceLanguage}
+                  targetLanguage={targetLanguage}
+                  onTargetLanguageChange={setTargetLanguage}
+                  outputMode={outputMode}
+                  onOutputModeChange={setOutputMode}
+                  activeMode={activeMode}
+                  tone={tone}
+                  onToneChange={setTone}
+                  instructionPreset={instructionPreset}
+                  onInstructionPresetChange={setInstructionPreset}
+                  sourceSummary={sourceSummary}
+                  generateBlocked={generateBlocked}
+                  loading={loading}
+                  canGenerate={canProcessTopicMaterial(topicMaterial)}
+                  runLabel={runLabel}
+                  error={error}
+                  onGenerate={generate}
+                  generateSectionRef={(node) => {
+                    generateSectionRef.current = node;
+                  }}
+                  hideToolGrid={effectiveIsDesktopConsole}
+                />
+              </div>
+            ) : null}
+            <ProcessingWorkspace
+              active
+              variant="desktopOverview"
+              topicMaterial={topicMaterial}
+              activeTask={activeTask}
+              providers={providers}
+              targetLanguage={targetLanguage}
+              activeMode={activeMode}
+              tone={tone}
+              customInstruction={customInstruction}
+              onOpenControlConsole={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onJumpToGenerate={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            />
 
+            <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
+            <MobileWorkflowPanel
+              captureIdea={mobileWorkflow.captureIdea}
+              voiceCapture={mobileWorkflow.voiceCapture}
+              voiceRecorder={mobileWorkflow.voiceRecorder}
+              linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
+              linkCapture={mobileWorkflow.linkCapture}
+              coreValue={mobileWorkflow.coreValue}
+              structures={mobileWorkflow.workflowStructures}
+              selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
+              draftContent={essayDraftContent}
+              markedParagraphs={mobileWorkflow.markedParagraphs}
+              revisionInstruction={mobileWorkflow.revisionInstruction}
+              diagnosis={mobileWorkflow.workflowDiagnosis}
+              polishVersions={mobileWorkflow.polishVersions}
+              repurposeOutputs={mobileWorkflow.repurposeOutputs}
+              busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
+              status={mobileWorkflow.mobileWorkflowStatus}
+              onCaptureChange={mobileWorkflow.setCaptureIdea}
+              onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
+              onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
+              onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
+              onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
+              onExtractValue={mobileWorkflow.extractCoreWritingValue}
+              onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
+              onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
+              onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
+              onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
+              onCreateStructures={() => runWithTopicMaterialGuard(mobileWorkflow.createWorkflowStructures)}
+              onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
+              onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
+              onGenerateDraft={() => runWithTopicMaterialGuard(mobileWorkflow.generateStructuredDraft)}
+              onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
+              onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
+              onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
+              onRequestRevision={() => runWithTopicMaterialGuard(mobileWorkflow.reviseMarkedDraft)}
+              onDiagnose={() => runWithTopicMaterialGuard(mobileWorkflow.diagnoseDraftQuality)}
+              onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
+              selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
+              onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
+              onCreatePolishVersions={() => runWithTopicMaterialGuard(mobileWorkflow.createPolishVersions)}
+              onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
+              onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
+              selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
+              onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
+              onRepurpose={() => runWithTopicMaterialGuard(mobileWorkflow.createRepurposeOutputs)}
+              onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
+              mode={mobileWorkflowPanelMode}
+              compactLabels={effectiveIsMobileLayout}
+              supportRailSourceSummary={sourceSummaryDetails}
+            />
+            </StructureBuilderPanel>
+          </div>
+        ) : (
+          <>
+            {mobileWorkflowStepId === "refine" ? (
+              <div id="ee-processing-studio-main" className="ee-processing-studio-main ee-narrow-step-processing">
+                <ProcessingWorkspace
+                  active
+                  variant="controls"
+                  topicMaterial={topicMaterial}
+                  customInstruction={customInstruction}
+                  onCustomInstructionChange={handleCustomInstructionChange}
+                  canRunMaterialOutput={canRunMaterialOutputNow()}
+                  materialAnalysisLoading={materialAnalysisLoading}
+                  materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+                  onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+                  quickRequestButtons={QUICK_REQUEST_BUTTONS}
+                  onApplyQuickRequest={applyQuickRequest}
+                  providers={providers}
+                  comparisonActive={comparisonActive}
+                  onToggleProvider={toggleProvider}
+                  controlsCollapsed={controlsCollapsed}
+                  task={task}
+                  onTaskChange={setTask}
+                  activeTask={activeTask}
+                  showWritingPresetHint={showWritingPresetHint}
+                  sourceLanguage={sourceLanguage}
+                  onSourceLanguageChange={setSourceLanguage}
+                  targetLanguage={targetLanguage}
+                  onTargetLanguageChange={setTargetLanguage}
+                  outputMode={outputMode}
+                  onOutputModeChange={setOutputMode}
+                  activeMode={activeMode}
+                  tone={tone}
+                  onToneChange={setTone}
+                  instructionPreset={instructionPreset}
+                  onInstructionPresetChange={setInstructionPreset}
+                  sourceSummary={sourceSummary}
+                  generateBlocked={generateBlocked}
+                  loading={loading}
+                  canGenerate={canProcessTopicMaterial(topicMaterial)}
+                  runLabel={runLabel}
+                  error={error}
+                  onGenerate={generate}
+                  generateSectionRef={(node) => {
+                    generateSectionRef.current = node;
+                  }}
+                  hideToolGrid={effectiveIsDesktopConsole}
+                />
+              </div>
+            ) : null}
+            <ProcessingWorkspace
+              active
+              variant="desktopOverview"
+              topicMaterial={topicMaterial}
+              activeTask={activeTask}
+              providers={providers}
+              targetLanguage={targetLanguage}
+              activeMode={activeMode}
+              tone={tone}
+              customInstruction={customInstruction}
+              onOpenControlConsole={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onJumpToGenerate={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            />
+
+            <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
+            <MobileWorkflowPanel
+              captureIdea={mobileWorkflow.captureIdea}
+              voiceCapture={mobileWorkflow.voiceCapture}
+              voiceRecorder={mobileWorkflow.voiceRecorder}
+              linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
+              linkCapture={mobileWorkflow.linkCapture}
+              coreValue={mobileWorkflow.coreValue}
+              structures={mobileWorkflow.workflowStructures}
+              selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
+              draftContent={essayDraftContent}
+              markedParagraphs={mobileWorkflow.markedParagraphs}
+              revisionInstruction={mobileWorkflow.revisionInstruction}
+              diagnosis={mobileWorkflow.workflowDiagnosis}
+              polishVersions={mobileWorkflow.polishVersions}
+              repurposeOutputs={mobileWorkflow.repurposeOutputs}
+              busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
+              status={mobileWorkflow.mobileWorkflowStatus}
+              onCaptureChange={mobileWorkflow.setCaptureIdea}
+              onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
+              onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
+              onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
+              onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
+              onExtractValue={mobileWorkflow.extractCoreWritingValue}
+              onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
+              onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
+              onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
+              onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
+              onCreateStructures={() => runWithTopicMaterialGuard(mobileWorkflow.createWorkflowStructures)}
+              onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
+              onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
+              onGenerateDraft={() => runWithTopicMaterialGuard(mobileWorkflow.generateStructuredDraft)}
+              onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
+              onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
+              onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
+              onRequestRevision={() => runWithTopicMaterialGuard(mobileWorkflow.reviseMarkedDraft)}
+              onDiagnose={() => runWithTopicMaterialGuard(mobileWorkflow.diagnoseDraftQuality)}
+              onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
+              selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
+              onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
+              onCreatePolishVersions={() => runWithTopicMaterialGuard(mobileWorkflow.createPolishVersions)}
+              onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
+              onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
+              selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
+              onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
+              onRepurpose={() => runWithTopicMaterialGuard(mobileWorkflow.createRepurposeOutputs)}
+              onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
+              mode={mobileWorkflowPanelMode}
+              compactLabels={effectiveIsMobileLayout}
+              supportRailSourceSummary={sourceSummaryDetails}
+            />
+            </StructureBuilderPanel>
+          </>
+        )}
+
+        {!effectiveIsDesktopConsole ? (
         <SourceMaterialPanel className="ee-narrow-step-source">
-        {effectiveIsMobileLayout ? (
-          <details className="ee-mobile-writing-pipeline">
-            <summary className="ee-mobile-writing-pipeline-summary">Writing pipeline</summary>
+        <MaterialWorkspace
+          active
+          variant="sourceCapture"
+          effectiveIsMobileLayout={effectiveIsMobileLayout}
+          timeline={
             <WorkflowTimeline
               versions={sourceVersions}
               currentSourceVersionId={currentSourceVersionId}
@@ -3871,408 +4018,311 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               onMarkFinal={markSourceVersionAsFinal}
               onStartFresh={startFreshWritingPipeline}
             />
-          </details>
-        ) : null}
-        <section className="layer source-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Source</p>
-            <h2>Source material</h2>
-            <p>
-              Capture or prepare material here only. Set your Request next, then create a Workpiece — draft assembly and publishing happen in later steps.
-            </p>
-          </div>
-          <div className="source-purpose source-summary-card">
-            <strong>Source summary:</strong>
-            <dl>
-              <div>
-                <dt>Type</dt>
-                <dd>{sourceSummaryDetails.type}</dd>
-              </div>
-              <div>
-                <dt>Sections</dt>
-                <dd>{sourceSummaryDetails.sections}</dd>
-              </div>
-              <div>
-                <dt>Approx. words</dt>
-                <dd>{sourceSummaryDetails.words.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>From</dt>
-                <dd>{sourceSummaryDetails.from}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="source-strip" aria-label="Supported source types">
-            {SOURCE_CHIPS.map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                className={sourceChip.label === chip.label ? "active" : ""}
-                onClick={() => setSourceChip(chip)}
-              >
-                {chip.label}
-              </button>
-            ))}
-            {isWebpageUrl && <strong>Webpage detected</strong>}
-            {effectiveYoutubeSource && <strong>YouTube detected</strong>}
-          </div>
-
-          <div className={input.trim() ? "source-helper active" : "source-helper"}>
-            {sourceHelper}
-          </div>
-          <div className="source-state">
-            <strong>Current source:</strong> {currentSourceVersion ? `v${currentSourceVersion.versionNumber} ${currentSourceVersion.label}` : sourceKind}
-          </div>
-          {viewedSourceVersion && viewedSourceVersion.id !== currentSourceVersionId && (
-            <div className="source-action-status">
-              Viewing v{viewedSourceVersion.versionNumber}. Click “Use as current source” in the timeline to make it active.
-            </div>
-          )}
-          {sourceActionStatus && <div className="source-action-status">{sourceActionStatus}</div>}
-          <div className="source-draft-actions">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => replaceSource(input, sourceType, "Source saved as current source version.")}
-              disabled={!input.trim()}
-            >
-              Save Source
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
-              disabled={!input.trim() || ttsLoading}
-            >
-              Listen to Source
-            </button>
-            <button type="button" className="copy-action source-clear" onClick={clearSourceOnly} disabled={!input.trim()}>
-              Clear source
-            </button>
-          </div>
-          <div className="input-label">
-            Engine source (confirmed text sent to Generate) — 请从左侧完成选材后点击「用所选替换 Source Capture」，或在此微调已确认的文本。
-          </div>
-
-          <textarea
-            value={input}
-            onChange={(e) => updateInput(e.target.value)}
-            rows={16}
-            placeholder={sourceChip.placeholder}
-          />
-
-          {effectiveYoutubeSource && !transcriptText && (
-            <div className="transcript-box source-fetch">
-              <div>
-                <strong>YouTube / podcast URL</strong>
-                <ol className="source-fetch-flow">
-                  <li>Paste the YouTube or podcast page URL in your Source text above.</li>
-                  <li>Fetch the transcript.</li>
-                  <li>Review it in Transcript Workspace — select what to keep.</li>
-                  <li>Replace or add checked sections into this Source.</li>
-                  <li>Optional: use Listen to Source when your audio tools are open (Refine step or audio panel).</li>
-                </ol>
-                <p className="source-fetch-note">
-                  Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
-                </p>
-              </div>
-              <button type="button" className="secondary" onClick={() => void getTranscript()} disabled={transcriptLoading}>
-                {transcriptLoading ? "Fetching…" : "Fetch transcript"}
-              </button>
-              {transcriptStatus && <span className="status">{transcriptStatus}</span>}
-            </div>
-          )}
-
-          {/* Full transcript sectioning (chapters, ranges, topic filter) lives in `TranscriptWorkspacePanel` in the center column — not duplicated here. */}
-
-          <div className="source-footer">
-            <span>{input.trim().length.toLocaleString()} characters captured</span>
-          </div>
-        </section>
+          }
+          sourceSummaryDetails={sourceSummaryDetails}
+          sourceChip={sourceChip}
+          onSourceChipChange={setSourceChip}
+          isWebpageUrl={isWebpageUrl}
+          effectiveYoutubeSource={effectiveYoutubeSource}
+          input={input}
+          onInputChange={updateInput}
+          sourceHelper={sourceHelper}
+          currentSourceVersion={currentSourceVersion}
+          viewedSourceVersion={viewedSourceVersion}
+          currentSourceVersionId={currentSourceVersionId}
+          sourceKind={sourceKind}
+          sourceActionStatus={sourceActionStatus}
+          onSaveSource={() => replaceSource(input, sourceType, "Source saved as current source version.")}
+          onListenToSource={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+          onClearSource={clearSourceOnly}
+          ttsLoading={ttsLoading}
+          transcriptText={transcriptText}
+          transcriptLoading={transcriptLoading}
+          transcriptStatus={transcriptStatus}
+          onFetchTranscript={() => void getTranscript()}
+        />
         </SourceMaterialPanel>
+        ) : null}
 
-        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate">
-        <OutputPanel
-          result={result}
-          task={task}
-          selectedProviders={providers}
-          onReplaceResultSource={useResultAsSource}
-          onAddResultToSource={addResultToSource}
-          onContinueResult={continueFromResult}
-          onReadResult={readResultAloud}
-          onAddResultToDraft={(output) => appendToEssayDraft(output, "Result added to Essay Draft.")}
-          onReplaceDraftWithResult={(output) => replaceEssayDraft(output, "Essay Draft replaced with selected result.")}
-          onMarkFinal={markResultAsFinal}
-          finalResult={finalResult}
-          resultStep={workflowStep + 1}
-        />
-        </ResultValidationPanel>
-
-        <DraftGeneratorPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-        <EssayDraftWorkspace
-          title={essayDraftTitle}
-          content={essayDraftContent}
-          updatedAt={essayDraftUpdatedAt}
-          onTitleChange={(value) => {
-            setEssayDraftTitle(value);
-            setEssayDraftUpdatedAt(new Date().toISOString());
+        <ReviewProductWorkspace
+          active
+          layout={effectiveIsDesktopConsole ? "split" : "stack"}
+          outputPanelProps={{
+            result,
+            task,
+            selectedProviders: providers,
+            onReplaceResultSource: useResultAsSource,
+            onAddResultToSource: addResultToSource,
+            onContinueResult: continueFromResult,
+            onReadResult: readResultAloud,
+            onAddResultToDraft: (output) => appendToEssayDraft(output, "Result added to Essay Draft."),
+            onReplaceDraftWithResult: (output) => replaceEssayDraft(output, "Essay Draft replaced with selected result."),
+            onMarkFinal: markResultAsFinal,
+            finalResult,
+            resultStep: workflowStep + 1,
           }}
-          onContentChange={(value) => {
-            setEssayDraftContent(value);
-            setEssayDraftUpdatedAt(new Date().toISOString());
+          draftWorkspaceProps={{
+            title: essayDraftTitle,
+            content: essayDraftContent,
+            updatedAt: essayDraftUpdatedAt,
+            onTitleChange: (value) => {
+              setEssayDraftTitle(value);
+              setEssayDraftUpdatedAt(new Date().toISOString());
+            },
+            onContentChange: (value) => {
+              setEssayDraftContent(value);
+              setEssayDraftUpdatedAt(new Date().toISOString());
+            },
+            onSaveDraft: saveEssayDraft,
+            onClearDraft: clearEssayDraft,
+            onCopyDraft: copyEssayDraft,
+            onUseDraftAsSource: useEssayDraftAsSource,
+            onMarkDraftFinal: markEssayDraftAsFinal,
+            onReadDraft: () => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftParts: () => runTtsAction("parts", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftMerged: () => runTtsAction("merged", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+            onDownloadDraftTxt: downloadEssayDraftTxt,
+            audioBusy: ttsLoading,
+            status: essayDraftStatus,
           }}
-          onSaveDraft={saveEssayDraft}
-          onClearDraft={clearEssayDraft}
-          onCopyDraft={copyEssayDraft}
-          onUseDraftAsSource={useEssayDraftAsSource}
-          onMarkDraftFinal={markEssayDraftAsFinal}
-          onReadDraft={() => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftParts={() => runTtsAction("parts", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftMerged={() => runTtsAction("merged", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")}
-          onDownloadDraftTxt={downloadEssayDraftTxt}
-          audioBusy={ttsLoading}
-          status={essayDraftStatus}
-        />
-        </DraftGeneratorPanel>
+          listenPanelContent={
+            <>
+              {effectiveIsMobileLayout ? (
+                <details className="ee-mobile-read-aloud-settings">
+                  <summary className="ee-mobile-read-aloud-summary">Read aloud settings</summary>
+                  <section className="layer read-layer ee-mobile-read-layer-duplicate">
+                    <div className="layer-head">
+                      <p className="eyebrow">9. Read Aloud Layer</p>
+                      <h2>{workflowListenGuide.asideHeadline}</h2>
+                      <p>{workflowListenGuide.asideBody}</p>
+                    </div>
+                    <div className="field-grid">
+                      <label className="field">
+                        <span>Voice</span>
+                        <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
+                          {TTS_VOICES.map((voice) => (
+                            <option key={voice} value={voice}>
+                              {voice}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Speed</span>
+                        <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
+                          {TTS_SPEEDS.map((speed) => (
+                            <option key={speed} value={speed}>
+                              {speed.toFixed(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label className="field">
+                      <span>Style</span>
+                      <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
+                        {TTS_STYLES.map((style) => (
+                          <option key={style} value={style}>
+                            {style}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </section>
+                </details>
+              ) : null}
+              <section className="layer audio-panel">
+                <div className="layer-head">
+                  <p className="eyebrow">{workflowListenGuide.panelEyebrow}</p>
+                  <h2>{workflowListenGuide.panelHeadline}</h2>
+                  <p>{workflowListenGuide.panelBody}</p>
+                </div>
+                <div className={`media-player state-${audioPlayer.state}`}>
+                  <div className="player-topline">
+                    <button
+                      type="button"
+                      className="player-main-button"
+                      onClick={toggleAudioPlayback}
+                      disabled={!audioCanToggle}
+                      aria-label={audioPlayer.state === "playing" ? "Pause audio" : "Play audio"}
+                    >
+                      {audioPlayer.state === "playing" ? "❚❚" : "▶"}
+                    </button>
+                    <div>
+                      <strong>
+                        {audioPlayer.state === "loading"
+                          ? "Generating audio..."
+                          : audioPlayer.state === "playing"
+                            ? "▶ Playing"
+                            : audioPlayer.state === "paused"
+                              ? "Paused"
+                              : audioPlayer.state === "finished"
+                                ? "Finished"
+                                : audioPlayer.state === "error"
+                                  ? "Audio generation failed."
+                                  : "Ready to listen"}
+                      </strong>
+                      <p>
+                        {audioPlayer.label} • Voice {ttsVoice} • {ttsSpeed.toFixed(1)}x
+                      </p>
+                    </div>
+                  </div>
 
-        <ListenAndMarkPanel className="ee-narrow-step-mark">
-        {effectiveIsMobileLayout ? (
-          <details className="ee-mobile-read-aloud-settings">
-            <summary className="ee-mobile-read-aloud-summary">Read aloud settings</summary>
-            <section className="layer read-layer ee-mobile-read-layer-duplicate">
-              <div className="layer-head">
-                <p className="eyebrow">9. Read Aloud Layer</p>
-                <h2>{workflowListenGuide.asideHeadline}</h2>
-                <p>{workflowListenGuide.asideBody}</p>
-              </div>
-              <div className="field-grid">
+                  {audioPlayer.state === "loading" ? (
+                    <div className="player-loading">
+                      <div className="loading-dots" aria-label="Generating audio">
+                        <span>●</span>
+                        <span>●</span>
+                        <span>○</span>
+                        <span>○</span>
+                        <span>○</span>
+                      </div>
+                      <span>
+                        Part {audioPlayer.partIndex + 1} of {audioPlayer.partTotal || 1}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="player-progress-row">
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.max(audioPlayer.duration, 0)}
+                          step={0.1}
+                          value={Math.min(audioPlayer.currentTime, audioPlayer.duration || audioPlayer.currentTime)}
+                          onChange={(e) => seekAudio(Number(e.target.value))}
+                          disabled={!audioCanToggle && audioPlayer.state !== "finished"}
+                          style={{ background: `linear-gradient(90deg, #5da8a6 ${audioProgressPercent}%, #263241 ${audioProgressPercent}%)` }}
+                          aria-label="Audio progress"
+                        />
+                        <span>
+                          {formatAudioTime(audioPlayer.currentTime)} / {formatAudioTime(audioPlayer.duration)}
+                        </span>
+                      </div>
+                      <div className="player-controls">
+                        <button type="button" className="secondary" onClick={playPreviousAudioPart} disabled={!audioCanMovePrev}>
+                          Prev
+                        </button>
+                        <button type="button" className="primary player-pause" onClick={toggleAudioPlayback} disabled={!audioCanToggle}>
+                          {audioPlayer.state === "playing" ? "Pause" : "Play"}
+                        </button>
+                        <button type="button" className="secondary" onClick={playNextAudioPart} disabled={!audioCanMoveNext}>
+                          Next
+                        </button>
+                        <span>
+                          Part {audioPlayer.partTotal ? audioPlayer.partIndex + 1 : 0} of {audioPlayer.partTotal}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="audio-grid">
+                  <div className="audio-card">
+                    <strong>Source audio</strong>
+                    <p>{input.trim() ? sourceSummary : "No source available."}</p>
+                    <div className="range-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+                        disabled={!input.trim() || ttsLoading}
+                      >
+                        Read source
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("merged", input, "essayengine-source", "essayengine-source.mp3")}
+                        disabled={!input.trim() || ttsLoading}
+                      >
+                        Download MP3
+                      </button>
+                    </div>
+                  </div>
+                  <div className="audio-card">
+                    <strong>Result audio</strong>
+                    <p>{primaryResultOutput ? "Generated result is ready to listen to." : "Generate a result first."}</p>
+                    <div className="range-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("play", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
+                        disabled={!primaryResultOutput || ttsLoading}
+                      >
+                        Read result
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => runTtsAction("merged", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
+                        disabled={!primaryResultOutput || ttsLoading}
+                      >
+                        Download MP3
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {ttsStatus && <p className="tts-status">{ttsStatus}</p>}
+              </section>
+            </>
+          }
+          beforeFinalPanel={
+            effectiveIsMobileLayout ? (
+              <section className="layer project-layer ee-mobile-project-assemble">
+                <div className="layer-head">
+                  <p className="eyebrow">10. Project Save Layer</p>
+                  <h2>Project save</h2>
+                  <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
+                </div>
                 <label className="field">
-                  <span>Voice</span>
-                  <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
-                    {TTS_VOICES.map((voice) => (
-                      <option key={voice} value={voice}>
-                        {voice}
+                  <span>Project name</span>
+                  <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
+                </label>
+                <div className="project-actions">
+                  <button type="button" onClick={() => saveCurrentProject()}>
+                    Save project
+                  </button>
+                  <button type="button" onClick={startNewProject}>
+                    New Project
+                  </button>
+                </div>
+                <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+                <label className="field">
+                  <span>Load project</span>
+                  <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label className="field">
-                  <span>Speed</span>
-                  <select value={ttsSpeed} onChange={(e) => setTtsSpeed(Number(e.target.value))}>
-                    {TTS_SPEEDS.map((speed) => (
-                      <option key={speed} value={speed}>
-                        {speed.toFixed(1)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label className="field">
-                <span>Style</span>
-                <select value={ttsStyle} onChange={(e) => setTtsStyle(e.target.value)}>
-                  {TTS_STYLES.map((style) => (
-                    <option key={style} value={style}>
-                      {style}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </section>
-          </details>
-        ) : null}
-        <section className="layer audio-panel">
-          <div className="layer-head">
-            <p className="eyebrow">{workflowListenGuide.panelEyebrow}</p>
-            <h2>{workflowListenGuide.panelHeadline}</h2>
-            <p>
-              {workflowListenGuide.panelBody}
-            </p>
-          </div>
-          <div className={`media-player state-${audioPlayer.state}`}>
-            <div className="player-topline">
-              <button
-                type="button"
-                className="player-main-button"
-                onClick={toggleAudioPlayback}
-                disabled={!audioCanToggle}
-                aria-label={audioPlayer.state === "playing" ? "Pause audio" : "Play audio"}
-              >
-                {audioPlayer.state === "playing" ? "❚❚" : "▶"}
-              </button>
-              <div>
-                <strong>
-                  {audioPlayer.state === "loading"
-                    ? "Generating audio..."
-                    : audioPlayer.state === "playing"
-                      ? "▶ Playing"
-                      : audioPlayer.state === "paused"
-                        ? "Paused"
-                        : audioPlayer.state === "finished"
-                          ? "Finished"
-                          : audioPlayer.state === "error"
-                            ? "Audio generation failed."
-                            : "Ready to listen"}
-                </strong>
-                <p>
-                  {audioPlayer.label} • Voice {ttsVoice} • {ttsSpeed.toFixed(1)}x
-                </p>
-              </div>
-            </div>
-
-            {audioPlayer.state === "loading" ? (
-              <div className="player-loading">
-                <div className="loading-dots" aria-label="Generating audio">
-                  <span>●</span>
-                  <span>●</span>
-                  <span>○</span>
-                  <span>○</span>
-                  <span>○</span>
-                </div>
-                <span>
-                  Part {audioPlayer.partIndex + 1} of {audioPlayer.partTotal || 1}
-                </span>
-              </div>
-            ) : (
-              <>
-                <div className="player-progress-row">
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(audioPlayer.duration, 0)}
-                    step={0.1}
-                    value={Math.min(audioPlayer.currentTime, audioPlayer.duration || audioPlayer.currentTime)}
-                    onChange={(e) => seekAudio(Number(e.target.value))}
-                    disabled={!audioCanToggle && audioPlayer.state !== "finished"}
-                    style={{ background: `linear-gradient(90deg, #5da8a6 ${audioProgressPercent}%, #263241 ${audioProgressPercent}%)` }}
-                    aria-label="Audio progress"
-                  />
-                  <span>
-                    {formatAudioTime(audioPlayer.currentTime)} / {formatAudioTime(audioPlayer.duration)}
-                  </span>
-                </div>
-                <div className="player-controls">
-                  <button type="button" className="secondary" onClick={playPreviousAudioPart} disabled={!audioCanMovePrev}>
-                    Prev
+                <div className="project-actions">
+                  <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
+                    Duplicate project
                   </button>
-                  <button type="button" className="primary player-pause" onClick={toggleAudioPlayback} disabled={!audioCanToggle}>
-                    {audioPlayer.state === "playing" ? "Pause" : "Play"}
+                  <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
+                    Delete project
                   </button>
-                  <button type="button" className="secondary" onClick={playNextAudioPart} disabled={!audioCanMoveNext}>
-                    Next
-                  </button>
-                  <span>
-                    Part {audioPlayer.partTotal ? audioPlayer.partIndex + 1 : 0} of {audioPlayer.partTotal}
-                  </span>
                 </div>
-              </>
-            )}
-          </div>
-          <div className="audio-grid">
-            <div className="audio-card">
-              <strong>Source audio</strong>
-              <p>{input.trim() ? sourceSummary : "No source available."}</p>
-              <div className="range-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
-                  disabled={!input.trim() || ttsLoading}
-                >
-                  Read source
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("merged", input, "essayengine-source", "essayengine-source.mp3")}
-                  disabled={!input.trim() || ttsLoading}
-                >
-                  Download MP3
-                </button>
-              </div>
-            </div>
-            <div className="audio-card">
-              <strong>Result audio</strong>
-              <p>{primaryResultOutput ? "Generated result is ready to listen to." : "Generate a result first."}</p>
-              <div className="range-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("play", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
-                  disabled={!primaryResultOutput || ttsLoading}
-                >
-                  Read result
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => runTtsAction("merged", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")}
-                  disabled={!primaryResultOutput || ttsLoading}
-                >
-                  Download MP3
-                </button>
-              </div>
-            </div>
-          </div>
-          {ttsStatus && <p className="tts-status">{ttsStatus}</p>}
-        </section>
-        </ListenAndMarkPanel>
-
-        <EssayAssemblyPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-        {effectiveIsMobileLayout ? (
-          <section className="layer project-layer ee-mobile-project-assemble">
-            <div className="layer-head">
-              <p className="eyebrow">10. Project Save Layer</p>
-              <h2>Project save</h2>
-              <p>Save this workspace locally so source, outputs, decisions, and audio settings can be restored later.</p>
-            </div>
-            <label className="field">
-              <span>Project name</span>
-              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
-            </label>
-            <div className="project-actions">
-              <button type="button" onClick={() => saveCurrentProject()}>
-                Save project
-              </button>
-              <button type="button" onClick={startNewProject}>
-                New Project
-              </button>
-            </div>
-            <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
-            <label className="field">
-              <span>Load project</span>
-              <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="project-actions">
-              <button type="button" onClick={duplicateCurrentProject} disabled={!activeProjectId}>
-                Duplicate project
-              </button>
-              <button type="button" onClick={deleteCurrentProject} disabled={!activeProjectId}>
-                Delete project
-              </button>
-            </div>
-            <div className="project-meta">
-              <span>Status: {resultStatus}</span>
-              {projectStatus && <strong>{projectStatus}</strong>}
-            </div>
-          </section>
-        ) : null}
-        <FinalPanel
-          finalVersion={finalVersion}
-          onCopyFinal={copyFinalArticle}
-          onDownloadFinalTxt={downloadFinalTxt}
-          onReadFinal={() => finalVersion && runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3")}
-          onDownloadFinalAudiobook={() => finalVersion && runTtsAction("merged", finalVersion.content, "essayengine-final", "essayengine-final.mp3")}
-          onCopyGoogleDocs={copyFinalForGoogleDocs}
-          audioBusy={ttsLoading}
+                <div className="project-meta">
+                  <span>Status: {resultStatus}</span>
+                  {projectStatus && <strong>{projectStatus}</strong>}
+                </div>
+              </section>
+            ) : null
+          }
+          finalPanelProps={{
+            finalVersion,
+            onCopyFinal: copyFinalArticle,
+            onDownloadFinalTxt: downloadFinalTxt,
+            onReadFinal: () => finalVersion && runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+            onDownloadFinalAudiobook: () =>
+              finalVersion && runTtsAction("merged", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+            onCopyGoogleDocs: copyFinalForGoogleDocs,
+            audioBusy: ttsLoading,
+          }}
         />
-        </EssayAssemblyPanel>
       </div>
       </DesktopConsoleLayout>
 
@@ -4281,8 +4331,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           activeStepIndex={mobileWorkflowStepIndex}
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
-          primaryWorkspaceDisabled={loading || !canRunMaterialOutputNow() || generateBlocked}
-          primaryWorkspaceLabel={loading ? "Generating…" : "Generate Workpiece"}
+          primaryWorkspaceDisabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}
+          primaryWorkspaceLabel={loading ? "Generating…" : "生成本轮产出"}
         />
 
         <div id="ee-active-workspace" className="ee-active-workspace-anchor" aria-hidden="true" />
@@ -4356,7 +4406,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         <button type="button" onClick={replaceSourceWithCheckedSections} disabled={checkedChapterIds.length === 0}>
           Replace Source
         </button>
-        <button type="button" onClick={generate} disabled={loading || !canRunMaterialOutputNow() || generateBlocked}>
+        <button type="button" onClick={generate} disabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}>
           Generate
         </button>
       </div>
@@ -4395,16 +4445,16 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow">Optional</span>
-          <strong className="ee-mobile-classic-title">Advanced / Legacy Editor</strong>
-          <span className="ee-mobile-classic-hint">Draft / Workpiece shortcuts — optional; main flow uses the five steps above.</span>
+          <span className="eyebrow">可选</span>
+          <strong className="ee-mobile-classic-title">完整编辑区</strong>
+          <span className="ee-mobile-classic-hint">草稿与本轮产出快捷入口 — 可选；主流程使用上方五步。</span>
         </summary>
         <div className="ee-mobile-classic-body">
-          <nav className="mobile-primary-tabs" aria-label="Legacy editor panels">
+          <nav className="mobile-primary-tabs" aria-label="完整编辑区面板">
             {(
               [
                 { id: "draft" as const, label: "Draft" },
-                { id: "result" as const, label: "Workpiece" },
+                { id: "result" as const, label: "本轮产出" },
               ]
             ).map((tab) => (
               <button
@@ -4422,7 +4472,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <section className="mobile-panel mobile-draft-panel">
               <div className="mobile-panel-head">
                 <strong>Draft</strong>
-                <span>For Refine / Publish — not part of the Source step</span>
+                <span>用于润色与发布 — 不属于素材步骤</span>
               </div>
               <input
                 value={essayDraftTitle}
@@ -4467,11 +4517,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           {mobileActiveTab === "result" && (
             <section className="mobile-panel mobile-result-panel">
               <div className="mobile-panel-head">
-                <strong>Workpiece</strong>
-                <span>Latest generated output</span>
+                <strong>本轮产出</strong>
+                <span>最新生成的 AI 输出</span>
               </div>
               <div className="mobile-result-output" data-selectable-output="true">
-                {primaryResultOutput || "No Workpiece yet. Set your Request and generate from Source."}
+                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材生成。"}
               </div>
               <div className="mobile-action-grid">
                 <button
@@ -4479,7 +4529,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
                   onClick={() => appendToEssayDraft(primaryResultOutput, "Result added to Essay Draft.")}
                   disabled={!primaryResultOutput}
                 >
-                  Add Workpiece to draft
+                  Add AI output to draft
                 </button>
                 <button type="button" onClick={() => continueFromResult(primaryResultOutput, "rewrite")} disabled={!primaryResultOutput}>
                   Rewrite
@@ -4618,9 +4668,51 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-validate {
           display: block !important;
         }
+        .workspace:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-narrow-step-processing {
+          display: block !important;
+        }
         .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-request-workspace-desktop,
         .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-work-support {
           display: block !important;
+        }
+        /* Desktop triptych: keep source + draft/final shell visible; tools live in Feature Section + left rail. */
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-grid-source {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          min-width: 0;
+          max-height: calc(100vh - 36px);
+          overflow: auto;
+          position: sticky;
+          top: 18px;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          align-items: stretch;
+          min-height: 0;
+          min-width: 0;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-work-support {
+          grid-column: unset;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .desktop-console-layout > .work-column > * {
+          display: none !important;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-mid {
+          display: flex !important;
+          flex-direction: column;
+          gap: 14px;
+          min-width: 0;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-draft-row {
+          display: grid !important;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 14px;
+          align-items: stretch;
+          flex: 1;
+          min-height: 0;
         }
         .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions {
           display: flex;
@@ -5055,16 +5147,21 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           font-weight: 750;
         }
         .request-quick-picks {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
           margin-top: 12px;
         }
-        .request-quick-picks button {
-          padding: 8px 11px;
+        .ee-quick-action-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+          gap: 8px;
+          align-items: stretch;
+        }
+        .ee-quick-action-grid button {
+          min-height: 44px;
+          padding: 8px 10px;
           font-size: 12px;
           font-weight: 750;
           line-height: 1.25;
+          text-align: center;
         }
         .source-footer {
           display: flex;
@@ -5213,6 +5310,45 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           background: #f8fcfb;
           padding: 14px;
         }
+        .topic-material-panel {
+          display: grid;
+          gap: 12px;
+          border: 1px solid #cfe3e1;
+          border-radius: 12px;
+          background: #f8fcfb;
+          padding: 14px;
+        }
+        .topic-material-preview {
+          display: grid;
+          gap: 10px;
+        }
+        .topic-material-metrics {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin: 0;
+        }
+        .topic-material-metrics div {
+          border: 1px solid #e3e9ef;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 8px;
+          min-width: 0;
+        }
+        .topic-material-metrics dt {
+          color: #617080;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .topic-material-metrics dd {
+          margin: 2px 0 0;
+          color: #17202a;
+          font-size: 13px;
+          font-weight: 760;
+          overflow-wrap: anywhere;
+        }
         .library-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr) auto auto auto;
@@ -5331,6 +5467,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+        .range-actions.ee-quick-action-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          align-items: stretch;
         }
         .range-status {
           border: 1px solid #d7e3ee;
@@ -5968,6 +6109,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             > .ee-narrow-step-validate {
             display: block !important;
           }
+          .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="refine"]
+            .desktop-console-layout
+            > .work-column
+            > .ee-narrow-step-processing {
+            display: block !important;
+          }
 
           .workspace.ee-narrow.ee-shell-workspace[data-workflow-step="publish"]
             .desktop-console-layout
@@ -6350,6 +6497,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           .audio-grid,
           .library-grid,
           .library-inline-form,
+          .topic-material-metrics,
           .source-summary-card dl,
           .mobile-bottom-bar {
             grid-template-columns: 1fr;
@@ -6433,6 +6581,9 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           }
         }
       `}</style>
+    </div>
+        </div>
+      </details>
     </div>
     </EssayEngineProvider>
   );

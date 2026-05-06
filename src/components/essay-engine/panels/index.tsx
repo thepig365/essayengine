@@ -22,7 +22,7 @@ export const TranscriptWorkspacePanel = definePanel("transcript-workspace");
 export const SourceMaterialPanel = definePanel("source-material");
 /** Capture inbox, link capture, voice note live inside `MobileWorkflowPanel` — this wraps that panel shell in EngineForm. */
 export const VoiceNotePanel = definePanel("voice-note");
-/** Guided workflow: structure → draft generate → mark → revise → diagnose → polish (MobileWorkflowPanel). */
+/** Workflow spine panels (MobileWorkflowPanel center + support rail). */
 export const StructureBuilderPanel = definePanel("structure-builder");
 /** Engine output cards, comparison tabs, promote/use actions (`OutputPanel` in `EngineForm`). */
 export const ResultValidationPanel = definePanel("result-validation");
@@ -34,5 +34,5 @@ export const ListenAndMarkPanel = definePanel("listen-and-mark");
 export const RevisionRequestPanel = definePanel("revision-request");
 /** Draft diagnosis / validation notes inside MobileWorkflowPanel. */
 export const DiagnosticsPanel = definePanel("diagnostics");
-/** Final article, export, repurpose outputs (FinalPanel + polish/repurpose in workflow). */
+/** Publish / repurpose: final article, export, audio (FinalPanel + polish/repurpose in workflow). */
 export const EssayAssemblyPanel = definePanel("essay-assembly");

@@ -35,3 +35,106 @@ select,
   min-width: 0;
   max-width: 100%;
 }
+
+/* Phase 1 Essay Engine shell (navigation + spacious workspace + Advanced Studio frame) */
+.ee-engine-v2-shell {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.ee-advanced-studio {
+  margin-top: 12px;
+  border: 1px solid rgba(38, 55, 70, 0.65);
+  border-radius: 14px;
+  background: rgba(10, 14, 20, 0.45);
+  overflow: hidden;
+}
+
+.ee-advanced-studio > summary.ee-advanced-studio-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(17, 24, 32, 0.75);
+  border-bottom: 1px solid transparent;
+}
+
+.ee-advanced-studio > summary.ee-advanced-studio-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ee-advanced-studio[open] > summary.ee-advanced-studio-summary {
+  border-bottom-color: rgba(38, 55, 70, 0.55);
+}
+
+.ee-advanced-summary-title {
+  font-size: 14px;
+  font-weight: 780;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+}
+
+.ee-advanced-summary-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.ee-advanced-studio[open] .ee-advanced-summary-sub {
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body {
+  border: none;
+  border-radius: 0;
+  padding: 14px 12px 16px;
+  background: rgba(8, 12, 18, 0.25);
+  box-sizing: border-box;
+}
+
+.ee-studio-canvas {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ee-studio-canvas-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.ee-studio-canvas-body {
+  margin: 0;
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed rgba(63, 143, 138, 0.35);
+  background: rgba(15, 23, 32, 0.85);
+  color: #cbd5e1;
+  font-family: var(--font-system, ui-sans-serif, system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: auto;
+  max-height: min(420px, 52vh);
+}
+
+.ee-anchor-target {
+  display: block;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  scroll-margin-top: 72px;
+}

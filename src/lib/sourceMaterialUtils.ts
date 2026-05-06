@@ -316,14 +316,44 @@ export const MATERIAL_WRITING_SUPPLEMENT = [
 ].join("\n");
 
 export const MATERIAL_ANALYSIS_BUTTONS: { label: string; task: string }[] = [
-  { label: "提取主要观点", task: "提取主要观点：分条列出，仅使用已选素材中的表述。" },
-  { label: "如何支持观点", task: "说明素材里如何支持核心观点：只引用已有论据与事实，不要编造。" },
-  { label: "中心内容", task: "概括中心内容：简短准确，仅基于已选素材。" },
-  { label: "提取金句", task: "提取可用于引用的金句（原句或接近原句），标注出自哪句上下文。" },
-  { label: "提取故事素材", task: "提取可用于叙事的故事素材：场景、冲突、转折、结局要素，仅限素材中有的信息。" },
-  { label: "提取论点", task: "提取论点与立场：区分事实与推断，不要补充素材未提及的主张。" },
-  { label: "提取案例", task: "提取案例与例证：说明人物/事件/数据，若素材未给出则注明未知。" },
-  { label: "提取情绪线索", task: "提取情绪线索与语气走向：用于写作时需对应到文本依据。" },
-  { label: "转成题材", task: "把已选素材整理成可复用的写作题材条目（主题、角度、受众、要点清单）。" },
-  { label: "生成写作方向", task: "基于已选素材给出 3–5 个具体写作方向标题+一句立意，不得引入素材外主题。" },
+  {
+    label: "Main claims",
+    task: "List the main claims as bullets. Use only wording and ideas that appear in the selected material. Do not invent claims.",
+  },
+  {
+    label: "How claims are supported",
+    task: "Explain how the selected material supports its core claims: cite only evidence and facts that are already there. Do not fabricate support.",
+  },
+  {
+    label: "Core summary",
+    task: "Give a short, accurate summary of the central content. Base it only on the selected material.",
+  },
+  {
+    label: "Quotable lines",
+    task: "Extract quotable lines (exact or close to exact) and note briefly which passage each comes from.",
+  },
+  {
+    label: "Story beats",
+    task: "Extract narrative material the text actually provides: scene, conflict, turning point, resolution. If something is missing, say it is not in the source.",
+  },
+  {
+    label: "Arguments / positions",
+    task: "Extract arguments and positions. Separate facts from inference. Do not add claims not present in the material.",
+  },
+  {
+    label: "Examples & cases",
+    task: "Extract examples and cases (people, events, data). If the source does not provide detail, say unknown.",
+  },
+  {
+    label: "Emotional thread",
+    task: "Describe emotional cues and tone in the selected material. Tie each point to specific text.",
+  },
+  {
+    label: "Topic card",
+    task: "Turn the selected material into a reusable writing topic card: theme, angle, audience, bullet points—only from this source.",
+  },
+  {
+    label: "Writing directions",
+    task: "Propose 3–5 concrete writing directions (title + one-line premise each). Do not introduce themes outside the selected material.",
+  },
 ];
