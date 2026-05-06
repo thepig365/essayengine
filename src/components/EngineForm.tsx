@@ -3074,7 +3074,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellProcessSavedTopic = () => {
-    handleWorkflowRibbonStep(3);
+    selectWorkflowStep(3);
   };
 
   const shellOpenDraftEditor = () => {
@@ -3083,11 +3083,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellOpenReview = () => {
-    handleWorkflowRibbonStep(4);
+    selectWorkflowStep(4);
   };
 
   const shellExportFinal = () => {
-    handleWorkflowRibbonStep(5);
+    selectWorkflowStep(5);
   };
 
   return (
