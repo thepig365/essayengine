@@ -589,7 +589,9 @@ export function ProcessingWorkspace({
             </details>
           )}
             </>
-          ) : null}
+          ) : (
+            <div className="writing-hint">Processing shortcut cards are available from Functions. Keep this workspace focused on the saved topic, settings, and Generate.</div>
+          )}
 
           <div className="ps-studio-custom-block">
             <label className="field">

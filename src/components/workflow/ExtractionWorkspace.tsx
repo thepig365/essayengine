@@ -396,14 +396,20 @@ export function ExtractionWorkspace({
             <p className="transcript-note">尚未选择可用素材。请勾选章节/段落，或勾选「使用完整素材」。</p>
           )}
           <div className="range-actions cta-row ee-quick-action-grid">
-            {selectedMaterialActions}
             <button type="button" className="primary" onClick={onReplaceSourceCaptureFromMaterialSelection} disabled={!selectedMaterial}>
               Replace Source with selection
             </button>
-            <button type="button" className="secondary" onClick={onUseFullTranscriptAsSource} disabled={!transcriptText.trim()}>
-              Use full transcript in Source
-            </button>
           </div>
+          <details className="extraction-secondary-tools">
+            <summary>More extraction tools</summary>
+            <p className="transcript-note">Secondary save, full-source, and transfer actions stay available here without crowding source selection.</p>
+            <div className="range-actions cta-row ee-quick-action-grid">
+              {selectedMaterialActions}
+              <button type="button" className="secondary" onClick={onUseFullTranscriptAsSource} disabled={!transcriptText.trim()}>
+                Use full transcript in Source
+              </button>
+            </div>
+          </details>
           {savedTopicCompatibility}
         </div>
       </details>
@@ -411,10 +417,10 @@ export function ExtractionWorkspace({
       {afterSelectedMaterial}
 
       {!hideMaterialAnalysisPanel ? (
-      <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
-        <summary>分析素材 / Analyze Source（仅已选）</summary>
+      <details className="priority-section" style={{ marginTop: "0.5rem" }}>
+        <summary>More extraction tools</summary>
         <div className="timestamp-chapters">
-          <p className="transcript-note">以下按钮只对「已选题材」中的文本生效，不会默认使用全文。</p>
+          <p className="transcript-note">Analyze Source actions are available here for selected material only; they never default to the full source.</p>
           <div className="range-actions cta-row ee-quick-action-grid">
             {materialAnalysisButtons.map((b) => (
               <button
@@ -503,16 +509,21 @@ export function ExtractionWorkspace({
                 <button type="button" className="primary" onClick={onReplaceSourceWithCheckedSections}>
                   Replace source with checked chapters
                 </button>
-                <button type="button" className="secondary" onClick={onAddCheckedSectionsToSource}>
-                  Add checked chapters to source
-                </button>
-                <button type="button" className="secondary" onClick={onAddCheckedSectionsToDraft}>
-                  Add checked chapters to Essay Draft
-                </button>
-                <button type="button" className="copy-action" onClick={onCopyCheckedSectionsCleanText}>
-                  Copy checked clean text
-                </button>
               </div>
+              <details className="extraction-secondary-tools">
+                <summary>More extraction tools</summary>
+                <div className="range-actions cta-row">
+                  <button type="button" className="secondary" onClick={onAddCheckedSectionsToSource}>
+                    Add checked chapters to source
+                  </button>
+                  <button type="button" className="secondary" onClick={onAddCheckedSectionsToDraft}>
+                    Add checked chapters to Essay Draft
+                  </button>
+                  <button type="button" className="copy-action" onClick={onCopyCheckedSectionsCleanText}>
+                    Copy checked clean text
+                  </button>
+                </div>
+              </details>
               {chapterSectionsGenerated ? (
                 <>
                   <div className="workspace-subhead">B. Parsed Sections</div>
@@ -555,19 +566,24 @@ export function ExtractionWorkspace({
                 <button type="button" className="primary" onClick={onReplaceSourceWithMatchedSections}>
                   Replace source with matched sections
                 </button>
-                <button type="button" className="secondary" onClick={onAddMatchedSectionsToSource}>
-                  Add matched sections to source
-                </button>
-                <button type="button" className="secondary" onClick={onAddMatchedSectionsToDraft}>
-                  Add matched sections to Essay Draft
-                </button>
-                <button type="button" className="copy-action" onClick={onCopyMatchedSections}>
-                  Copy matched clean text
-                </button>
-                <button type="button" className="copy-action" onClick={onClearTopicMatches}>
-                  Clear matches
-                </button>
               </div>
+              <details className="extraction-secondary-tools">
+                <summary>More extraction tools</summary>
+                <div className="range-actions cta-row">
+                  <button type="button" className="secondary" onClick={onAddMatchedSectionsToSource}>
+                    Add matched sections to source
+                  </button>
+                  <button type="button" className="secondary" onClick={onAddMatchedSectionsToDraft}>
+                    Add matched sections to Essay Draft
+                  </button>
+                  <button type="button" className="copy-action" onClick={onCopyMatchedSections}>
+                    Copy matched clean text
+                  </button>
+                  <button type="button" className="copy-action" onClick={onClearTopicMatches}>
+                    Clear matches
+                  </button>
+                </div>
+              </details>
               <div className="workspace-section-list compact">
                 {topicMatches.map((match) => (
                   <article className="workspace-section" key={match.section.id}>
