@@ -1,11 +1,11 @@
 /** Single shared workflow spine (desktop + mobile). Display names follow the V2 five-stage model; `id` values stay stable for CSS and routing. */
 export const MOBILE_WORKFLOW_STEPS = [
-  { id: "source", label: "Material", short: "Material" },
-  { id: "request", label: "Extraction", short: "Extract" },
+  { id: "source", label: "Source", short: "Source" },
+  { id: "request", label: "Extract", short: "Extract" },
   { id: "workpiece", label: "Topic", short: "Topic" },
   /** Main canvas: full Processing Studio (`ProcessingWorkspace` controls) mounts in `work-column` on this step — see EngineForm. */
-  { id: "refine", label: "润色与修订", short: "润色" },
-  { id: "publish", label: "Review / Product", short: "Review" },
+  { id: "refine", label: "Process", short: "Process" },
+  { id: "publish", label: "Review", short: "Review" },
 ] as const;
 
 export type MobileWorkflowStepId = (typeof MOBILE_WORKFLOW_STEPS)[number]["id"];

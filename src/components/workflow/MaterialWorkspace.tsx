@@ -104,7 +104,7 @@ export function MaterialWorkspace({
     return (
       <section className="layer source-input-layer">
         <div className="layer-head">
-          <p className="eyebrow">Material / 素材</p>
+          <p className="eyebrow">Source / 素材源</p>
           <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
           <p>此处只放原材料与链接，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
         </div>
@@ -253,7 +253,7 @@ export function MaterialWorkspace({
       className="material-workspace"
       data-stage="material"
       hidden={!active}
-      aria-label="Material — raw inputs"
+      aria-label="Source — capture inputs"
     >
       {children}
     </section>

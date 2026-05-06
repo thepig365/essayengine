@@ -53,27 +53,33 @@ export default function HomePage() {
     <main className="page">
       <header className="hero hero--compact">
         <p className="hero-one-liner">
-          Turn source material into saved topics, drafts, and final products.
+          Turn sources into saved topics, drafts, and final products.
         </p>
-        <div className="hero-actions">
-          {viewportIsDesktop ? (
-            <button
-              type="button"
-              className="console-view-toggle console-view-toggle--icon"
-              onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
-              aria-label={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
-              title={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
-            >
-              <span aria-hidden="true">{effectiveIsMobileLayout ? "🖥" : "📱"}</span>
-            </button>
-          ) : null}
-          <UserGuide />
-        </div>
       </header>
 
       <div className={isForcedMobilePreviewOnDesktop ? "mobile-preview-frame" : "engine-slot"}>
         <div className={isForcedMobilePreviewOnDesktop ? "mobile-preview-shell" : "engine-slot-inner"}>
-          <EngineForm result={result} onResult={setResult} viewMode={viewMode} />
+          <EngineForm
+            result={result}
+            onResult={setResult}
+            viewMode={viewMode}
+            navTrailing={
+              <>
+                <UserGuide />
+                {viewportIsDesktop ? (
+                  <button
+                    type="button"
+                    className="console-view-toggle console-view-toggle--icon"
+                    onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
+                    aria-label={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
+                    title={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
+                  >
+                    <span aria-hidden="true">{effectiveIsMobileLayout ? "🖥" : "📱"}</span>
+                  </button>
+                ) : null}
+              </>
+            }
+          />
         </div>
       </div>
 

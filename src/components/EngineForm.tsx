@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DesktopConsoleLayout } from "@/components/layout/DesktopConsoleLayout";
 import { MobileWorkflowLayout } from "@/components/layout/MobileWorkflowLayout";
 import { MobileWorkflowPanel } from "@/components/MobileWorkflowPanel";
@@ -431,15 +431,18 @@ type Props = {
   result: EngineResponse | null;
   onResult: (result: EngineResponse | null) => void;
   viewMode: ViewMode;
+  /** Hero actions: guide, layout toggle, etc. — appears in the top nav row */
+  navTrailing?: ReactNode;
 };
 
-export function EngineForm({ result, onResult, viewMode }: Props) {
+export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   const [task, setTask] = useState<EngineTask>("translate");
   const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"draft" | "result">("draft");
   const [mobileWorkflowStepIndex, setMobileWorkflowStepIndex] = useState(0);
   const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
-  const [megaMenuCategoryId, setMegaMenuCategoryId] = useState<MegaMenuCategorySpec["id"] | null>(null);
+  const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
+  const [functionsMenuFocusSection, setFunctionsMenuFocusSection] = useState<MegaMenuCategorySpec["id"] | null>(null);
   useEffect(() => {
     setMobileWorkflowStepIndex((i) => (i < MOBILE_WORKFLOW_STEPS.length ? i : 0));
   }, []);
@@ -2910,18 +2913,31 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         break;
       case "material-transcript":
         setSourceMaterialPipeline("transcript");
-        scrollToEl("ee-panel-transcript");
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
         break;
       case "material-audio":
         setSourceMaterialPipeline("audio");
         scrollToAdvancedStudio();
         break;
+      case "source-save":
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() =>
+          replaceSource(input, sourceType, "Source saved as current source version."),
+        );
+        break;
+      case "source-clear":
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => clearSourceOnly());
+        break;
       case "extract-transcript-blocks":
         setSourceMaterialPipeline("transcript");
-        scrollToEl("ee-panel-transcript");
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
         break;
       case "extract-time-range":
-        scrollToEl("ee-extract-time-tools");
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => scrollToEl("ee-extract-time-tools"));
         break;
       case "extract-paragraph-blocks":
         setSourceMaterialPipeline("document");
@@ -2929,13 +2945,28 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         break;
       case "extract-topic-filter":
         findTopicSections();
-        scrollToEl("ee-panel-transcript");
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
         break;
       case "process-story-beats":
         runAnalysisByLabel("Story beats");
         break;
       case "process-examples":
         runAnalysisByLabel("Examples & cases");
+        break;
+      case "extract-copy-selected":
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => {
+          scrollToEl("ee-panel-transcript");
+          copyCheckedSectionsCleanText();
+        });
+        break;
+      case "extract-replace-source-selection":
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => {
+          scrollToEl("ee-panel-transcript");
+          replaceSourceWithCheckedSections();
+        });
         break;
       case "topic-save":
         appendTopicMaterialFromSelection();
@@ -3014,7 +3045,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       case "settings-tts-voice":
       case "settings-project":
         setControlsCollapsed(false);
-        scrollToEl("ee-panel-engines");
+        scrollToAdvancedStudio();
+        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-engines"));
         break;
       default:
         scrollToAdvancedStudio();
@@ -3061,11 +3093,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     <EssayEngineProvider value={essayEngineController}>
     <div className="ee-engine-v2-shell">
       <EssayEngineNav
-        megaCategoryId={megaMenuCategoryId}
-        onMegaCategoryChange={setMegaMenuCategoryId}
+        functionsMenuOpen={functionsMenuOpen}
+        onFunctionsMenuOpenChange={setFunctionsMenuOpen}
+        functionsMenuFocusSection={functionsMenuFocusSection}
+        onFunctionsMenuFocusSectionChange={setFunctionsMenuFocusSection}
         activeWorkflowStepIndex={mobileWorkflowStepIndex}
         onWorkflowRibbonStep={handleWorkflowRibbonStep}
         onMegaItemActivate={handleMegaMenuItem}
+        trailingActions={navTrailing}
       />
       <StudioWorkspaceShell
         topicStrip={
@@ -3084,14 +3119,14 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <pre className="ee-studio-canvas-body">
               {(transcriptText || input).trim()
                 ? `${(transcriptText || input).trim().slice(0, 900)}${(transcriptText || input).trim().length > 900 ? "…" : ""}`
-                : "No source text yet. Add material from the top menu or open Advanced Studio."}
+                : "No source text yet. Use Functions → Source or open Advanced Studio."}
             </pre>
           </div>
         }
         sourceActions={
           <>
             <button type="button" className="primary" onClick={shellOpenMaterial}>
-              Open Material
+              Open Source
             </button>
             <button type="button" className="secondary" onClick={shellExtractSource}>
               Extract Source

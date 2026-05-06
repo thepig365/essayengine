@@ -1,101 +1,127 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
 import { FeatureMegaMenu } from "@/components/navigation/FeatureMegaMenu";
 import { MEGA_MENU_CATEGORIES } from "@/components/navigation/megaMenuData";
 import type { MegaMenuCategorySpec, MegaMenuItemSpec } from "@/components/navigation/megaMenuData";
 
-const WORKFLOW_RIBBON = ["Material", "Extract", "Topic", "Process", "Review", "Export"] as const;
+const WORKFLOW_RIBBON = ["Source", "Extract", "Topic", "Process", "Review", "Export"] as const;
 
 export type EssayEngineNavProps = {
-  /** Which mega category panel is open, or null */
-  megaCategoryId: MegaMenuCategorySpec["id"] | null;
-  onMegaCategoryChange: (id: MegaMenuCategorySpec["id"] | null) => void;
-  /** Active ribbon index 0–4 maps to internal workflow steps; 5 = Export (scroll-only) */
+  functionsMenuOpen: boolean;
+  onFunctionsMenuOpenChange: (open: boolean) => void;
+  functionsMenuFocusSection: MegaMenuCategorySpec["id"] | null;
+  onFunctionsMenuFocusSectionChange: (id: MegaMenuCategorySpec["id"] | null) => void;
   activeWorkflowStepIndex: number;
   onWorkflowRibbonStep: (index: number) => void;
   onMegaItemActivate: (item: MegaMenuItemSpec) => void;
+  /** Layout toggle, guide, etc. — right side of the top row */
+  trailingActions?: ReactNode;
 };
 
 export function EssayEngineNav({
-  megaCategoryId,
-  onMegaCategoryChange,
+  functionsMenuOpen,
+  onFunctionsMenuOpenChange,
+  functionsMenuFocusSection,
+  onFunctionsMenuFocusSectionChange,
   activeWorkflowStepIndex,
   onWorkflowRibbonStep,
   onMegaItemActivate,
+  trailingActions,
 }: EssayEngineNavProps) {
-  const openCategory = useCallback(
-    (id: MegaMenuCategorySpec["id"]) => {
-      onMegaCategoryChange(megaCategoryId === id ? null : id);
-    },
-    [megaCategoryId, onMegaCategoryChange],
-  );
+  const closeMenu = useCallback(() => {
+    onFunctionsMenuOpenChange(false);
+    onFunctionsMenuFocusSectionChange(null);
+  }, [onFunctionsMenuOpenChange, onFunctionsMenuFocusSectionChange]);
 
-  const closeMega = useCallback(() => onMegaCategoryChange(null), [onMegaCategoryChange]);
+  const openFunctions = useCallback(() => {
+    onFunctionsMenuFocusSectionChange(null);
+    onFunctionsMenuOpenChange(true);
+  }, [onFunctionsMenuOpenChange, onFunctionsMenuFocusSectionChange]);
+
+  const openSettingsInMenu = useCallback(() => {
+    onFunctionsMenuFocusSectionChange("settings");
+    onFunctionsMenuOpenChange(true);
+  }, [onFunctionsMenuOpenChange, onFunctionsMenuFocusSectionChange]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeMega();
+      if (e.key === "Escape") closeMenu();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeMega]);
-
-  const activeMega = MEGA_MENU_CATEGORIES.find((c) => c.id === megaCategoryId) ?? null;
+  }, [closeMenu]);
 
   const handleItem = (item: MegaMenuItemSpec) => {
     onMegaItemActivate(item);
-    closeMega();
+    closeMenu();
   };
+
+  const functionsExpanded = functionsMenuOpen;
 
   return (
     <header className="ee-top-nav" role="banner">
       <div className="ee-top-nav-inner">
         <div className="ee-nav-brand">
           <span className="ee-wordmark">Essay Engine</span>
-          <span className="ee-wordmark-sub">structured writing workspace</span>
+          <span className="ee-wordmark-sub">Source → Draft → Final</span>
         </div>
-        <nav className="ee-nav-primary" aria-label="Primary tools">
-          {MEGA_MENU_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              className={"ee-nav-trigger" + (megaCategoryId === cat.id ? " ee-nav-trigger--open" : "")}
-              aria-expanded={megaCategoryId === cat.id}
-              onClick={() => openCategory(cat.id)}
-            >
-              {cat.navLabel}
-            </button>
-          ))}
+        <nav className="ee-nav-primary" aria-label="App">
+          <button
+            type="button"
+            className={"ee-nav-trigger ee-nav-trigger--functions" + (functionsExpanded ? " ee-nav-trigger--open" : "")}
+            aria-expanded={functionsExpanded}
+            aria-haspopup="dialog"
+            onClick={() => (functionsMenuOpen ? closeMenu() : openFunctions())}
+          >
+            Functions <span aria-hidden="true">▾</span>
+          </button>
+          {trailingActions ? <div className="ee-nav-trailing">{trailingActions}</div> : null}
+          <button
+            type="button"
+            className="ee-nav-trigger ee-nav-trigger--icon-only"
+            onClick={openSettingsInMenu}
+            aria-label="Settings (open Functions menu)"
+            title="Settings"
+          >
+            ⚙
+          </button>
         </nav>
       </div>
       <div className="ee-workflow-track" role="presentation">
         <span className="ee-workflow-track-label">Progress</span>
         <div className="ee-workflow-ribbon" aria-label="Workflow progress">
-        {WORKFLOW_RIBBON.map((label, i) => {
-          const isActive =
-            (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
-          const isExportStep = i === 5;
-          return (
-            <button
-              key={label}
-              type="button"
-              className={
-                "ee-ribbon-step" +
-                (isActive ? " ee-ribbon-step--active" : "") +
-                (isExportStep ? " ee-ribbon-step--final" : "")
-              }
-              onClick={() => onWorkflowRibbonStep(i)}
-            >
-              <span className="ee-ribbon-label">{label}</span>
-              {i < WORKFLOW_RIBBON.length - 1 ? <span className="ee-ribbon-chev" aria-hidden>→</span> : null}
-            </button>
-          );
-        })}
+          {WORKFLOW_RIBBON.map((label, i) => {
+            const isActive =
+              (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
+            const isExportStep = i === 5;
+            return (
+              <button
+                key={label}
+                type="button"
+                className={
+                  "ee-ribbon-step" +
+                  (isActive ? " ee-ribbon-step--active" : "") +
+                  (isExportStep ? " ee-ribbon-step--final" : "")
+                }
+                onClick={() => onWorkflowRibbonStep(i)}
+              >
+                <span className="ee-ribbon-label">{label}</span>
+                {i < WORKFLOW_RIBBON.length - 1 ? <span className="ee-ribbon-chev" aria-hidden>→</span> : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {activeMega ? <FeatureMegaMenu category={activeMega} onClose={closeMega} onItemActivate={handleItem} /> : null}
+      <FeatureMegaMenu
+        open={functionsMenuOpen}
+        categories={MEGA_MENU_CATEGORIES}
+        focusSectionId={functionsMenuFocusSection}
+        onClose={closeMenu}
+        onItemActivate={handleItem}
+      />
 
       <style jsx>{`
         .ee-top-nav {
@@ -121,7 +147,7 @@ export function EssayEngineNav({
           display: flex;
           flex-direction: column;
           gap: 2px;
-          min-width: 140px;
+          min-width: 120px;
         }
         .ee-wordmark {
           font-size: 1.15rem;
@@ -130,17 +156,27 @@ export function EssayEngineNav({
           color: #f1f5f9;
         }
         .ee-wordmark-sub {
-          font-size: 12px;
-          font-weight: 600;
-          color: #7dd3c0;
-          letter-spacing: 0.02em;
+          font-size: 11px;
+          font-weight: 650;
+          color: #64748b;
+          letter-spacing: 0.04em;
         }
         .ee-nav-primary {
           display: flex;
           flex-wrap: wrap;
-          gap: 6px 8px;
+          gap: 8px 10px;
+          align-items: center;
           justify-content: flex-end;
           flex: 1;
+          min-width: 0;
+        }
+        .ee-nav-trailing {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px 12px;
+          flex: 1;
+          justify-content: flex-end;
           min-width: 0;
         }
         .ee-nav-trigger {
@@ -154,6 +190,14 @@ export function EssayEngineNav({
           font-weight: 750;
           cursor: pointer;
           white-space: nowrap;
+        }
+        .ee-nav-trigger--functions {
+          padding-right: 14px;
+        }
+        .ee-nav-trigger--icon-only {
+          padding: 10px 14px;
+          font-size: 16px;
+          line-height: 1;
         }
         .ee-nav-trigger:hover {
           border-color: #3f8f8a;
@@ -172,6 +216,11 @@ export function EssayEngineNav({
           }
           .ee-nav-primary {
             justify-content: flex-start;
+          }
+          .ee-nav-trailing {
+            justify-content: flex-start;
+            flex: none;
+            width: 100%;
           }
           .ee-workflow-track .ee-workflow-ribbon {
             overflow-x: auto;

@@ -603,8 +603,8 @@ export function ProcessingWorkspace({
               />
             </label>
             <p className="transcript-note ps-studio-url-hint">
-              Do not paste source URLs here — put URLs only under <strong>Material</strong>. The engine runs on saved{" "}
-              <strong>saved topic content</strong>.
+              Do not paste source URLs here — put URLs only under <strong>Source</strong> in Advanced Studio. The engine
+              runs on <strong>saved topic content</strong>.
             </p>
           </div>
         </section>

@@ -269,3 +269,219 @@ select,
   scroll-margin-top: 72px;
   min-height: 0;
 }
+
+/* Unified Functions mega menu (overlay — does not consume page height when closed) */
+.ee-functions-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(2, 8, 14, 0.58);
+  backdrop-filter: blur(5px);
+  padding: 64px 18px 28px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ee-functions-panel {
+  width: min(1220px, 100%);
+  border: 1px solid rgba(38, 55, 70, 0.95);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #121a22, #0e141a);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+  padding: 22px 24px 28px;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.ee-functions-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(38, 55, 70, 0.65);
+}
+
+.ee-functions-eyebrow {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.ee-functions-title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+  color: #f1f5f9;
+}
+
+.ee-functions-lead {
+  margin: 0;
+  max-width: 52rem;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+  font-weight: 550;
+}
+
+.ee-functions-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #334657;
+  background: #151e29;
+  color: #dbe4ef;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ee-functions-close:hover {
+  border-color: #5da8a6;
+  background: #1a2935;
+}
+
+.ee-functions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 28px;
+  align-items: start;
+}
+
+.ee-functions-section {
+  min-width: 0;
+  border: 1px solid rgba(38, 55, 70, 0.55);
+  border-radius: 14px;
+  background: rgba(15, 22, 30, 0.72);
+  padding: 14px 16px 16px;
+  box-sizing: border-box;
+}
+
+.ee-functions-section-head {
+  margin-bottom: 12px;
+}
+
+.ee-functions-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 820;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #7dd3c0;
+}
+
+.ee-functions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ee-functions-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(49, 64, 80, 0.65);
+  background: rgba(17, 25, 33, 0.95);
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.ee-functions-item:hover:not(:disabled) {
+  border-color: #3f8f8a;
+  background: rgba(26, 40, 48, 0.95);
+}
+
+.ee-functions-item--disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.ee-functions-item--advanced {
+  border-style: dashed;
+  border-color: rgba(95, 168, 166, 0.35);
+}
+
+.ee-functions-item-icon {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.ee-functions-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ee-functions-item-title {
+  font-size: 14px;
+  font-weight: 780;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.ee-functions-item-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.ee-functions-item-hint {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5eead4;
+  margin-top: 4px;
+}
+
+.ee-functions-item--disabled .ee-functions-item-hint {
+  color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+  .ee-functions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ee-functions-overlay {
+    padding: 52px 12px 20px;
+    align-items: stretch;
+  }
+
+  .ee-functions-panel {
+    width: 100%;
+    min-height: min(100dvh, 100vh);
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 18px 16px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ee-functions-overlay {
+    padding: 48px 0 0;
+  }
+}
