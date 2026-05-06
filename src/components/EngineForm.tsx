@@ -13,6 +13,7 @@ import {
 } from "@/components/essay-engine/panels";
 import { ReviewProductWorkspace } from "@/components/workflow/ReviewProductWorkspace";
 import { ProcessingWorkspace } from "@/components/workflow/ProcessingWorkspace";
+import { MaterialWorkspace } from "@/components/workflow/MaterialWorkspace";
 import { TopicWorkspace } from "@/components/workflow/TopicWorkspace";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
@@ -2873,35 +2874,21 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </button>
           {!controlsCollapsed && <span>Control Console</span>}
         </div>
-        <section className="layer source-input-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Material / 素材</p>
-            <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
-            <p>此处只放原材料与链接，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
-          </div>
-          <label className="field">
-            <span>Paste source URL or content / 粘贴素材链接或内容</span>
-            <textarea
-              rows={5}
-              className="instruction"
-              value={sourceMaterialRawInput}
-              onChange={(e) => setSourceMaterialRawInput(e.target.value)}
-              placeholder="Paste YouTube URL, podcast URL, LinkedIn post, article text, transcript, or social post here..."
-            />
-          </label>
-          <p>
-            <strong>Detected source type / 检测类型：</strong> {userFacingDetectedSourceKind(sourceMaterialRawInput)}
-          </p>
-          {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
-          {linkExtractLoading &&
-          sourceMaterialRawInput.trim() &&
-          WEBPAGE_RE.test(sourceMaterialRawInput.trim()) &&
-          !YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
-            <p className="range-status">Extracting page… / 正在提取正文…</p>
-          ) : null}
-          {transcriptLoading && YOUTUBE_RE.test(sourceMaterialRawInput.trim()) ? (
-            <p className="range-status">Extracting transcript… / 正在提取字幕…</p>
-          ) : null}
+        <MaterialWorkspace
+          active
+          variant="rawInput"
+          sourceMaterialRawInput={sourceMaterialRawInput}
+          onSourceMaterialRawInputChange={setSourceMaterialRawInput}
+          detectedSourceKind={userFacingDetectedSourceKind(sourceMaterialRawInput)}
+          autoExtractStatus={autoExtractStatus}
+          showLinkExtracting={
+            linkExtractLoading &&
+            Boolean(sourceMaterialRawInput.trim()) &&
+            WEBPAGE_RE.test(sourceMaterialRawInput.trim()) &&
+            !YOUTUBE_RE.test(sourceMaterialRawInput.trim())
+          }
+          showTranscriptExtracting={transcriptLoading && YOUTUBE_RE.test(sourceMaterialRawInput.trim())}
+        >
 
           {transcriptText && sourceMaterialPipeline === "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
@@ -3016,7 +3003,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               </button>
             </div>
           </div>
-        </section>
+        </MaterialWorkspace>
 
         <ProcessingWorkspace
           active
@@ -3902,9 +3889,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         </StructureBuilderPanel>
 
         <SourceMaterialPanel className="ee-narrow-step-source">
-        {effectiveIsMobileLayout ? (
-          <details className="ee-mobile-writing-pipeline">
-            <summary className="ee-mobile-writing-pipeline-summary">Writing pipeline</summary>
+        <MaterialWorkspace
+          active
+          variant="sourceCapture"
+          effectiveIsMobileLayout={effectiveIsMobileLayout}
+          timeline={
             <WorkflowTimeline
               versions={sourceVersions}
               currentSourceVersionId={currentSourceVersionId}
@@ -3915,125 +3904,29 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
               onMarkFinal={markSourceVersionAsFinal}
               onStartFresh={startFreshWritingPipeline}
             />
-          </details>
-        ) : null}
-        <section className="layer source-layer">
-          <div className="layer-head">
-            <p className="eyebrow">Source</p>
-            <h2>Source material</h2>
-            <p>
-              Capture or prepare material here only. Set your Request next, then create a Workpiece — draft assembly and publishing happen in later steps.
-            </p>
-          </div>
-          <div className="source-purpose source-summary-card">
-            <strong>Source summary:</strong>
-            <dl>
-              <div>
-                <dt>Type</dt>
-                <dd>{sourceSummaryDetails.type}</dd>
-              </div>
-              <div>
-                <dt>Sections</dt>
-                <dd>{sourceSummaryDetails.sections}</dd>
-              </div>
-              <div>
-                <dt>Approx. words</dt>
-                <dd>{sourceSummaryDetails.words.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>From</dt>
-                <dd>{sourceSummaryDetails.from}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="source-strip" aria-label="Supported source types">
-            {SOURCE_CHIPS.map((chip) => (
-              <button
-                key={chip.label}
-                type="button"
-                className={sourceChip.label === chip.label ? "active" : ""}
-                onClick={() => setSourceChip(chip)}
-              >
-                {chip.label}
-              </button>
-            ))}
-            {isWebpageUrl && <strong>Webpage detected</strong>}
-            {effectiveYoutubeSource && <strong>YouTube detected</strong>}
-          </div>
-
-          <div className={input.trim() ? "source-helper active" : "source-helper"}>
-            {sourceHelper}
-          </div>
-          <div className="source-state">
-            <strong>Current source:</strong> {currentSourceVersion ? `v${currentSourceVersion.versionNumber} ${currentSourceVersion.label}` : sourceKind}
-          </div>
-          {viewedSourceVersion && viewedSourceVersion.id !== currentSourceVersionId && (
-            <div className="source-action-status">
-              Viewing v{viewedSourceVersion.versionNumber}. Click “Use as current source” in the timeline to make it active.
-            </div>
-          )}
-          {sourceActionStatus && <div className="source-action-status">{sourceActionStatus}</div>}
-          <div className="source-draft-actions">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => replaceSource(input, sourceType, "Source saved as current source version.")}
-              disabled={!input.trim()}
-            >
-              Save Source
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
-              disabled={!input.trim() || ttsLoading}
-            >
-              Listen to Source
-            </button>
-            <button type="button" className="copy-action source-clear" onClick={clearSourceOnly} disabled={!input.trim()}>
-              Clear source
-            </button>
-          </div>
-          <div className="input-label">
-            Engine source (confirmed text sent to Generate) — 请从左侧完成选材后点击「用所选替换 Source Capture」，或在此微调已确认的文本。
-          </div>
-
-          <textarea
-            value={input}
-            onChange={(e) => updateInput(e.target.value)}
-            rows={16}
-            placeholder={sourceChip.placeholder}
-          />
-
-          {effectiveYoutubeSource && !transcriptText && (
-            <div className="transcript-box source-fetch">
-              <div>
-                <strong>YouTube / podcast URL</strong>
-                <ol className="source-fetch-flow">
-                  <li>Paste the YouTube or podcast page URL in your Source text above.</li>
-                  <li>Fetch the transcript.</li>
-                  <li>Review it in Transcript Workspace — select what to keep.</li>
-                  <li>Replace or add checked sections into this Source.</li>
-                  <li>Optional: use Listen to Source when your audio tools are open (Refine step or audio panel).</li>
-                </ol>
-                <p className="source-fetch-note">
-                  Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
-                </p>
-              </div>
-              <button type="button" className="secondary" onClick={() => void getTranscript()} disabled={transcriptLoading}>
-                {transcriptLoading ? "Fetching…" : "Fetch transcript"}
-              </button>
-              {transcriptStatus && <span className="status">{transcriptStatus}</span>}
-            </div>
-          )}
-
-          {/* Full transcript sectioning (chapters, ranges, topic filter) lives in `TranscriptWorkspacePanel` in the center column — not duplicated here. */}
-
-          <div className="source-footer">
-            <span>{input.trim().length.toLocaleString()} characters captured</span>
-          </div>
-        </section>
+          }
+          sourceSummaryDetails={sourceSummaryDetails}
+          sourceChip={sourceChip}
+          onSourceChipChange={setSourceChip}
+          isWebpageUrl={isWebpageUrl}
+          effectiveYoutubeSource={effectiveYoutubeSource}
+          input={input}
+          onInputChange={updateInput}
+          sourceHelper={sourceHelper}
+          currentSourceVersion={currentSourceVersion}
+          viewedSourceVersion={viewedSourceVersion}
+          currentSourceVersionId={currentSourceVersionId}
+          sourceKind={sourceKind}
+          sourceActionStatus={sourceActionStatus}
+          onSaveSource={() => replaceSource(input, sourceType, "Source saved as current source version.")}
+          onListenToSource={() => runTtsAction("play", input, "essayengine-source", "essayengine-source.mp3")}
+          onClearSource={clearSourceOnly}
+          ttsLoading={ttsLoading}
+          transcriptText={transcriptText}
+          transcriptLoading={transcriptLoading}
+          transcriptStatus={transcriptStatus}
+          onFetchTranscript={() => void getTranscript()}
+        />
         </SourceMaterialPanel>
 
         <ReviewProductWorkspace
