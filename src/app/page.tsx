@@ -53,11 +53,11 @@ export default function HomePage() {
     <main className="page">
       <header className="hero">
         <div>
-          <p>Translator / Paraphraser Engine v1.0</p>
-          <h1>Essay Engine</h1>
+          <p>Essay Engine</p>
+          <h1>Writing workspace</h1>
         </div>
         <div className="hero-actions">
-          <span>Build essays from transcripts, notes, and ideas — refine, iterate, and finalize into text or audio.</span>
+          <span>Primary tools and workflow live in the engine header below. Use this page for view mode and the guide.</span>
           {viewportIsDesktop ? (
             <button
               type="button"
