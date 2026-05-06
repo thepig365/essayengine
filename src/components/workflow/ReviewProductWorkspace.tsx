@@ -15,11 +15,7 @@ import type { DraftWorkpiece, FinalProduct } from "@/types/workflow";
 /**
  * Stage 5: Review & Product — finalize and ship.
  *
- * Allowed:
- *   - output preview, listen / TTS preview
- *   - revise / rewrite actions, save as draft
- *   - save as final product, version & status controls
- *   - export / copy actions
+ * `layout="split"`: two columns (draft vs final) for desktop triptych — same panels, new geometry.
  */
 type Props = {
   children?: ReactNode;
@@ -31,6 +27,8 @@ type Props = {
   listenPanelContent?: ReactNode;
   beforeFinalPanel?: ReactNode;
   finalPanelProps?: ComponentProps<typeof FinalPanel>;
+  /** Desktop canvas: stack (default) vs split draft/final columns inside `work-column`. */
+  layout?: "stack" | "split";
 };
 
 export function ReviewProductWorkspace({
@@ -43,35 +41,94 @@ export function ReviewProductWorkspace({
   listenPanelContent,
   beforeFinalPanel,
   finalPanelProps,
+  layout = "stack",
 }: Props) {
   const hasDraft = (drafts?.length ?? 0) > 0;
   const hasFinal = (finalProducts?.length ?? 0) > 0;
   const hasExtractedPanels = Boolean(outputPanelProps || draftWorkspaceProps || listenPanelContent || beforeFinalPanel || finalPanelProps);
 
+  const draftStack = (
+    <>
+      {outputPanelProps ? (
+        <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate">
+          <OutputPanel {...outputPanelProps} />
+        </ResultValidationPanel>
+      ) : null}
+
+      {draftWorkspaceProps ? (
+        <DraftGeneratorPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
+          <EssayDraftWorkspace {...draftWorkspaceProps} />
+        </DraftGeneratorPanel>
+      ) : null}
+    </>
+  );
+
+  const finalStack = (
+    <>
+      {listenPanelContent ? <ListenAndMarkPanel className="ee-narrow-step-mark">{listenPanelContent}</ListenAndMarkPanel> : null}
+
+      {beforeFinalPanel || finalPanelProps ? (
+        <EssayAssemblyPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
+          {beforeFinalPanel}
+          {finalPanelProps ? <FinalPanel {...finalPanelProps} /> : null}
+        </EssayAssemblyPanel>
+      ) : null}
+    </>
+  );
+
   if (hasExtractedPanels) {
+    if (layout === "split") {
+      return (
+        <>
+          <div className="ee-triptych-draft-row">
+            <div className="ee-split-draft ee-triptych-draft-col">{draftStack}</div>
+            <div className="ee-split-final ee-triptych-final-col">{finalStack}</div>
+          </div>
+          {children}
+          <style jsx global>{`
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-draft-row {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+              gap: 14px;
+              align-items: stretch;
+              min-height: 0;
+              flex: 1;
+            }
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
+              .desktop-console-layout
+              > .work-column
+              > .ee-triptych-draft-row
+              > .ee-split-draft,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
+              .desktop-console-layout
+              > .work-column
+              > .ee-triptych-draft-row
+              > .ee-split-final {
+              display: flex !important;
+              flex-direction: column;
+              gap: 14px;
+              min-width: 0;
+              min-height: 0;
+              overflow: auto;
+            }
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-draft,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-validate,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-publish,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-mark,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-publish {
+              display: block !important;
+            }
+          `}</style>
+        </>
+      );
+    }
+
     return (
       <>
-        {outputPanelProps ? (
-          <ResultValidationPanel className="ee-narrow-step-draft ee-narrow-step-validate">
-            <OutputPanel {...outputPanelProps} />
-          </ResultValidationPanel>
-        ) : null}
-
-        {draftWorkspaceProps ? (
-          <DraftGeneratorPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-            <EssayDraftWorkspace {...draftWorkspaceProps} />
-          </DraftGeneratorPanel>
-        ) : null}
-
-        {listenPanelContent ? <ListenAndMarkPanel className="ee-narrow-step-mark">{listenPanelContent}</ListenAndMarkPanel> : null}
-
-        {beforeFinalPanel || finalPanelProps ? (
-          <EssayAssemblyPanel className="ee-narrow-step-assemble ee-narrow-step-publish">
-            {beforeFinalPanel}
-            {finalPanelProps ? <FinalPanel {...finalPanelProps} /> : null}
-          </EssayAssemblyPanel>
-        ) : null}
-
+        {draftStack}
+        {finalStack}
         {children}
         <style jsx global>{`
           .workspace:not(.ee-narrow)[data-workflow-step] .desktop-console-layout > .work-column > .ee-narrow-step-draft,

@@ -818,19 +818,19 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           panelEyebrow: "Listen",
           panelHeadline: "Listen to Source",
           panelBody:
-            "Use the audio strip on Source or Request. Voice settings are in the left controls (or Read aloud settings on mobile).",
+            "Use the audio strip on Source or Extract. Voice settings are in the left controls (or Read aloud settings on mobile).",
           mobileToolbarListen: "Listen: source",
         };
       case "workpiece":
         return {
-          asideHeadline: "Listen to Workpiece",
+          asideHeadline: "Listen to AI output",
           asideBody:
-            "Hear the latest generated Workpiece (engine output) before revising. Long text is split into parts automatically.",
+            "Hear the latest generated AI output before revising. Long text is split into parts automatically.",
           panelEyebrow: "Listen",
-          panelHeadline: "Listen to Workpiece",
+          panelHeadline: "Listen to AI output",
           panelBody:
             "Playback uses the result or draft you select. Voice settings are in the left controls (or Read aloud settings on mobile).",
-          mobileToolbarListen: "Listen: workpiece",
+          mobileToolbarListen: "Listen: AI output",
         };
       case "refine":
         return {
@@ -862,7 +862,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           panelEyebrow: "Listen",
           panelHeadline: "Audio",
           panelBody:
-            "Listen after selecting source, Workpiece, or publish output. Voice settings are in the left controls (or Read aloud settings on mobile).",
+            "Listen after selecting source, AI output, or publish output. Voice settings are in the left controls (or Read aloud settings on mobile).",
           mobileToolbarListen: "Listen",
         };
     }
@@ -2214,7 +2214,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     );
     appendBlockToCustomInstruction("Saved topic material", nextTopicMaterial.content);
     saveTopicMaterial(nextTopicMaterial, "题材已保存。");
-    setMaterialAnalysisStatus("Saved to topic stash and appended to Request.");
+    setMaterialAnalysisStatus("Saved to topic stash and appended to your task instruction.");
   }
 
   function handleUseFullSource() {
@@ -2227,8 +2227,8 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
     setMaterialUseFullExplicit(true);
     appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
     saveTopicMaterial(nextTopicMaterial, "已使用完整素材保存题材。");
-    setMaterialAnalysisStatus("Full source is on; material was appended to Request.");
-    setProjectStatus("Full source enabled and saved as TopicMaterial.");
+    setMaterialAnalysisStatus("Full source is on; material was appended to your task instruction.");
+    setProjectStatus("Full source enabled and saved as topic material.");
   }
 
   function handleClearTopic() {
@@ -2362,7 +2362,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       }
       onResult(data as EngineResponse);
       setResultStatus("Draft");
-      setMaterialAnalysisStatus("Analysis finished. See Workpiece for the result.");
+      setMaterialAnalysisStatus("Analysis finished. See AI output for the result.");
     } catch (err) {
       setMaterialAnalysisStatus(err instanceof Error ? err.message : "Analysis failed.");
     } finally {
@@ -3043,7 +3043,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
         }
         draftPanel={
           <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Workpiece / draft (read-only preview).</p>
+            <p className="ee-studio-canvas-lead">AI output / draft (read-only preview).</p>
             <pre className="ee-studio-canvas-body">
               {(primaryResultOutput || essayDraftContent).trim()
                 ? `${(primaryResultOutput || essayDraftContent).trim().slice(0, 900)}${(primaryResultOutput || essayDraftContent).trim().length > 900 ? "…" : ""}`
@@ -3062,11 +3062,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           </div>
         }
       />
-      <section className="ee-advanced-studio" id="ee-advanced-studio" aria-labelledby="ee-advanced-studio-title">
-        <div className="ee-advanced-studio-banner">
-          <h2 id="ee-advanced-studio-title">Advanced Studio</h2>
-          <p>Full engine controls are available here while the new interface is being refined.</p>
-        </div>
+      <details className="ee-advanced-studio" id="ee-advanced-studio">
+        <summary className="ee-advanced-studio-summary">
+          <span className="ee-advanced-summary-title">Open Advanced Studio</span>
+          <span className="ee-advanced-summary-sub">Full engine controls are available here.</span>
+        </summary>
         <div className="ee-advanced-studio-body">
     <div
       className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}${effectiveIsDesktopConsole ? " ee-desktop-triptych" : ""}`}
@@ -3080,12 +3080,12 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             type="button"
             className="collapse-toggle"
             onClick={() => setControlsCollapsed((value) => !value)}
-            aria-label={controlsCollapsed ? "Expand control panel" : "Collapse control panel"}
-            title={controlsCollapsed ? "Expand controls" : "Collapse controls"}
+            aria-label={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
+            title={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
           >
             ☰
           </button>
-          {!controlsCollapsed && <span>Control Console</span>}
+          {!controlsCollapsed && <span>引擎与设置</span>}
         </div>
         <MaterialWorkspace
           active
@@ -3182,8 +3182,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <div className="range-head">
               <strong>Extraction &amp; selection / 提取与勾选</strong>
               <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
-                Live preview of what you checked in <strong>Source Material Extractor</strong>. Save it as <strong>TopicMaterial</strong> in the Topic
-                panel before processing.
+                Live preview of what you checked in <strong>Source Material Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
               </p>
             </div>
             {computeSelectedSourceMaterial() ? (
@@ -3550,7 +3549,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           savedTopicCompatibility={
             savedTopicMaterial.trim() ? (
               <label className="field">
-                <span>Saved topic (also merged into prompts when not duplicated in Request)</span>
+                <span>Saved topic (also merged into prompts when not duplicated in your task)</span>
                 <textarea className="transcript-preview" readOnly rows={4} value={savedTopicMaterial} />
                 <button type="button" className="copy-action" onClick={() => setSavedTopicMaterial("")}>
                   Clear saved topic
@@ -4323,7 +4322,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
           primaryWorkspaceDisabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}
-          primaryWorkspaceLabel={loading ? "Generating…" : "Generate Workpiece"}
+          primaryWorkspaceLabel={loading ? "Generating…" : "生成本轮产出"}
         />
 
         <div id="ee-active-workspace" className="ee-active-workspace-anchor" aria-hidden="true" />
@@ -4436,16 +4435,16 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow">Optional</span>
-          <strong className="ee-mobile-classic-title">Advanced / Legacy Editor</strong>
-          <span className="ee-mobile-classic-hint">Draft / Workpiece shortcuts — optional; main flow uses the five steps above.</span>
+          <span className="eyebrow">可选</span>
+          <strong className="ee-mobile-classic-title">完整编辑区</strong>
+          <span className="ee-mobile-classic-hint">草稿与本轮产出快捷入口 — 可选；主流程使用上方五步。</span>
         </summary>
         <div className="ee-mobile-classic-body">
-          <nav className="mobile-primary-tabs" aria-label="Legacy editor panels">
+          <nav className="mobile-primary-tabs" aria-label="完整编辑区面板">
             {(
               [
                 { id: "draft" as const, label: "Draft" },
-                { id: "result" as const, label: "Workpiece" },
+                { id: "result" as const, label: "本轮产出" },
               ]
             ).map((tab) => (
               <button
@@ -4463,7 +4462,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
             <section className="mobile-panel mobile-draft-panel">
               <div className="mobile-panel-head">
                 <strong>Draft</strong>
-                <span>For Refine / Publish — not part of the Source step</span>
+                <span>用于润色与发布 — 不属于素材步骤</span>
               </div>
               <input
                 value={essayDraftTitle}
@@ -4508,11 +4507,11 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
           {mobileActiveTab === "result" && (
             <section className="mobile-panel mobile-result-panel">
               <div className="mobile-panel-head">
-                <strong>Workpiece</strong>
-                <span>Latest generated output</span>
+                <strong>本轮产出</strong>
+                <span>最新生成的 AI 输出</span>
               </div>
               <div className="mobile-result-output" data-selectable-output="true">
-                {primaryResultOutput || "No Workpiece yet. Set your Request and generate from Source."}
+                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材生成。"}
               </div>
               <div className="mobile-action-grid">
                 <button
@@ -4520,7 +4519,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
                   onClick={() => appendToEssayDraft(primaryResultOutput, "Result added to Essay Draft.")}
                   disabled={!primaryResultOutput}
                 >
-                  Add Workpiece to draft
+                  Add AI output to draft
                 </button>
                 <button type="button" onClick={() => continueFromResult(primaryResultOutput, "rewrite")} disabled={!primaryResultOutput}>
                   Rewrite
@@ -6574,7 +6573,7 @@ export function EngineForm({ result, onResult, viewMode }: Props) {
       `}</style>
     </div>
         </div>
-      </section>
+      </details>
     </div>
     </EssayEngineProvider>
   );

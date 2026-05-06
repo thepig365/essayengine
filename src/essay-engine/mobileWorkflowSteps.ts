@@ -4,7 +4,7 @@ export const MOBILE_WORKFLOW_STEPS = [
   { id: "request", label: "Extraction", short: "Extract" },
   { id: "workpiece", label: "Topic", short: "Topic" },
   /** Main canvas: full Processing Studio (`ProcessingWorkspace` controls) mounts in `work-column` on this step — see EngineForm. */
-  { id: "refine", label: "Processing", short: "Process" },
+  { id: "refine", label: "润色与修订", short: "润色" },
   { id: "publish", label: "Review / Product", short: "Review" },
 ] as const;
 

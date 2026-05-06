@@ -20,45 +20,53 @@ export function TopicMaterialStatusStrip({
   statusNote,
 }: Props) {
   const badge =
-    variant === "missing" ? "No TopicMaterial" : variant === "stale" ? "Stale" : "Saved";
+    variant === "missing"
+      ? "尚未保存主题素材"
+      : variant === "stale"
+        ? "可能过期"
+        : "已保存主题";
 
   return (
     <div className="ee-topic-strip" role="status" aria-live="polite">
       <div className="ee-topic-strip-main">
         <span className={"ee-topic-badge ee-topic-badge--" + variant}>{badge}</span>
         <span className="ee-topic-meta">{sourceTypeLabel}</span>
-        <span className="ee-topic-meta">{wordCount} words</span>
-        <span className="ee-topic-meta">{fullSourceAvailable ? "Full source available" : "Full source: no"}</span>
+        <span className="ee-topic-meta">{wordCount} 词</span>
+        <span className="ee-topic-meta">{fullSourceAvailable ? "正在使用完整素材" : "未使用完整素材"}</span>
       </div>
+      {variant === "stale" ? (
+        <p className="ee-topic-stale-msg">题材可能已过期：素材已被修改，请重新保存题材。</p>
+      ) : null}
       {statusNote ? <p className="ee-topic-note">{statusNote}</p> : null}
       {preview.trim() ? (
         <p className="ee-topic-preview">
-          <span className="ee-topic-preview-label">Preview</span>
+          <span className="ee-topic-preview-label">预览</span>
           {preview.length > 160 ? `${preview.slice(0, 160)}…` : preview}
         </p>
       ) : (
-        <p className="ee-topic-preview ee-topic-preview--empty">No topic preview yet. Save material as Topic in Advanced Studio.</p>
+        <p className="ee-topic-preview ee-topic-preview--empty">
+          尚无主题预览。请在 Advanced Studio 的题材步骤中保存已选素材。
+        </p>
       )}
       <style jsx>{`
         .ee-topic-strip {
           border: 1px solid #2f4152;
           border-radius: 12px;
           background: linear-gradient(180deg, #15202a, #121a22);
-          padding: 12px 16px 14px;
-          margin-bottom: 16px;
+          padding: 10px 14px 12px;
+          margin-bottom: 14px;
         }
         .ee-topic-strip-main {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
-          gap: 10px 14px;
+          gap: 8px 12px;
         }
         .ee-topic-badge {
           font-size: 11px;
           font-weight: 820;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          padding: 6px 10px;
+          letter-spacing: 0.04em;
+          padding: 5px 9px;
           border-radius: 999px;
           border: 1px solid #334657;
           background: #111921;
@@ -83,13 +91,19 @@ export function TopicMaterialStatusStrip({
           font-weight: 650;
           color: #94a3b8;
         }
-        .ee-topic-note {
+        .ee-topic-stale-msg {
           margin: 8px 0 0;
+          font-size: 12px;
+          line-height: 1.45;
+          color: #fcd34d;
+        }
+        .ee-topic-note {
+          margin: 6px 0 0;
           font-size: 12px;
           color: #7dd3c0;
         }
         .ee-topic-preview {
-          margin: 10px 0 0;
+          margin: 8px 0 0;
           font-size: 13px;
           line-height: 1.45;
           color: #cbd5e1;
@@ -102,10 +116,10 @@ export function TopicMaterialStatusStrip({
           display: block;
           font-size: 10px;
           font-weight: 800;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
           color: #5eead4;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
       `}</style>
     </div>

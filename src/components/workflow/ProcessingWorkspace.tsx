@@ -68,6 +68,8 @@ type Props = {
   generateSectionRef?: (node: HTMLElement | null) => void;
   onOpenControlConsole?: () => void;
   onJumpToGenerate?: () => void;
+  /** When true, omit grouped tool cards (shown in `FeatureSection` on desktop instead). */
+  hideToolGrid?: boolean;
 };
 
 export const PROCESSING_LAYERS: ReadonlyArray<{ id: ProcessingLayer; label: string }> = [
@@ -405,6 +407,7 @@ export function ProcessingWorkspace({
   generateSectionRef,
   onOpenControlConsole,
   onJumpToGenerate,
+  hideToolGrid = false,
 }: Props) {
   const ready = Boolean(topicMaterial && (topicMaterial.content.trim() || topicMaterial.useFullSource));
 
@@ -448,7 +451,7 @@ export function ProcessingWorkspace({
           <h2>Processing Studio</h2>
           <p>
             Choose grouped actions and settings in the <strong>Processing Studio</strong> on the left, then run <strong>Generate</strong>. Processing
-            always uses your saved <strong>TopicMaterial</strong>.
+            always uses your saved <strong>topic text</strong>.
           </p>
         </div>
         <div className="request-workspace-summary">
@@ -509,9 +512,11 @@ export function ProcessingWorkspace({
           <header className="ps-studio-header">
             <p className="eyebrow">PROCESSING / 加工</p>
             <h2>Processing Studio</h2>
-            <p className="ps-studio-lede">Choose how to transform the saved TopicMaterial. Processing uses TopicMaterial only.</p>
+            <p className="ps-studio-lede">Choose how to transform the saved topic. Processing uses saved topic text only.</p>
           </header>
 
+          {!hideToolGrid ? (
+            <>
           <div className="ps-studio-groups">
             {STUDIO_GROUPS.map((group) => (
               <section key={group.id} className="ps-studio-group" aria-labelledby={`ps-group-${group.id}`}>
@@ -583,26 +588,28 @@ export function ProcessingWorkspace({
               </div>
             </details>
           )}
+            </>
+          ) : null}
 
           <div className="ps-studio-custom-block">
             <label className="field">
-              <span>How do you want to process this TopicMaterial?</span>
+              <span>How do you want to process this topic?</span>
               <textarea
                 className="instruction"
                 value={customInstruction}
                 onChange={(e) => onCustomInstructionChange?.(e.target.value)}
                 rows={4}
-                placeholder="Example: Summarize key claims, rewrite as a reflective essay, translate to English, or tighten for spoken audio — all applied to your saved TopicMaterial."
+                placeholder="Example: Summarize key claims, rewrite as a reflective essay, translate to English, or tighten for spoken audio — all applied to your saved topic."
               />
             </label>
             <p className="transcript-note ps-studio-url-hint">
               Do not paste source URLs here — put URLs only under <strong>Material</strong>. The engine runs on saved{" "}
-              <strong>TopicMaterial.content</strong>.
+              <strong>saved topic content</strong>.
             </p>
           </div>
         </section>
 
-        <details className="layer ps-settings-details" open>
+        <details className="layer ps-settings-details" open={!hideToolGrid}>
           <summary className="ps-settings-summary">
             <span className="ps-settings-summary-main">AI engine &amp; task</span>
             <span className="ps-settings-summary-hint">Models, comparison, transformation task</span>
@@ -627,7 +634,7 @@ export function ProcessingWorkspace({
             <div className="layer-head">
               <p className="eyebrow">Transformation task</p>
               <h2>Task</h2>
-              <p>Choose what the engine should do with the TopicMaterial.</p>
+              <p>Choose what the engine should do with the saved topic.</p>
             </div>
             <div className="task-icon-bar" aria-label="Transformation task">
               {TASKS.map((t) => (
@@ -762,7 +769,7 @@ export function ProcessingWorkspace({
           <div className="layer-head">
             <p className="eyebrow">Generate</p>
             <h2>Run</h2>
-            <p>Generate output from TopicMaterial, engines, and settings above.</p>
+            <p>Generate output from saved topic, engines, and settings above.</p>
           </div>
           <div className="ready-summary">
             <strong>Before Generate</strong>

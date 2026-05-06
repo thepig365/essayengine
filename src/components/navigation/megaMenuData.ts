@@ -54,7 +54,7 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategorySpec[] = [
     id: "topic",
     navLabel: "Topic",
     items: [
-      { actionId: "topic-save", icon: "💾", title: "Save as Topic", description: "Promote selection to TopicMaterial.", tier: "live" },
+      { actionId: "topic-save", icon: "💾", title: "Save as Topic", description: "Promote selection to your saved topic.", tier: "live" },
       { actionId: "topic-full-source", icon: "⛶", title: "Use full source", description: "Build topic from the full captured source.", tier: "live" },
       { actionId: "topic-clear", icon: "⌫", title: "Clear Topic", description: "Reset saved topic material.", tier: "live" },
       {
@@ -77,7 +77,7 @@ export const MEGA_MENU_CATEGORIES: MegaMenuCategorySpec[] = [
     id: "process",
     navLabel: "Process",
     items: [
-      { actionId: "process-main-claims", icon: "✦", title: "Main claims", description: "Bullet core claims from TopicMaterial.", tier: "live" },
+      { actionId: "process-main-claims", icon: "✦", title: "Main claims", description: "Bullet core claims from saved topic text.", tier: "live" },
       { actionId: "process-core-summary", icon: "✳", title: "Core summary", description: "Faithful short recap.", tier: "live" },
       { actionId: "process-topic-card", icon: "🃏", title: "Topic card", description: "Reusable writing topic card.", tier: "live" },
       { actionId: "process-writing-directions", icon: "✍", title: "Writing directions", description: "Concrete directions for drafting.", tier: "live" },

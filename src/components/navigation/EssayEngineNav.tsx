@@ -71,12 +71,18 @@ export function EssayEngineNav({
       </div>
       <div className="ee-workflow-ribbon" aria-label="Workflow progress">
         {WORKFLOW_RIBBON.map((label, i) => {
-          const isActive = i < 5 && i === activeWorkflowStepIndex;
+          const isActive =
+            (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
+          const isExportStep = i === 5;
           return (
             <button
               key={label}
               type="button"
-              className={"ee-ribbon-step" + (isActive ? " ee-ribbon-step--active" : "")}
+              className={
+                "ee-ribbon-step" +
+                (isActive ? " ee-ribbon-step--active" : "") +
+                (isExportStep ? " ee-ribbon-step--final" : "")
+              }
               onClick={() => onWorkflowRibbonStep(i)}
             >
               <span className="ee-ribbon-label">{label}</span>
@@ -185,6 +191,13 @@ export function EssayEngineNav({
           color: #7dd3c0;
           text-decoration: underline;
           text-underline-offset: 4px;
+        }
+        .ee-ribbon-step--final .ee-ribbon-label {
+          font-weight: 820;
+          color: #e2e8f0;
+        }
+        .ee-ribbon-step--final.ee-ribbon-step--active .ee-ribbon-label {
+          color: #5eead4;
         }
         .ee-ribbon-chev {
           color: #475569;

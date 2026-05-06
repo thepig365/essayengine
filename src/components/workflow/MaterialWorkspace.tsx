@@ -59,6 +59,8 @@ type Props = {
   transcriptLoading?: boolean;
   transcriptStatus?: string | null;
   onFetchTranscript?: () => void;
+  /** When set, raw-input variant does not render `children` (duplicate extract UIs hidden on desktop studio). */
+  omitRawInputChildren?: boolean;
 };
 
 export function MaterialWorkspace({
@@ -94,6 +96,7 @@ export function MaterialWorkspace({
   transcriptLoading = false,
   transcriptStatus,
   onFetchTranscript,
+  omitRawInputChildren = false,
 }: Props) {
   if (!active) return null;
 
@@ -121,7 +124,7 @@ export function MaterialWorkspace({
         {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
         {showLinkExtracting ? <p className="range-status">Extracting page… / 正在提取正文…</p> : null}
         {showTranscriptExtracting ? <p className="range-status">Extracting transcript… / 正在提取字幕…</p> : null}
-        {children}
+        {!omitRawInputChildren ? children : null}
         <MaterialWorkspaceStyles />
       </section>
     );
@@ -141,7 +144,7 @@ export function MaterialWorkspace({
             <p className="eyebrow">Source</p>
             <h2>Source material</h2>
             <p>
-              Capture or prepare material here only. Set your Request next, then create a Workpiece — draft assembly and publishing happen in later
+              Capture or prepare material here only. Move to your generation task next, then produce a draft output — assembly and publishing happen in later
               steps.
             </p>
           </div>
@@ -221,7 +224,7 @@ export function MaterialWorkspace({
                   <li>Fetch the transcript.</li>
                   <li>Review it in Transcript Workspace — select what to keep.</li>
                   <li>Replace or add checked sections into this Source.</li>
-                  <li>Optional: use Listen to Source when your audio tools are open (Refine step or audio panel).</li>
+                  <li>Optional: use Listen to Source when your audio tools are open (润色与修订 step or audio panel).</li>
                 </ol>
                 <p className="source-fetch-note">
                   Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.

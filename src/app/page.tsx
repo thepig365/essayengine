@@ -46,25 +46,25 @@ export default function HomePage() {
   const effectiveIsMobileLayout =
     !viewportIsDesktop || (viewportIsDesktop && viewMode === "mobile");
 
-  /** Wide screen + user forced Mobile Friendly View — show phone-width preview, not full-bleed faux mobile. */
+  /** Wide screen + user forced narrow layout — show phone-width centered shell. */
   const isForcedMobilePreviewOnDesktop = viewMode === "mobile" && viewportIsDesktop;
 
   return (
     <main className="page">
-      <header className="hero">
-        <div>
-          <p>Essay Engine</p>
-          <h1>Writing workspace</h1>
-        </div>
+      <header className="hero hero--compact">
+        <p className="hero-one-liner">
+          Turn source material into saved topics, drafts, and final products.
+        </p>
         <div className="hero-actions">
-          <span>Primary tools and workflow live in the engine header below. Use this page for view mode and the guide.</span>
           {viewportIsDesktop ? (
             <button
               type="button"
-              className="console-view-toggle"
+              className="console-view-toggle console-view-toggle--icon"
               onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
+              aria-label={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
+              title={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
             >
-              {effectiveIsMobileLayout ? "Desktop Console View" : "Mobile Friendly View"}
+              <span aria-hidden="true">{effectiveIsMobileLayout ? "🖥" : "📱"}</span>
             </button>
           ) : null}
           <UserGuide />
@@ -144,6 +144,26 @@ export default function HomePage() {
           font-size: 34px;
           line-height: 1.05;
           letter-spacing: 0;
+        }
+        .hero--compact {
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
+          gap: 16px;
+        }
+        .hero-one-liner {
+          margin: 0;
+          flex: 1;
+          min-width: 0;
+          color: #94a3b8;
+          font-size: 15px;
+          font-weight: 650;
+          line-height: 1.5;
+        }
+        .console-view-toggle--icon {
+          padding: 10px 14px;
+          font-size: 1.15rem;
+          line-height: 1;
         }
         .hero-actions {
           display: flex;

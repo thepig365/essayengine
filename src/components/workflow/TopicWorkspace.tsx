@@ -22,6 +22,8 @@ type Props = {
   onSaveAsTopic?: () => void;
   onUseFullSource?: () => void;
   onClearTopic?: () => void;
+  /** Dense strip suitable for side rails / dark UI. */
+  compact?: boolean;
 };
 
 export function TopicWorkspace({
@@ -37,12 +39,13 @@ export function TopicWorkspace({
   onSaveAsTopic,
   onUseFullSource,
   onClearTopic,
+  compact = false,
 }: Props) {
   const renderTopicMaterialPanel = Boolean(onSaveAsTopic || onUseFullSource || onClearTopic);
 
   return (
     <section
-      className="topic-workspace"
+      className={`topic-workspace${compact ? " topic-workspace--compact" : ""}`}
       data-stage="topic"
       data-topic-saved={topicMaterial?.saved ? "true" : "false"}
       data-topic-uses-full-source={topicMaterial?.useFullSource ? "true" : "false"}
@@ -52,10 +55,10 @@ export function TopicWorkspace({
       {renderTopicMaterialPanel ? (
         <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
           <div className="range-head">
-            <strong>TopicMaterial — saved topic</strong>
+            <strong>已选主题素材</strong>
             <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材”时，才允许使用全文。</p>
             <p className="transcript-note" style={{ margin: "0.35rem 0 0" }}>
-              Saved TopicMaterial is restored when this project reloads.
+              已保存的主题会在重新打开项目时恢复。
             </p>
           </div>
           <div className="range-actions cta-row ee-quick-action-grid">
@@ -97,7 +100,7 @@ export function TopicWorkspace({
                   <dd>{topicMaterial.useFullSource ? "true" : "false"}</dd>
                 </div>
               </dl>
-              <textarea className="transcript-preview" readOnly rows={6} value={topicMaterial.content} />
+              <textarea className="transcript-preview" readOnly rows={compact ? 3 : 6} value={topicMaterial.content} />
             </div>
           ) : (
             <p className="transcript-note">尚未保存题材。请先勾选素材并点击“Save as Topic / 保存为题材”。</p>
@@ -144,6 +147,20 @@ export function TopicWorkspace({
           font-size: 13px;
           font-weight: 760;
           overflow-wrap: anywhere;
+        }
+        .topic-workspace--compact .topic-material-panel {
+          border-color: rgba(100, 116, 139, 0.35);
+          background: rgba(15, 23, 32, 0.75);
+          padding: 10px 12px;
+        }
+        .topic-workspace--compact .range-head strong {
+          font-size: 0.88rem;
+        }
+        .topic-workspace--compact .range-head > p:not(.transcript-note) {
+          display: none;
+        }
+        .topic-workspace--compact .transcript-note {
+          font-size: 0.72rem;
         }
       `}</style>
     </section>

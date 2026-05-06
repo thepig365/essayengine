@@ -132,6 +132,8 @@ type Props = {
   selectedMaterialActions?: ReactNode;
   savedTopicCompatibility?: ReactNode;
   afterSelectedMaterial?: ReactNode;
+  /** Hide the "Analyze Source" tool wall (tools live in Feature Section on desktop). */
+  hideMaterialAnalysisPanel?: boolean;
 };
 
 export function ExtractionWorkspace({
@@ -221,6 +223,7 @@ export function ExtractionWorkspace({
   selectedMaterialActions,
   savedTopicCompatibility,
   afterSelectedMaterial,
+  hideMaterialAnalysisPanel = false,
 }: Props) {
   return (
     <section
@@ -234,7 +237,7 @@ export function ExtractionWorkspace({
         <h2>Content Source Analyzer / 内容素材分析器</h2>
         <p>
           <strong>Extraction &amp; selection:</strong> every source becomes selectable blocks here. Pick ranges or paragraphs, then save as{" "}
-          <strong>TopicMaterial</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
+          <strong>saved topic</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
         </p>
         <p>所有来源都先变成「可选的文本块」，再分析与写入；默认不使用全文。</p>
       </div>
@@ -407,6 +410,7 @@ export function ExtractionWorkspace({
 
       {afterSelectedMaterial}
 
+      {!hideMaterialAnalysisPanel ? (
       <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
         <summary>分析素材 / Analyze Source（仅已选）</summary>
         <div className="timestamp-chapters">
@@ -446,6 +450,7 @@ export function ExtractionWorkspace({
           {materialAnalysisStatus && <span className="range-status">{materialAnalysisStatus}</span>}
         </div>
       </details>
+      ) : null}
 
       {sourceMaterialPipeline === "transcript" && !transcriptText && (
         <div className="transcript-empty">
@@ -586,7 +591,7 @@ export function ExtractionWorkspace({
             </div>
           </details>
 
-          <details>
+          <details id="ee-extract-time-tools">
             <summary>3. Advanced: Manual Time Ranges</summary>
             <div className="range-selector">
               <div className="range-head">
