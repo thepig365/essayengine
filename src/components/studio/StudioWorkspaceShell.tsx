@@ -29,17 +29,26 @@ export function StudioWorkspaceShell({
       {topicStrip}
       <div className="ee-studio-triptych">
         <div className="ee-studio-col ee-studio-col--source">
-          <h2 className="ee-studio-heading">Source</h2>
+          <div className="ee-studio-col-head">
+            <span className="ee-studio-step">1</span>
+            <h2 className="ee-studio-heading">Source</h2>
+          </div>
           {sourcePanel}
           {sourceActions ? <div className="ee-studio-panel-actions">{sourceActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--draft">
-          <h2 className="ee-studio-heading">Draft / Semi-product</h2>
+          <div className="ee-studio-col-head">
+            <span className="ee-studio-step">2</span>
+            <h2 className="ee-studio-heading">Draft / Semi-product</h2>
+          </div>
           {draftPanel}
           {draftActions ? <div className="ee-studio-panel-actions">{draftActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--final">
-          <h2 className="ee-studio-heading">Final / Review</h2>
+          <div className="ee-studio-col-head">
+            <span className="ee-studio-step">3</span>
+            <h2 className="ee-studio-heading">Final / Review</h2>
+          </div>
           {finalPanel}
           {finalActions ? <div className="ee-studio-panel-actions">{finalActions}</div> : null}
         </div>
@@ -65,6 +74,26 @@ export function StudioWorkspaceShell({
           gap: 12px;
           min-width: 0;
         }
+        .ee-studio-col-head {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+        .ee-studio-step {
+          flex: 0 0 auto;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          border: 1px solid rgba(125, 211, 192, 0.45);
+          background: rgba(30, 58, 58, 0.5);
+          color: #ccfbf1;
+          font-size: 13px;
+          font-weight: 900;
+        }
         .ee-studio-heading {
           margin: 0;
           font-size: 13px;
@@ -74,12 +103,21 @@ export function StudioWorkspaceShell({
           color: #7dd3c0;
         }
         @media (max-width: 1023px) {
+          .ee-studio-shell {
+            margin-bottom: 16px;
+          }
           .ee-studio-triptych {
             grid-template-columns: 1fr;
-            gap: 14px;
+            gap: 12px;
           }
           .ee-studio-col {
-            min-height: 200px;
+            min-height: 0;
+            padding: 16px;
+            border-radius: 15px;
+          }
+          .ee-studio-heading {
+            font-size: 14px;
+            line-height: 1.25;
           }
         }
       `}</style>

@@ -190,6 +190,10 @@ export function EssayEngineNav({
           font-weight: 750;
           cursor: pointer;
           white-space: nowrap;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
         }
         .ee-nav-trigger--functions {
           padding-right: 14px;
@@ -210,22 +214,63 @@ export function EssayEngineNav({
           color: #ecfeff;
         }
         @media (max-width: 720px) {
+          .ee-top-nav {
+            margin-bottom: 12px;
+            border-radius: 14px;
+          }
           .ee-top-nav-inner {
             flex-direction: column;
             align-items: stretch;
+            padding: 12px;
+            gap: 10px;
+          }
+          .ee-nav-brand {
+            min-width: 0;
+          }
+          .ee-wordmark {
+            font-size: 1.2rem;
+          }
+          .ee-wordmark-sub {
+            font-size: 12px;
           }
           .ee-nav-primary {
-            justify-content: flex-start;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            justify-content: stretch;
+            gap: 10px;
+          }
+          .ee-nav-trigger {
+            min-height: 46px;
+            font-size: 15px;
+          }
+          .ee-nav-trigger--functions {
+            justify-content: center;
           }
           .ee-nav-trailing {
+            grid-column: 1 / -1;
+            grid-row: 2;
             justify-content: flex-start;
             flex: none;
             width: 100%;
+          }
+          .ee-workflow-track {
+            padding: 8px 10px 10px;
+            gap: 8px;
+          }
+          .ee-workflow-track-label {
+            width: 100%;
+            min-width: 0;
+            font-size: 11px;
           }
           .ee-workflow-track .ee-workflow-ribbon {
             overflow-x: auto;
             flex-wrap: nowrap;
             -webkit-overflow-scrolling: touch;
+            padding-bottom: 2px;
+          }
+          .ee-ribbon-step {
+            font-size: 12px;
+            padding: 6px 5px;
           }
         }
       `}</style>
