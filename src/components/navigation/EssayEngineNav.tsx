@@ -63,7 +63,7 @@ export function EssayEngineNav({
       <div className="ee-top-nav-inner">
         <div className="ee-nav-brand">
           <span className="ee-wordmark">Essay Engine</span>
-          <span className="ee-wordmark-sub">Source → Draft → Final</span>
+          <span className="ee-wordmark-sub">Source → Extract → Topic → Process → Review → Export</span>
         </div>
         <nav className="ee-nav-primary" aria-label="App">
           <button
@@ -91,8 +91,7 @@ export function EssayEngineNav({
         <span className="ee-workflow-track-label">Progress</span>
         <div className="ee-workflow-ribbon" aria-label="Workflow progress">
           {WORKFLOW_RIBBON.map((label, i) => {
-            const isActive =
-              (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
+            const isActive = i === activeWorkflowStepIndex;
             const isExportStep = i === 5;
             return (
               <span

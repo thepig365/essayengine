@@ -62,7 +62,7 @@ export function FeatureMegaMenu({ open, categories, focusSectionId, onClose, onI
             <p className="ee-functions-eyebrow">Workflow tools</p>
             <h2 className="ee-functions-title">Functions</h2>
             <p className="ee-functions-lead">
-              Source → Extract → Topic → Process → Review → Export · 素材源 · 提取 · 题材 · 加工 · 审阅 · 导出
+              Source → Extract → Topic → Process → Review → Export
             </p>
           </div>
           <button type="button" className="ee-functions-close" onClick={onClose} aria-label="Close menu">

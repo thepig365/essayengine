@@ -557,8 +557,8 @@ export function MobileWorkflowPanel({
 
         {showDraftFromStructure ? (
         <article className="workflow-step">
-          <span>本轮产出</span>
-          <h3>生成本轮结构化草稿</h3>
+          <span>AI Output</span>
+          <h3>Generate the structured draft</h3>
           <p className="helper">
             {selectedStructure
               ? `Selected: ${selectedStructure.title}. Generating will replace Essay Draft; the previous draft is preserved as a source version.`

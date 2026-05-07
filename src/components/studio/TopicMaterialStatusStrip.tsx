@@ -21,10 +21,10 @@ export function TopicMaterialStatusStrip({
 }: Props) {
   const badge =
     variant === "missing"
-      ? "尚未保存主题素材源"
+      ? "No saved topic yet"
       : variant === "stale"
-        ? "可能过期"
-        : "已保存主题素材源";
+        ? "May be stale"
+        : "Saved topic";
 
   return (
     <div className="ee-topic-strip" role="status" aria-live="polite">
@@ -35,24 +35,24 @@ export function TopicMaterialStatusStrip({
         ) : (
           <>
             <span className="ee-topic-meta">
-              <span className="ee-topic-meta-key">来源</span> {sourceTypeLabel}
+              <span className="ee-topic-meta-key">Source</span> {sourceTypeLabel}
             </span>
             <span className="ee-topic-meta">
-              <span className="ee-topic-meta-key">长度</span> {wordCount} 词
+              <span className="ee-topic-meta-key">Length</span> {wordCount} words
             </span>
             <span className="ee-topic-meta">
-              模式：{fullSourceAvailable ? "使用完整素材源" : "使用已选素材源"}
+              Mode: {fullSourceAvailable ? "Using Full Source" : "Using Selected Source"}
             </span>
           </>
         )}
       </div>
       {variant === "stale" ? (
-        <p className="ee-topic-stale-msg">题材可能已过期：素材源已被修改，请重新保存题材。</p>
+        <p className="ee-topic-stale-msg">Topic may be stale. The source has changed. Save the topic again.</p>
       ) : null}
       {statusNote ? <p className="ee-topic-note">{statusNote}</p> : null}
       {preview.trim() ? (
         <p className="ee-topic-preview">
-          <span className="ee-topic-preview-label">预览</span>
+          <span className="ee-topic-preview-label">Preview</span>
           {preview.length > 160 ? `${preview.slice(0, 160)}…` : preview}
         </p>
       ) : (

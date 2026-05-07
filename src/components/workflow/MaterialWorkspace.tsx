@@ -104,12 +104,12 @@ export function MaterialWorkspace({
     return (
       <section className="layer source-input-layer">
         <div className="layer-head">
-          <p className="eyebrow">Source / 素材源</p>
+          <p className="eyebrow">Source</p>
           <h2>Paste a YouTube URL, podcast link, LinkedIn post, article, social post, or raw text.</h2>
-          <p>此处只放原材料与链接，不放写作指令。支持 YouTube / 播客页 / LinkedIn / 社媒或论坛链接 / 长文粘贴等。</p>
+          <p>Use this area only for raw material and links, not writing instructions. Supports YouTube, podcast pages, LinkedIn, social or forum links, and long-form paste.</p>
         </div>
         <label className="field">
-          <span>Paste source URL or content / 粘贴素材源链接或内容</span>
+          <span>Paste source URL or content</span>
           <textarea
             rows={5}
             className="instruction"
@@ -119,11 +119,11 @@ export function MaterialWorkspace({
           />
         </label>
         <p>
-          <strong>Detected source type / 检测类型：</strong> {detectedSourceKind}
+          <strong>Detected source type:</strong> {detectedSourceKind}
         </p>
         {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
-        {showLinkExtracting ? <p className="range-status">Extracting page… / 正在提取正文…</p> : null}
-        {showTranscriptExtracting ? <p className="range-status">Extracting transcript… / 正在提取字幕…</p> : null}
+        {showLinkExtracting ? <p className="range-status">Extracting page…</p> : null}
+        {showTranscriptExtracting ? <p className="range-status">Extracting transcript…</p> : null}
         {!omitRawInputChildren ? children : null}
         <MaterialWorkspaceStyles />
       </section>
@@ -210,7 +210,7 @@ export function MaterialWorkspace({
             </button>
           </div>
           <div className="input-label">
-            Engine source (confirmed text sent to Generate) — 请从左侧完成选材后点击「用所选替换 Source Capture」，或在此微调已确认的文本。
+            Engine source (confirmed text sent to Generate) — select material in Extract, then replace Source Capture or refine the confirmed text here.
           </div>
 
           <textarea value={input} onChange={(e) => onInputChange?.(e.target.value)} rows={16} placeholder={sourceChip.placeholder} />
@@ -224,7 +224,7 @@ export function MaterialWorkspace({
                   <li>Fetch the transcript.</li>
                   <li>Review it in Transcript Workspace — select what to keep.</li>
                   <li>Replace or add checked sections into this Source.</li>
-                  <li>Optional: use Listen to Source when your audio tools are open (润色与修订 step or audio panel).</li>
+                  <li>Optional: use Listen to Source when your audio tools are open in Review or the audio panel.</li>
                 </ol>
                 <p className="source-fetch-note">
                   Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
