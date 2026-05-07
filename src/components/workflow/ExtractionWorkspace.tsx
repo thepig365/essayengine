@@ -237,14 +237,11 @@ export function ExtractionWorkspace({
     >
       <div id="ee-content-source-analyzer" className="ee-extraction-sticky-hero">
         <div className="layer-head ee-extraction-hero-head">
-          <p className="eyebrow">Source Extractor</p>
-          <h2 id="ee-content-source-analyzer-heading">Content Source Analyzer</h2>
-          <p className="ee-extraction-hero-lead">
+          <h2 id="ee-content-source-analyzer-heading" className="ee-analyzer-primary-title">
+            Content Source Analyzer
+          </h2>
+          <p className="ee-extraction-hero-lead ee-analyzer-primary-lead">
             Extract useful parts from transcripts, links, pasted text, audio, or captions.
-          </p>
-          <p>
-            Every source becomes selectable blocks here. Pick ranges or paragraphs, then save as <strong>saved topic</strong> below. Processing uses saved topic
-            text, not this panel alone. Full text is optional via the checkbox below.
           </p>
         </div>
 
@@ -261,14 +258,23 @@ export function ExtractionWorkspace({
           ))}
         </div>
 
-        <label className="organize-option" style={{ marginTop: "0.75rem" }}>
-          <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
-          <span>Use full source text (only when explicitly checked)</span>
-        </label>
-        <p className="transcript-note">
-          When unchecked, analysis, custom extraction, and your saved topic use only the sections or paragraphs you select. Summaries of an entire video or
-          full text require this option or Use full transcript in Source below.
-        </p>
+        <details className="ee-analyzer-saved-topic-notes">
+          <summary className="ee-analyzer-saved-topic-notes-summary">Saved topic &amp; full source options</summary>
+          <div className="ee-analyzer-saved-topic-notes-body">
+            <p className="ee-analyzer-guidance-copy">
+              Every source becomes selectable blocks here. Pick ranges or paragraphs, then save as <strong>saved topic</strong> below. Processing uses saved
+              topic text, not this panel alone. Full text is optional via the checkbox below.
+            </p>
+            <label className="organize-option" style={{ marginTop: "0.5rem" }}>
+              <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
+              <span>Use full source text (only when explicitly checked)</span>
+            </label>
+            <p className="transcript-note">
+              When unchecked, analysis, custom extraction, and your saved topic use only the sections or paragraphs you select. Summaries of an entire video or
+              full text require this option or Use full transcript in Source below.
+            </p>
+          </div>
+        </details>
       </div>
 
       {sourceMaterialPipeline === "link" && (

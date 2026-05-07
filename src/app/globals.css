@@ -886,6 +886,152 @@ input::placeholder {
   gap: 14px;
 }
 
+/* Content Source Analyzer — primary headline scale (banner strip; typography only) */
+.extraction-workspace.ee-extraction-workspace--banner .ee-analyzer-primary-title {
+  margin: 0 0 8px;
+  font-size: clamp(1.45rem, 2vw, 1.85rem);
+  font-weight: 820;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #f1f5f9;
+}
+
+.extraction-workspace.ee-extraction-workspace--banner .ee-analyzer-primary-lead {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.ee-advanced-studio-body .ee-analyzer-saved-topic-notes {
+  margin-top: 12px;
+  border: 1px solid #334657;
+  border-radius: 10px;
+  background: rgba(14, 20, 30, 0.85);
+}
+
+.ee-advanced-studio-body .ee-analyzer-saved-topic-notes-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 780;
+  color: #cbd5e1;
+}
+
+.ee-advanced-studio-body .ee-analyzer-saved-topic-notes-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ee-advanced-studio-body .ee-analyzer-saved-topic-notes-body {
+  padding: 0 12px 12px;
+}
+
+.ee-advanced-studio-body .ee-analyzer-guidance-copy {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+/* Transcript Library — collapsed details chrome (default closed) */
+.ee-advanced-studio-body .ee-transcript-library-drawer {
+  margin-bottom: 12px;
+  border: 1px solid #334657;
+  border-radius: 12px;
+  background: rgba(14, 20, 30, 0.92);
+}
+
+.ee-advanced-studio-body .ee-transcript-library-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 820;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .ee-transcript-library-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Triptych right rail — heading above collapsible stacks */
+.ee-advanced-studio-body .workspace .ee-advanced-panels-rail-head {
+  margin-bottom: 4px;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid rgba(51, 70, 87, 0.65);
+}
+
+.ee-advanced-studio-body .workspace .ee-advanced-panels-rail-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 860;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .ee-advanced-panels-rail-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+/* Confirmed Source — compact summary + editor in details */
+.ee-advanced-studio-body .workspace .ee-confirmed-source-editor-drawer {
+  margin-top: 10px;
+  border: 1px solid #334657;
+  border-radius: 10px;
+  background: rgba(14, 20, 30, 0.88);
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-editor-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-editor-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-editor-body {
+  padding: 0 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-inline-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334657;
+  background: rgba(14, 23, 34, 0.88);
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-preview-snippet {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  word-break: break-word;
+}
+
+.ee-advanced-studio-body .workspace .ee-confirmed-source-empty-hint {
+  font-style: italic;
+  color: #64748b;
+}
+
 /* AI Output / Listen — remove leftover white shells inside Advanced Studio */
 .ee-advanced-studio-body .workspace .result-layer {
   background: linear-gradient(180deg, #1c2736, #161f2c);

@@ -61,6 +61,8 @@ type Props = {
   onFetchTranscript?: () => void;
   /** When set, raw-input variant does not render `children` (duplicate extract UIs hidden on desktop studio). */
   omitRawInputChildren?: boolean;
+  /** Desktop Advanced Studio: demote large confirmed-source editor behind a collapsed details section. */
+  demoteConfirmedSourceEditor?: boolean;
 };
 
 export function MaterialWorkspace({
@@ -97,6 +99,7 @@ export function MaterialWorkspace({
   transcriptStatus,
   onFetchTranscript,
   omitRawInputChildren = false,
+  demoteConfirmedSourceEditor = false,
 }: Props) {
   if (!active) return null;
 
@@ -141,13 +144,14 @@ export function MaterialWorkspace({
             {timeline}
           </details>
         ) : null}
-        <section className="layer source-layer">
+        <section className={`layer source-layer${demoteConfirmedSourceEditor ? " ee-confirmed-source-compact" : ""}`}>
           <div className="layer-head">
             <p className="eyebrow">Source</p>
-            <h2>Source material</h2>
+            <h2>{demoteConfirmedSourceEditor ? "Confirmed Source" : "Source material"}</h2>
             <p>
-              Capture or prepare material here only. Move to your generation task next, then produce a draft output — assembly and publishing happen in later
-              steps.
+              {demoteConfirmedSourceEditor
+                ? "Summary of what Generate uses — expand below to edit the full confirmed text."
+                : "Capture or prepare material here only. Move to your generation task next, then produce a draft output — assembly and publishing happen in later steps."}
             </p>
           </div>
           {sourceSummaryDetails ? (
@@ -211,33 +215,86 @@ export function MaterialWorkspace({
               Clear source
             </button>
           </div>
-          <div className="input-label">
-            Engine source (confirmed text sent to Generate) — finish selecting material on the left, click Replace Source Capture with selection, or fine-tune
-            confirmed text here.
-          </div>
-
-          <textarea value={input} onChange={(e) => onInputChange?.(e.target.value)} rows={16} placeholder={sourceChip.placeholder} />
-
-          {effectiveYoutubeSource && !transcriptText && (
-            <div className="transcript-box source-fetch">
-              <div>
-                <strong>YouTube / podcast URL</strong>
-                <ol className="source-fetch-flow">
-                  <li>Paste the YouTube or podcast page URL in your Source text above.</li>
-                  <li>Fetch the transcript.</li>
-                  <li>Review it in Transcript Workspace — select what to keep.</li>
-                  <li>Replace or add checked sections into this Source.</li>
-                  <li>Optional: use Listen to Source when your audio tools are open (Process step or audio panel).</li>
-                </ol>
-                <p className="source-fetch-note">
-                  Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
-                </p>
+          {demoteConfirmedSourceEditor ? (
+            <>
+              <div className="ee-confirmed-source-inline-meta">
+                <span>
+                  <strong>Characters:</strong> {input.trim().length.toLocaleString()}
+                </span>
+                {input.trim() ? (
+                  <span className="ee-confirmed-source-preview-snippet" title={input.trim()}>
+                    {input.trim().slice(0, 140)}
+                    {input.trim().length > 140 ? "…" : ""}
+                  </span>
+                ) : (
+                  <span className="ee-confirmed-source-empty-hint">No confirmed text yet — open Edit confirmed source to paste or adjust.</span>
+                )}
               </div>
-              <button type="button" className="secondary" onClick={onFetchTranscript} disabled={transcriptLoading}>
-                {transcriptLoading ? "Fetching…" : "Fetch transcript"}
-              </button>
-              {transcriptStatus && <span className="status">{transcriptStatus}</span>}
-            </div>
+              <details className="ee-confirmed-source-editor-drawer">
+                <summary className="ee-confirmed-source-editor-summary">Edit confirmed source</summary>
+                <div className="ee-confirmed-source-editor-body">
+                  <div className="input-label">
+                    Engine source (confirmed text sent to Generate) — finish selecting material on the left, click Replace Source Capture with selection, or
+                    fine-tune confirmed text here.
+                  </div>
+
+                  <textarea value={input} onChange={(e) => onInputChange?.(e.target.value)} rows={12} placeholder={sourceChip.placeholder} />
+
+                  {effectiveYoutubeSource && !transcriptText && (
+                    <div className="transcript-box source-fetch">
+                      <div>
+                        <strong>YouTube / podcast URL</strong>
+                        <ol className="source-fetch-flow">
+                          <li>Paste the YouTube or podcast page URL in your Source text above.</li>
+                          <li>Fetch the transcript.</li>
+                          <li>Review it in Transcript Workspace — select what to keep.</li>
+                          <li>Replace or add checked sections into this Source.</li>
+                          <li>Optional: use Listen to Source when your audio tools are open (Process step or audio panel).</li>
+                        </ol>
+                        <p className="source-fetch-note">
+                          Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
+                        </p>
+                      </div>
+                      <button type="button" className="secondary" onClick={onFetchTranscript} disabled={transcriptLoading}>
+                        {transcriptLoading ? "Fetching…" : "Fetch transcript"}
+                      </button>
+                      {transcriptStatus && <span className="status">{transcriptStatus}</span>}
+                    </div>
+                  )}
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <div className="input-label">
+                Engine source (confirmed text sent to Generate) — finish selecting material on the left, click Replace Source Capture with selection, or
+                fine-tune confirmed text here.
+              </div>
+
+              <textarea value={input} onChange={(e) => onInputChange?.(e.target.value)} rows={16} placeholder={sourceChip.placeholder} />
+
+              {effectiveYoutubeSource && !transcriptText && (
+                <div className="transcript-box source-fetch">
+                  <div>
+                    <strong>YouTube / podcast URL</strong>
+                    <ol className="source-fetch-flow">
+                      <li>Paste the YouTube or podcast page URL in your Source text above.</li>
+                      <li>Fetch the transcript.</li>
+                      <li>Review it in Transcript Workspace — select what to keep.</li>
+                      <li>Replace or add checked sections into this Source.</li>
+                      <li>Optional: use Listen to Source when your audio tools are open (Process step or audio panel).</li>
+                    </ol>
+                    <p className="source-fetch-note">
+                      Podcasts sometimes work like webpages: try the Webpage URL source type when the page exposes readable text or captions.
+                    </p>
+                  </div>
+                  <button type="button" className="secondary" onClick={onFetchTranscript} disabled={transcriptLoading}>
+                    {transcriptLoading ? "Fetching…" : "Fetch transcript"}
+                  </button>
+                  {transcriptStatus && <span className="status">{transcriptStatus}</span>}
+                </div>
+              )}
+            </>
           )}
 
           {/* Full transcript sectioning (chapters, ranges, topic filter) lives in `TranscriptWorkspacePanel` in the center column — not duplicated here. */}

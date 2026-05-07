@@ -3203,7 +3203,6 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
               <span className="ee-advanced-summary-title">Advanced Studio</span>
               <span className="ee-advanced-summary-sub">Capture, process, review, export — full controls below.</span>
             </div>
-            <span className="ee-advanced-open-pill">Open Full Studio</span>
           </div>
         </summary>
         <div className="ee-advanced-studio-body">
@@ -3493,7 +3492,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           </div>
         </MaterialWorkspace>
 
-        {mobileWorkflowStepId !== "refine" ? (
+        {mobileWorkflowStepId !== "refine" && mobileWorkflowStepId !== "source" ? (
           <ProcessingWorkspace
             active
             variant="controls"
@@ -3540,6 +3539,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         ) : null}
 
         {effectiveIsDesktopConsole ? (
+          mobileWorkflowStepId !== "source" ? (
           <details className="ee-rail-secondary" style={{ marginTop: "0.5rem" }}>
             <summary style={{ cursor: "pointer", fontWeight: 800, fontSize: "0.88rem" }}>
               Audio · Read aloud · Project save
@@ -3629,6 +3629,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
               </section>
             </div>
           </details>
+          ) : null
         ) : (
           <>
             <section className="layer read-layer">
@@ -3853,10 +3854,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         />
         ) : null}
 
-        <details className="ee-transcript-library-drawer" open={effectiveIsDesktopConsole}>
-          <summary className="ee-transcript-library-summary">
-            Transcript Library — folders, save transcript, load saved
-          </summary>
+        <details className="ee-transcript-library-drawer">
+          <summary className="ee-transcript-library-summary">Manage Transcript Library</summary>
           <section className="transcript-library-panel">
             <div className="range-head">
               <strong>Transcript Library</strong>
@@ -4032,6 +4031,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
               transcriptLoading={transcriptLoading}
               transcriptStatus={transcriptStatus}
               onFetchTranscript={() => void getTranscript()}
+              demoteConfirmedSourceEditor={effectiveIsDesktopConsole}
             />
           </SourceMaterialPanel>
         ) : null}
@@ -4039,6 +4039,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <div id="ee-panel-workspace" className={`work-column${effectiveIsDesktopConsole ? " ee-triptych-work" : ""}`}>
         <span id="ee-advanced-export-anchor" className="ee-anchor-target" aria-hidden />
+        {effectiveIsDesktopConsole ? (
+          <div className="ee-advanced-panels-rail-head">
+            <strong className="ee-advanced-panels-rail-title">Advanced Panels</strong>
+            <p className="ee-advanced-panels-rail-hint">Open only when needed.</p>
+          </div>
+        ) : null}
         {effectiveIsDesktopConsole ? (
           <div className="ee-triptych-mid">
             {mobileWorkflowStepId === "refine" ? (
@@ -4725,9 +4731,9 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow ee-mobile-classic-eyebrow">Optional</span>
+          <span className="eyebrow ee-mobile-classic-eyebrow">Optional shortcuts</span>
           <strong className="ee-mobile-classic-title">Advanced Studio</strong>
-          <span className="ee-mobile-classic-hint">Optional draft and AI output shortcuts. Main flow stays with the five steps above.</span>
+          <span className="ee-mobile-classic-hint">Draft and output tools are available when needed.</span>
         </summary>
         <div className="ee-mobile-classic-body">
           <nav className="mobile-primary-tabs" aria-label="Advanced Studio panels">
@@ -5068,8 +5074,23 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
           .desktop-console-layout
           > .work-column
+          > .ee-advanced-panels-rail-head {
+          display: block !important;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
+          .desktop-console-layout
+          > .work-column
           > .ee-studio-panel-details {
           display: block !important;
+        }
+        /* Source step (desktop Advanced Studio): hide review/process stack — surfaces stay mounted off-layout */
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] > .ee-grid-source {
+          grid-column: 2 / -1;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"]
+          .desktop-console-layout
+          > .work-column {
+          display: none !important;
         }
         .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions {
           display: flex;
