@@ -443,6 +443,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
   const [functionsMenuFocusSection, setFunctionsMenuFocusSection] = useState<MegaMenuCategorySpec["id"] | null>(null);
+  const [startFreshConfirmOpen, setStartFreshConfirmOpen] = useState(false);
   useEffect(() => {
     setMobileWorkflowStepIndex((i) => (i < MOBILE_WORKFLOW_STEPS.length ? i : 0));
   }, []);
@@ -1156,12 +1157,15 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   }
 
   function startNewProject() {
-    if (
-      (input.trim() || sourceVersions.length > 0 || essayDraftContent.trim() || result || finalResult) &&
-      !window.confirm("Start a new blank workspace? Existing saved projects will remain available, but unsaved changes in the current workspace may be lost.")
-    ) {
+    if (input.trim() || sourceVersions.length > 0 || essayDraftContent.trim() || result || finalResult) {
+      setStartFreshConfirmOpen(true);
       return;
     }
+    clearWorkspace();
+  }
+
+  function confirmStartFresh() {
+    setStartFreshConfirmOpen(false);
     clearWorkspace();
   }
 
@@ -3115,11 +3119,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         sourcePanel={
           <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Transcript and captured source (read-only preview).</p>
+            <p className="ee-studio-canvas-lead">Your source material for the workflow.</p>
             <pre className="ee-studio-canvas-body">
               {(transcriptText || input).trim()
                 ? `${(transcriptText || input).trim().slice(0, 900)}${(transcriptText || input).trim().length > 900 ? "…" : ""}`
-                : "No source text yet. Use Functions → Source or open Advanced Studio."}
+                : "No source yet. Paste material with Open Source, then extract the parts you want to save as a topic."}
             </pre>
           </div>
         }
@@ -3135,17 +3139,17 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         draftPanel={
           <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">AI output / draft (read-only preview).</p>
+            <p className="ee-studio-canvas-lead">Build the working draft from a saved topic.</p>
             <pre className="ee-studio-canvas-body">
               {(primaryResultOutput || essayDraftContent).trim()
                 ? `${(primaryResultOutput || essayDraftContent).trim().slice(0, 900)}${(primaryResultOutput || essayDraftContent).trim().length > 900 ? "…" : ""}`
-                : "No draft yet. Process your saved topic to create a first draft."}
+                : "No draft yet. Save a topic from your source, then process it to create a first draft."}
             </pre>
           </div>
         }
         draftActions={
           <>
-            <button type="button" className="primary" onClick={shellProcessSavedTopic}>
+            <button type="button" className={topicMaterial ? "primary" : "secondary"} onClick={shellProcessSavedTopic} disabled={!topicMaterial}>
               Process Saved Topic
             </button>
             <button type="button" className="secondary" onClick={shellOpenDraftEditor}>
@@ -3155,25 +3159,41 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         finalPanel={
           <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Final product (read-only preview).</p>
+            <p className="ee-studio-canvas-lead">Approved final article ready for review and export.</p>
             <pre className="ee-studio-canvas-body">
               {finalVersion?.content?.trim()
                 ? `${finalVersion.content.trim().slice(0, 900)}${finalVersion.content.trim().length > 900 ? "…" : ""}`
-                : "No final product yet. Review a draft, listen to it, then mark it as final."}
+                : "No final yet. Create a draft first, review it, then mark the approved version as final."}
             </pre>
           </div>
         }
         finalActions={
           <>
-            <button type="button" className="primary" onClick={shellOpenReview}>
+            <button type="button" className={topicMaterial ? "primary" : "secondary"} onClick={shellOpenReview} disabled={!topicMaterial}>
               Open Review
             </button>
-            <button type="button" className="secondary" onClick={shellExportFinal}>
+            <button type="button" className="secondary" onClick={shellExportFinal} disabled={!topicMaterial}>
               Export Final
             </button>
           </>
         }
       />
+      {startFreshConfirmOpen ? (
+        <div className="ee-start-fresh-dialog" role="dialog" aria-modal="true" aria-labelledby="ee-start-fresh-title">
+          <div className="ee-start-fresh-card">
+            <h2 id="ee-start-fresh-title">Start fresh</h2>
+            <p>Clear the current screen and begin a new source-to-final workflow. Saved projects are not deleted.</p>
+            <div className="ee-start-fresh-actions">
+              <button type="button" className="secondary" onClick={() => setStartFreshConfirmOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className="primary" onClick={confirmStartFresh}>
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <details ref={advancedStudioDetailsRef} className="ee-advanced-studio" id="ee-advanced-studio">
         <summary className="ee-advanced-studio-summary">
           <div className="ee-advanced-summary-row">
@@ -3442,10 +3462,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     Save project
                   </button>
                   <button type="button" onClick={startNewProject}>
-                    New Project
+                    Start Fresh
                   </button>
                 </div>
-                <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+                <p className="project-helper">Clear the current screen and begin a new source-to-final workflow. Saved projects are not deleted.</p>
                 <label className="field">
                   <span>Load project</span>
                   <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
@@ -3528,10 +3548,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   Save project
                 </button>
                 <button type="button" onClick={startNewProject}>
-                  New Project
+                  Start Fresh
                 </button>
               </div>
-              <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+              <p className="project-helper">Clear the current screen and begin a new source-to-final workflow. Saved projects are not deleted.</p>
               <label className="field">
                 <span>Load project</span>
                 <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
@@ -4391,10 +4411,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     Save project
                   </button>
                   <button type="button" onClick={startNewProject}>
-                    New Project
+                    Start Fresh
                   </button>
                 </div>
-                <p className="project-helper">Start a blank workspace without deleting saved projects.</p>
+                <p className="project-helper">Clear the current screen and begin a new source-to-final workflow. Saved projects are not deleted.</p>
                 <label className="field">
                   <span>Load project</span>
                   <select value={activeProjectId} onChange={(e) => loadSelectedProject(e.target.value)}>
@@ -4656,6 +4676,44 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       </details>
 
       <style jsx>{`
+        .ee-start-fresh-dialog {
+          position: fixed;
+          inset: 0;
+          z-index: 1100;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+          background: rgba(8, 15, 24, 0.62);
+        }
+        .ee-start-fresh-card {
+          width: min(420px, 100%);
+          border: 1px solid #dfe5ec;
+          border-radius: 16px;
+          background: #ffffff;
+          box-shadow: 0 24px 70px rgba(8, 15, 24, 0.28);
+          padding: 22px;
+        }
+        .ee-start-fresh-card h2 {
+          margin: 0 0 8px;
+          color: #17202a;
+          font-size: 20px;
+          line-height: 1.25;
+        }
+        .ee-start-fresh-card p {
+          margin: 0;
+          color: #526171;
+          font-size: 14px;
+          line-height: 1.55;
+        }
+        .ee-start-fresh-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 18px;
+        }
+        .ee-start-fresh-actions button {
+          min-width: 104px;
+        }
         .workspace {
           display: grid;
           grid-template-columns: minmax(0, 0.75fr) minmax(0, 2.3fr) minmax(0, 1fr);

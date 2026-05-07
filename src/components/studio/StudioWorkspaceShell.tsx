@@ -34,12 +34,12 @@ export function StudioWorkspaceShell({
           {sourceActions ? <div className="ee-studio-panel-actions">{sourceActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--draft">
-          <h2 className="ee-studio-heading">Draft / Semi-product</h2>
+          <h2 className="ee-studio-heading">Draft</h2>
           {draftPanel}
           {draftActions ? <div className="ee-studio-panel-actions">{draftActions}</div> : null}
         </div>
         <div className="ee-studio-col ee-studio-col--final">
-          <h2 className="ee-studio-heading">Final / Review</h2>
+          <h2 className="ee-studio-heading">Final</h2>
           {finalPanel}
           {finalActions ? <div className="ee-studio-panel-actions">{finalActions}</div> : null}
         </div>

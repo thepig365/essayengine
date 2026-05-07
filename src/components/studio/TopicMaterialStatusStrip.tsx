@@ -30,15 +30,21 @@ export function TopicMaterialStatusStrip({
     <div className="ee-topic-strip" role="status" aria-live="polite">
       <div className="ee-topic-strip-main">
         <span className={"ee-topic-badge ee-topic-badge--" + variant}>{badge}</span>
-        <span className="ee-topic-meta">
-          <span className="ee-topic-meta-key">来源</span> {sourceTypeLabel}
-        </span>
-        <span className="ee-topic-meta">
-          <span className="ee-topic-meta-key">长度</span> {wordCount} 词
-        </span>
-        <span className="ee-topic-meta">
-          模式：{fullSourceAvailable ? "使用完整素材源" : "使用已选素材源"}
-        </span>
+        {variant === "missing" ? (
+          <span className="ee-topic-meta">Choose source text, extract the useful parts, then save them as the topic.</span>
+        ) : (
+          <>
+            <span className="ee-topic-meta">
+              <span className="ee-topic-meta-key">来源</span> {sourceTypeLabel}
+            </span>
+            <span className="ee-topic-meta">
+              <span className="ee-topic-meta-key">长度</span> {wordCount} 词
+            </span>
+            <span className="ee-topic-meta">
+              模式：{fullSourceAvailable ? "使用完整素材源" : "使用已选素材源"}
+            </span>
+          </>
+        )}
       </div>
       {variant === "stale" ? (
         <p className="ee-topic-stale-msg">题材可能已过期：素材源已被修改，请重新保存题材。</p>
@@ -51,7 +57,7 @@ export function TopicMaterialStatusStrip({
         </p>
       ) : (
         <p className="ee-topic-preview ee-topic-preview--empty">
-          尚无主题预览。请在 Advanced Studio 的题材步骤中保存已选素材源。
+          No topic saved yet. Open Source, select the material you want to write from, then save it as the topic.
         </p>
       )}
       <style jsx>{`
