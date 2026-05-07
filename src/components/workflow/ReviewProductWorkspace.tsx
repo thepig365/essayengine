@@ -87,12 +87,13 @@ export function ReviewProductWorkspace({
           {children}
           <style jsx global>{`
             .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-draft-row {
-              display: grid !important;
-              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+              grid-template-columns: minmax(0, 1fr);
               gap: 14px;
-              align-items: stretch;
+              align-items: start;
               min-height: 0;
-              flex: 1;
+            }
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > .work-column > .ee-triptych-draft-row {
+              display: grid !important;
             }
             .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
               .desktop-console-layout
@@ -109,15 +110,24 @@ export function ReviewProductWorkspace({
               gap: 14px;
               min-width: 0;
               min-height: 0;
-              overflow: auto;
+              overflow: visible;
             }
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-draft,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-validate,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-assemble,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-draft .ee-narrow-step-publish,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-mark,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-assemble,
-            .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-split-final .ee-narrow-step-publish {
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-draft .ee-narrow-step-draft,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-draft .ee-narrow-step-validate,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-draft .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-draft .ee-narrow-step-publish,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-final .ee-narrow-step-mark,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-final .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step] .ee-split-final .ee-narrow-step-publish {
+              display: none !important;
+            }
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-draft .ee-narrow-step-draft,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-draft .ee-narrow-step-validate,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-draft .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-draft .ee-narrow-step-publish,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-final .ee-narrow-step-mark,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-final .ee-narrow-step-assemble,
+            .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-split-final .ee-narrow-step-publish {
               display: block !important;
             }
           `}</style>

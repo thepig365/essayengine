@@ -3091,7 +3091,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellExportFinal = () => {
-    selectWorkflowStep(5);
+    selectWorkflowStep(MOBILE_WORKFLOW_STEPS.length - 1);
   };
 
   return (
@@ -3895,6 +3895,90 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       <div id="ee-panel-workspace" className={`work-column${effectiveIsDesktopConsole ? " ee-triptych-work" : ""}`}>
         <span id="ee-advanced-export-anchor" className="ee-anchor-target" aria-hidden />
         {effectiveIsDesktopConsole ? (
+          <>
+            <section className="layer ee-advanced-step-context ee-advanced-step-context--source" aria-label="Source status">
+              <div className="layer-head">
+                <p className="eyebrow">Source</p>
+                <h2>Source status</h2>
+                <p>Only source capture context is shown on this step.</p>
+              </div>
+              <div className="source-summary-card">
+                <strong>{input.trim() ? sourceSummary : "No source saved yet."}</strong>
+                <dl>
+                  <div>
+                    <dt>Current version</dt>
+                    <dd>{currentSourceVersion ? `v${currentSourceVersion.versionNumber}` : "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Detected type</dt>
+                    <dd>{sourceKind}</dd>
+                  </div>
+                </dl>
+              </div>
+              {sourceActionStatus ? <p className="transcript-note">{sourceActionStatus}</p> : null}
+            </section>
+
+            <section className="layer ee-advanced-step-context ee-advanced-step-context--extract" aria-label="Extracted material status">
+              <div className="layer-head">
+                <p className="eyebrow">Extract</p>
+                <h2>Selected material</h2>
+                <p>Review the selected source range before saving it as a topic.</p>
+              </div>
+              {computeSelectedSourceMaterial() ? (
+                <>
+                  <div className="source-summary-card">
+                    <strong>{computeSelectedSourceMaterial()?.summary}</strong>
+                    <dl>
+                      <div>
+                        <dt>Source type</dt>
+                        <dd>{labelForMaterialKind(computeSelectedSourceMaterial()!.analysisSourceType, "en")}</dd>
+                      </div>
+                      <div>
+                        <dt>Length</dt>
+                        <dd>{countWords(computeSelectedSourceMaterial()?.text ?? "").toLocaleString()} words</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <div className="range-actions cta-row ee-quick-action-grid">
+                    <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection}>
+                      Save as Topic
+                    </button>
+                    <button type="button" className="copy-action" onClick={clearMaterialSelection}>
+                      Clear Selection
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="transcript-note">No extracted material selected yet. Use the extractor in the center column.</p>
+              )}
+            </section>
+
+            <section className="layer ee-advanced-step-context ee-advanced-step-context--topic" aria-label="Topic status">
+              <div className="layer-head">
+                <p className="eyebrow">Topic</p>
+                <h2>Saved topic</h2>
+                <p>Confirm the saved topic before opening processing tools.</p>
+              </div>
+              <TopicMaterialStatusStrip
+                variant={!topicMaterial ? "missing" : topicMaterialIsStale ? "stale" : "saved"}
+                sourceTypeLabel={topicMaterial ? String(topicMaterial.sourceType) : "—"}
+                wordCount={topicMaterialWordCount}
+                fullSourceAvailable={Boolean(topicMaterial?.useFullSource)}
+                preview={topicMaterial?.content ?? ""}
+                statusNote={topicMaterialStatus || undefined}
+              />
+              <div className="range-actions cta-row ee-quick-action-grid">
+                <button type="button" className="secondary" onClick={handleClearTopic} disabled={!topicMaterial}>
+                  Clear Topic
+                </button>
+                <button type="button" className={topicMaterial ? "primary" : "secondary"} onClick={shellProcessSavedTopic} disabled={!topicMaterial}>
+                  Process Saved Topic
+                </button>
+              </div>
+            </section>
+          </>
+        ) : null}
+        {effectiveIsDesktopConsole ? (
           <div className="ee-triptych-mid">
             {mobileWorkflowStepId === "refine" ? (
               <div id="ee-processing-studio-main" className="ee-processing-studio-main ee-narrow-step-processing">
@@ -4574,9 +4658,9 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow">可选</span>
-          <strong className="ee-mobile-classic-title">完整编辑区</strong>
-          <span className="ee-mobile-classic-hint">草稿与本轮产出快捷入口 — 可选；主流程使用上方五步。</span>
+          <span className="eyebrow">Optional</span>
+          <strong className="ee-mobile-classic-title">Advanced Studio</strong>
+          <span className="ee-mobile-classic-hint">Optional draft and AI output shortcuts.</span>
         </summary>
         <div className="ee-mobile-classic-body">
           <nav className="mobile-primary-tabs" aria-label="完整编辑区面板">
@@ -4716,8 +4800,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .workspace {
           display: grid;
-          grid-template-columns: minmax(0, 0.75fr) minmax(0, 2.3fr) minmax(0, 1fr);
-          gap: 18px;
+          grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.45fr) minmax(280px, 0.82fr);
+          gap: 16px;
           align-items: start;
           width: 100%;
           max-width: 100%;
@@ -4729,8 +4813,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           flex-direction: column;
           gap: 14px;
           min-width: 0;
-          position: sticky;
-          top: 18px;
+          align-self: start;
         }
         .control-column.collapsed {
           gap: 10px;
@@ -4779,10 +4862,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           min-width: 0;
         }
         .transcript-column {
-          max-height: calc(100vh - 36px);
-          overflow: auto;
-          position: sticky;
-          top: 18px;
+          align-self: start;
+          overflow: visible;
         }
         .ee-desktop-workflow-nav {
           display: none;
@@ -4842,16 +4923,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .workspace:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-work-support {
           display: block !important;
         }
-        /* Desktop triptych: keep source + draft/final shell visible; tools live in Feature Section + left rail. */
+        /* Desktop triptych: aligned columns with step-specific right-rail context. */
         .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-grid-source {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 16px;
           min-width: 0;
-          max-height: calc(100vh - 36px);
-          overflow: auto;
-          position: sticky;
-          top: 18px;
+          align-self: start;
+          overflow: visible;
         }
         .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column {
           display: flex;
@@ -4868,18 +4947,30 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           display: none !important;
         }
         .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-mid {
-          display: flex !important;
           flex-direction: column;
           gap: 14px;
           min-width: 0;
         }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > .work-column > .ee-triptych-mid,
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-triptych-mid {
+          display: flex !important;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-advanced-step-context {
+          display: none;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > .work-column > .ee-advanced-step-context--source,
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column > .ee-advanced-step-context--extract,
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > .work-column > .ee-advanced-step-context--topic {
+          display: block !important;
+        }
         .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column > .ee-triptych-draft-row {
-          display: grid !important;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr);
           gap: 14px;
-          align-items: stretch;
-          flex: 1;
+          align-items: start;
           min-height: 0;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > .work-column > .ee-triptych-draft-row {
+          display: grid !important;
         }
         .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions {
           display: flex;
