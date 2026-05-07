@@ -447,7 +447,7 @@ export function ProcessingWorkspace({
     return (
       <section className="layer ee-request-workspace-desktop" aria-label="Processing workspace overview">
         <div className="layer-head">
-          <p className="eyebrow">PROCESSING / 加工</p>
+          <p className="eyebrow">Processing</p>
           <h2>Processing Studio</h2>
           <p>
             Choose grouped actions and settings in the <strong>Processing Studio</strong> on the left, then run <strong>Generate</strong>. Processing
@@ -510,7 +510,7 @@ export function ProcessingWorkspace({
       <>
         <section className="layer request-layer ps-studio-root" aria-label="Processing studio">
           <header className="ps-studio-header">
-            <p className="eyebrow">PROCESSING / 加工</p>
+            <p className="eyebrow">Processing</p>
             <h2>Processing Studio</h2>
             <p className="ps-studio-lede">Choose how to transform the saved topic. Processing uses saved topic text only.</p>
           </header>
@@ -760,8 +760,7 @@ export function ProcessingWorkspace({
             Custom processing text and studio cards live above. Use tone and presets here for voice-level shaping.
           </div>
           <div className="writing-hint">
-            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any
-            specific writer.
+            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a refined, subtle, image-rich modern essay voice without directly imitating any specific writer.
           </div>
         </details>
 

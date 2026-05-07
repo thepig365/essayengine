@@ -55,18 +55,18 @@ export function TopicWorkspace({
       {renderTopicMaterialPanel ? (
         <section className="topic-material-panel" style={{ marginTop: "0.5rem" }}>
           <div className="range-head">
-            <strong>已选主题素材源</strong>
-            <p>加工阶段只使用这里保存的题材内容。只有点击“使用完整素材源”时，才允许使用全文。</p>
+            <strong>Saved topic material</strong>
+            <p>Processing uses only the saved topic content here. Full source is used only when you explicitly choose Use Full Source.</p>
             <p className="transcript-note" style={{ margin: "0.35rem 0 0" }}>
-              已保存的主题会在重新打开项目时恢复。
+              Saved topics are restored when you reopen the project.
             </p>
           </div>
           <div className="range-actions cta-row ee-quick-action-grid">
             <button type="button" className="primary" onClick={onSaveAsTopic} disabled={!canSaveAsTopic}>
-              Save as Topic / 保存为题材
+              Save as Topic
             </button>
             <button type="button" className="secondary" onClick={onUseFullSource} disabled={!canUseFullSource}>
-              Use Full Source / 使用完整素材源
+              Use Full Source
             </button>
             <button type="button" className="copy-action" onClick={onClearTopic} disabled={!topicMaterial}>
               Clear Topic
@@ -75,7 +75,7 @@ export function TopicWorkspace({
           {topicMaterialStatus && <span className="range-status">{topicMaterialStatus}</span>}
           {topicMaterial ? (
             <div className="topic-material-preview">
-              {isCurrentTopicStale && <span className="range-status">题材可能已过期：素材源已被修改，请重新保存题材。</span>}
+              {isCurrentTopicStale && <span className="range-status">Topic may be stale: the source changed after this topic was saved. Save the topic again before processing.</span>}
               <dl className="topic-material-metrics">
                 <div>
                   <dt>Source type</dt>
@@ -103,7 +103,7 @@ export function TopicWorkspace({
               <textarea className="transcript-preview" readOnly rows={compact ? 3 : 6} value={topicMaterial.content} />
             </div>
           ) : (
-            <p className="transcript-note">尚未保存题材。请先勾选素材源并点击“Save as Topic / 保存为题材”。</p>
+            <p className="transcript-note">No topic saved yet. Select source material and click Save as Topic.</p>
           )}
         </section>
       ) : null}

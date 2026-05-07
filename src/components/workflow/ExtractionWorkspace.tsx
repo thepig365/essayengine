@@ -27,11 +27,11 @@ type SelectedSourceMaterial = {
 };
 
 const EXTRACTION_TABS: ReadonlyArray<{ id: SourceMaterialPipelineTab; label: string }> = [
-  { id: "transcript", label: "转录 / 字幕" },
-  { id: "link", label: "链接抓取" },
-  { id: "paste", label: "粘贴长文" },
-  { id: "audio", label: "上传音频" },
-  { id: "document", label: "文本 / 字幕稿" },
+  { id: "transcript", label: "Transcript" },
+  { id: "link", label: "Link extract" },
+  { id: "paste", label: "Long paste" },
+  { id: "audio", label: "Audio upload" },
+  { id: "document", label: "Text / captions" },
 ];
 
 /**
@@ -233,13 +233,13 @@ export function ExtractionWorkspace({
       aria-label="Extraction — segment selection"
     >
       <div className="layer-head">
-        <p className="eyebrow">Source Extractor / 素材源提取器</p>
-        <h2>Content Source Analyzer / 内容素材源分析器</h2>
+        <p className="eyebrow">Source Extractor</p>
+        <h2>Content Source Analyzer</h2>
         <p>
           <strong>Extraction &amp; selection:</strong> every source becomes selectable blocks here. Pick ranges or paragraphs, then save as{" "}
           <strong>saved topic</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
         </p>
-        <p>所有来源都先变成「可选的文本块」，再分析与写入；默认不使用全文。</p>
+        <p>Each source becomes selectable text blocks first. By default, processing uses only what you select.</p>
       </div>
 
       <div className="range-actions cta-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
@@ -257,25 +257,25 @@ export function ExtractionWorkspace({
 
       <label className="organize-option" style={{ marginTop: "0.75rem" }}>
         <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
-        <span>使用完整素材源（仅显式勾选时启用全文）</span>
+        <span>Use full source (explicit opt-in only)</span>
       </label>
       <p className="transcript-note">
-        未勾选时：分析、自定义提取与「已选题材」仅使用你勾选的章节/段落块。口头摘要整段视频/全文需要先勾选此项或使用下方「使用完整素材源替换 Source」。
+        When unchecked, analysis, custom extraction, and saved topics use only selected chapters or paragraph blocks.
       </p>
 
       {sourceMaterialPipeline === "link" && (
         <div className="topic-filter" style={{ marginTop: "1rem" }}>
           <div className="range-head">
-            <strong>链接抓取（LinkedIn / 社媒 / 论坛 / 播客页等）</strong>
-            <p>抓取可读的页面正文并拆成段落。YouTube 请用「转录 / 字幕」页签。</p>
+            <strong>Link extract (LinkedIn, social, forum, podcast pages)</strong>
+            <p>Extract readable page text and split it into paragraphs. Use Transcript for YouTube.</p>
           </div>
           <label className="field">
-            <span>页面 URL</span>
+            <span>Page URL</span>
             <input value={linkExtractUrl} onChange={(e) => onLinkExtractUrlChange?.(e.target.value)} placeholder="https://" />
           </label>
           <div className="range-actions cta-row">
             <button type="button" className="primary" disabled={linkExtractLoading} onClick={onRunLinkMaterialExtract}>
-              {linkExtractLoading ? "提取中…" : "提取素材源"}
+              {linkExtractLoading ? "Extracting…" : "Extract source"}
             </button>
           </div>
           {linkExtractStatus && <span className="range-status">{linkExtractStatus}</span>}
@@ -285,21 +285,21 @@ export function ExtractionWorkspace({
       {sourceMaterialPipeline === "paste" && (
         <div className="topic-filter" style={{ marginTop: "1rem" }}>
           <div className="range-head">
-            <strong>粘贴文章或长文</strong>
-            <p>按空行拆成段落块，再勾选需要的部分。</p>
+            <strong>Paste article or long-form text</strong>
+            <p>Split by blank lines into paragraph blocks, then select the parts you need.</p>
           </div>
           <label className="field">
-            <span>长文本</span>
+            <span>Long text</span>
             <textarea
               rows={8}
               value={pasteBlockInput}
               onChange={(e) => onPasteBlockInputChange?.(e.target.value)}
-              placeholder="粘贴公众号文章、笔记、Thread 全文等…"
+              placeholder="Paste article text, notes, thread text, or any long-form content…"
             />
           </label>
           <div className="range-actions cta-row">
             <button type="button" className="primary" onClick={onApplyPasteMaterialBlocks}>
-              拆分段落
+              Split paragraphs
             </button>
           </div>
         </div>
@@ -308,11 +308,11 @@ export function ExtractionWorkspace({
       {sourceMaterialPipeline === "audio" && (
         <div className="topic-filter" style={{ marginTop: "1rem" }}>
           <div className="range-head">
-            <strong>上传音频转写</strong>
-            <p>服务器端转写为文本后再拆段（需要配置 OPENAI_API_KEY）。</p>
+            <strong>Upload audio to transcribe</strong>
+            <p>Server-side transcription creates text and then splits it into blocks (requires OPENAI_API_KEY).</p>
           </div>
           <label className="field">
-            <span>音频文件</span>
+            <span>Audio file</span>
             <input
               type="file"
               accept="audio/*"
@@ -323,18 +323,18 @@ export function ExtractionWorkspace({
               }}
             />
           </label>
-          {audioUploadLoading && <span className="range-status">正在转写…</span>}
+          {audioUploadLoading && <span className="range-status">Transcribing…</span>}
         </div>
       )}
 
       {sourceMaterialPipeline === "document" && (
         <div className="topic-filter" style={{ marginTop: "1rem" }}>
           <div className="range-head">
-            <strong>上传文本 / 字幕稿</strong>
-            <p>支持 .txt / .md / .srt / .vtt；带时间轴的文件会显示为时间块。</p>
+            <strong>Upload text / captions</strong>
+            <p>Supports .txt, .md, .srt, and .vtt. Timed files appear as timestamp blocks.</p>
           </div>
           <label className="field">
-            <span>文件</span>
+            <span>File</span>
             <input
               type="file"
               accept=".txt,.md,.srt,.vtt,text/plain"
@@ -354,10 +354,10 @@ export function ExtractionWorkspace({
         <div className="section-workspace" style={{ marginTop: "1rem" }}>
           <div className="range-head">
             <strong>
-              {labelForMaterialKind(genericMaterialKind, "zh")}
+              {labelForMaterialKind(genericMaterialKind, "en")}
               {genericMaterialTitle ? ` · ${genericMaterialTitle}` : ""}
             </strong>
-            <p>勾选要参与分析与写入的块（论坛/帖子会尽量保持段落结构）。</p>
+            <p>Select the blocks to use for analysis and writing. Forum and post structure is preserved when possible.</p>
           </div>
           <div className="chapter-list compact">
             {genericSegments.map((seg, idx) => (
@@ -367,7 +367,7 @@ export function ExtractionWorkspace({
                   <strong>
                     {seg.startTime !== undefined
                       ? `[${formatSecondsTimestamp(seg.startTime)}${seg.endTime !== undefined ? `–${formatSecondsTimestamp(seg.endTime)}` : ""}] `
-                      : `段落 ${idx + 1} `}
+                      : `Paragraph ${idx + 1} `}
                   </strong>
                   {seg.label ? `${seg.label} · ` : ""}
                   {seg.text.length > 220 ? `${seg.text.slice(0, 220)}…` : seg.text}
@@ -379,30 +379,34 @@ export function ExtractionWorkspace({
       )}
 
       <details open className="priority-section" style={{ marginTop: "1rem" }}>
-        <summary>Extraction &amp; selection / 提取与勾选</summary>
+        <summary>Extraction & selection</summary>
         <div className="timestamp-chapters">
           <p className="transcript-note">
-            当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材源"}</strong> · 类型：
-            <strong> {sourceMaterialPipeline === "transcript" ? labelForMaterialKind("youtube", "zh") : labelForMaterialKind(genericMaterialKind, "zh")}</strong>
+            Current tab: <strong>{sourceMaterialPipeline === "transcript" ? "Transcript" : "General source"}</strong> · Type:
+            <strong> {sourceMaterialPipeline === "transcript" ? labelForMaterialKind("youtube", "en") : labelForMaterialKind(genericMaterialKind, "en")}</strong>
           </p>
           {selectedMaterial ? (
             <>
               <p>
-                <strong>范围：</strong> {selectedMaterial.summary}
+                <strong>Range:</strong> {selectedMaterial.summary}
               </p>
               <textarea className="transcript-preview" readOnly rows={6} value={selectedMaterial.text} />
             </>
           ) : (
-            <p className="transcript-note">尚未选择可用素材源。请勾选章节/段落，或勾选「使用完整素材源」。</p>
+            <p className="transcript-note">No usable source material selected yet. Select chapters or paragraphs, or opt in to Use full source.</p>
           )}
           <div className="range-actions cta-row ee-quick-action-grid">
             {selectedMaterialActions}
-            <button type="button" className="primary" onClick={onReplaceSourceCaptureFromMaterialSelection} disabled={!selectedMaterial}>
-              Replace Source with selection
-            </button>
-            <button type="button" className="secondary" onClick={onUseFullTranscriptAsSource} disabled={!transcriptText.trim()}>
-              Use full transcript in Source
-            </button>
+            {onReplaceSourceCaptureFromMaterialSelection ? (
+              <button type="button" className="primary" onClick={onReplaceSourceCaptureFromMaterialSelection} disabled={!selectedMaterial}>
+                Replace Source with selection
+              </button>
+            ) : null}
+            {onUseFullTranscriptAsSource ? (
+              <button type="button" className="secondary" onClick={onUseFullTranscriptAsSource} disabled={!transcriptText.trim()}>
+                Use full transcript in Source
+              </button>
+            ) : null}
           </div>
           {savedTopicCompatibility}
         </div>
@@ -412,9 +416,9 @@ export function ExtractionWorkspace({
 
       {!hideMaterialAnalysisPanel ? (
       <details open className="priority-section" style={{ marginTop: "0.5rem" }}>
-        <summary>分析素材源 / Analyze Source（仅已选）</summary>
+        <summary>Analyze Source (selected material only)</summary>
         <div className="timestamp-chapters">
-          <p className="transcript-note">以下按钮只对「已选题材」中的文本生效，不会默认使用全文。</p>
+          <p className="transcript-note">These buttons use only selected topic material; they do not use the full source by default.</p>
           <div className="range-actions cta-row ee-quick-action-grid">
             {materialAnalysisButtons.map((b) => (
               <button
@@ -429,12 +433,12 @@ export function ExtractionWorkspace({
             ))}
           </div>
           <label className="field">
-            <span>你想从这段素材源里提取什么？</span>
+            <span>What do you want to extract from this source material?</span>
             <textarea
               rows={3}
               value={materialCustomPrompt}
               onChange={(e) => onMaterialCustomPromptChange?.(e.target.value)}
-              placeholder="例如：帮我找出里面最适合写疗愈文章的部分；从这段 podcast 转录提取主要观点…"
+              placeholder="Example: find the best passages for a reflective article; extract the main claims from this podcast transcript…"
             />
           </label>
           <div className="range-actions cta-row">
@@ -444,7 +448,7 @@ export function ExtractionWorkspace({
               disabled={materialAnalysisLoading || !materialCustomPrompt.trim() || !selectedMaterial}
               onClick={() => onRunMaterialAnalysisTask?.(materialCustomPrompt.trim())}
             >
-              {materialAnalysisLoading ? "分析中…" : "开始分析"}
+              {materialAnalysisLoading ? "Analyzing…" : "Start analysis"}
             </button>
           </div>
           {materialAnalysisStatus && <span className="range-status">{materialAnalysisStatus}</span>}
@@ -454,15 +458,15 @@ export function ExtractionWorkspace({
 
       {sourceMaterialPipeline === "transcript" && !transcriptText && (
         <div className="transcript-empty">
-          <strong>{effectiveYoutubeSource ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
+          <strong>{effectiveYoutubeSource ? "YouTube link detected" : "No transcript text yet"}</strong>
           <p>
             {effectiveYoutubeSource
-              ? "点击提取素材源，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
-              : "在 Source 粘贴 YouTube 链接并切回本页签，或使用「链接抓取 / 粘贴 / 音频」处理其他来源。"}
+              ? "Click Extract source, then select timestamp chapters, rough sections, or topic-filter matches."
+              : "Paste a YouTube link in Source and return here, or use Link extract, Long paste, or Audio upload for other sources."}
           </p>
           {effectiveYoutubeSource && (
             <button type="button" className="primary transcript-fetch" onClick={onFetchTranscript} disabled={transcriptLoading}>
-              {transcriptLoading ? "提取中…" : "提取素材源"}
+              {transcriptLoading ? "Extracting…" : "Extract source"}
             </button>
           )}
           {transcriptStatus && <span className="range-status">{transcriptStatus}</span>}

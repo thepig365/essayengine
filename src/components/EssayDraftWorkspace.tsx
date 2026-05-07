@@ -9,7 +9,7 @@ type Props = {
   onSaveDraft: () => void;
   onClearDraft: () => void;
   onCopyDraft: () => void;
-  onUseDraftAsSource: () => void;
+  onUseDraftAsSource?: () => void;
   onMarkDraftFinal: () => void;
   onReadDraft: () => void;
   onDownloadDraftParts: () => void;
@@ -52,7 +52,7 @@ export function EssayDraftWorkspace({
       </div>
 
       <div className="draft-helper">
-        The draft is your human assembly space. It is not sent to the engine unless you click Use draft as source.
+        The draft is your human assembly space. Use Review actions to revise it, or mark it as final when it is ready.
       </div>
 
       <label className="field">
@@ -86,9 +86,11 @@ export function EssayDraftWorkspace({
         <button type="button" onClick={onCopyDraft} disabled={!hasContent}>
           Copy draft
         </button>
-        <button type="button" className="primary" onClick={onUseDraftAsSource} disabled={!hasContent}>
-          Use draft as source
-        </button>
+        {onUseDraftAsSource ? (
+          <button type="button" className="primary" onClick={onUseDraftAsSource} disabled={!hasContent}>
+            Use draft as source
+          </button>
+        ) : null}
         <button type="button" onClick={onMarkDraftFinal} disabled={!hasContent}>
           Mark draft as final
         </button>

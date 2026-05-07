@@ -17,7 +17,6 @@ import { ProcessingWorkspace } from "@/components/workflow/ProcessingWorkspace";
 import { MaterialWorkspace } from "@/components/workflow/MaterialWorkspace";
 import { ExtractionWorkspace } from "@/components/workflow/ExtractionWorkspace";
 import { TopicWorkspace } from "@/components/workflow/TopicWorkspace";
-import { StudioWorkspaceShell } from "@/components/studio/StudioWorkspaceShell";
 import { TopicMaterialStatusStrip } from "@/components/studio/TopicMaterialStatusStrip";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { formatAudioTime, useAudioWorkspace } from "@/hooks/useAudioWorkspace";
@@ -1199,15 +1198,15 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       setLoading(false);
       setError(
         isProbablyUrl(customInstruction, { anywhere: true })
-          ? "这看起来是素材源链接。请先放到“Source / 素材源”阶段提取并保存为题材。"
-          : "请先在“题材”阶段保存题材，再进行加工。",
+          ? "This looks like a source link. Add it on the Source screen, extract material, and save a topic first."
+          : "Save a topic before processing.",
       );
       return;
     }
     const payloadInput = topicMaterial.content.trim();
     if (!payloadInput) {
       setLoading(false);
-      setError("请先在“题材”阶段保存题材，再进行加工。");
+      setError("Save a topic before processing.");
       return;
     }
     try {
@@ -1246,7 +1245,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setTranscriptStatus(null);
     const sourceUrl = (overrideUrl ?? (sourceMaterialRawInput.trim() || input.trim())).trim();
     if (!sourceUrl) {
-      setTranscriptStatus("缺少可提取的链接。");
+      setTranscriptStatus("Missing extractable link.");
       setTranscriptLoading(false);
       return;
     }
@@ -1286,7 +1285,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         setTopicStatus(null);
         setSourceMaterialPipeline("transcript");
         setMaterialUseFullExplicit(false);
-        setTranscriptStatus("素材源已提取。请勾选章节或片段后再写入 Source。");
+        setTranscriptStatus("Source extracted. Select chapters or segments before using it.");
       } else {
         setTranscriptText("");
         setTranscriptSegments([]);
@@ -1301,7 +1300,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         setChapterStatus(null);
         setRangeStatus(null);
         setTopicStatus(null);
-        setTranscriptStatus(data.warnings?.[0] ?? "暂不可用该链接的字幕/转录。");
+        setTranscriptStatus(data.warnings?.[0] ?? "Transcript is not available for this link yet.");
       }
     } catch (err) {
       setTranscriptStatus(err instanceof Error ? err.message : "Unknown error.");
@@ -1524,7 +1523,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
   function useFullTranscriptAsSource() {
     if (!transcriptText.trim()) {
-      setTranscriptStatus("暂无转录预览。请先提取素材源。");
+      setTranscriptStatus("No transcript preview yet. Extract source first.");
       return;
     }
     const content = formatTranscriptText(transcriptText);
@@ -1537,10 +1536,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     createSourceVersion({
       content,
       origin: "transcript_selection",
-      label: "使用完整素材源（转录全文）",
+      label: "Use full source (full transcript)",
       parentVersionId: currentSourceVersionId ?? undefined,
     });
-    setTranscriptStatus("已使用完整素材源替换 Source Capture（显式）。");
+    setTranscriptStatus("Full source explicitly replaced Source Capture.");
     setRangeStatus(null);
   }
 
@@ -1960,35 +1959,35 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (materialUseFullExplicit) {
       return {
         text: formatTranscriptText(transcriptText),
-        summary: "使用完整素材源（字幕 / 转录全文）",
+        summary: "Use full source (captions / full transcript)",
       };
     }
     const ch = checkedWorkspaceSections();
     if (ch.length > 0) {
       return {
         text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
-        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        summary: `Timestamp chapters · ${ch.length} selected`,
       };
     }
     const full = checkedFullTranscriptSections();
     if (full.length > 0) {
       return {
         text: cleanSectionsText(full, true, includeTranscriptTimestamps),
-        summary: `粗分段 · 已选 ${full.length} 段`,
+        summary: `Rough sections · ${full.length} selected`,
       };
     }
     const topic = checkedTopicSections();
     if (topic.length > 0) {
       return {
         text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
-        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        summary: `Topic filter · ${topic.length} selected`,
       };
     }
     const manual = manualRangeBlocks({ silent: true });
     if (manual && manual.length > 0) {
       return {
         text: formatManualRangesForSource(manual),
-        summary: `手动时间范围 · ${manual.length} 段`,
+        summary: `Manual time ranges · ${manual.length} selected`,
       };
     }
     return null;
@@ -2027,7 +2026,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       .join("\n\n");
     return {
       text: body,
-      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      summary: hasTs ? `${picked.length} caption blocks selected` : `${picked.length} paragraph blocks selected`,
     };
   }
 
@@ -2090,7 +2089,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (ch.length > 0) {
       return {
         text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
-        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        summary: `Timestamp chapters · ${ch.length} selected`,
         selectedSegmentIds: ch.map((section) => section.id),
       };
     }
@@ -2098,7 +2097,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (full.length > 0) {
       return {
         text: cleanSectionsText(full, true, includeTranscriptTimestamps),
-        summary: `粗分段 · 已选 ${full.length} 段`,
+        summary: `Rough sections · ${full.length} selected`,
         selectedSegmentIds: full.map((section) => section.id),
       };
     }
@@ -2106,7 +2105,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (topic.length > 0) {
       return {
         text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
-        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        summary: `Topic filter · ${topic.length} selected`,
         selectedSegmentIds: topic.map((section) => section.id),
       };
     }
@@ -2116,7 +2115,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       const last = manual[manual.length - 1];
       return {
         text: formatManualRangesForSource(manual),
-        summary: `手动时间范围 · ${manual.length} 段`,
+        summary: `Manual time ranges · ${manual.length} selected`,
         selectedSegmentIds: manual.map((block, index) => `manual-range-${index + 1}-${block.start}-${block.end}`),
         selectedRange: {
           startTime: first.start,
@@ -2149,7 +2148,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     const timed = picked.filter((segment) => segment.startTime !== undefined);
     return {
       text: body,
-      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      summary: hasTs ? `${picked.length} caption blocks selected` : `${picked.length} paragraph blocks selected`,
       selectedSegmentIds: picked.map((segment) => segment.id),
       selectedRange: timed.length
         ? {
@@ -2213,7 +2212,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleSaveAsTopic() {
     const nextTopicMaterial = createTopicMaterialFromCurrentSelection();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("请先选择素材源。");
+      setTopicMaterialStatus("Select source material first.");
       setMaterialAnalysisStatus("No selected material to save.");
       return;
     }
@@ -2221,20 +2220,20 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       prev.trim() ? `${prev.trim()}\n\n---\n\n${nextTopicMaterial.content}` : nextTopicMaterial.content,
     );
     appendBlockToCustomInstruction("Saved topic material", nextTopicMaterial.content);
-    saveTopicMaterial(nextTopicMaterial, "题材已保存。");
+    saveTopicMaterial(nextTopicMaterial, "Topic saved.");
     setMaterialAnalysisStatus("Saved to topic stash and appended to your task instruction.");
   }
 
   function handleUseFullSource() {
     const nextTopicMaterial = createTopicMaterialFromFullSource();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("没有可用的完整素材源。");
+      setTopicMaterialStatus("No full source is available.");
       setMaterialAnalysisStatus("No transcript or document text available as full source.");
       return;
     }
     setMaterialUseFullExplicit(true);
     appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
-    saveTopicMaterial(nextTopicMaterial, "已使用完整素材源保存题材。");
+    saveTopicMaterial(nextTopicMaterial, "Topic saved from the full source.");
     setMaterialAnalysisStatus("Full source is on; material was appended to your task instruction.");
     setProjectStatus("Full source enabled and saved as topic material.");
   }
@@ -2242,14 +2241,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleClearTopic() {
     setTopicMaterial(null);
     setTopicMaterialFingerprint(null);
-    setTopicMaterialStatus("题材已清除。");
+    setTopicMaterialStatus("Topic cleared.");
   }
 
   function runWithTopicMaterialGuard(action: () => void | Promise<void>) {
     if (!canProcessTopicMaterial(topicMaterial)) {
-      setError("请先在“题材”阶段保存题材，再进行加工。");
-      setTopicMaterialStatus("请先在“题材”阶段保存题材，再进行加工。");
-      setProjectStatus("请先在“题材”阶段保存题材，再进行加工。");
+      setError("Save a topic before processing.");
+      setTopicMaterialStatus("Save a topic before processing.");
+      setProjectStatus("Save a topic before processing.");
       return;
     }
     void action();
@@ -2289,13 +2288,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (isStandaloneUrlText(value.trim())) {
       setSourceMaterialRawInput(value.trim());
       setCustomInstruction("");
-      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材源」，正在提取。");
+      setProjectStatus("This looks like a source URL — moved to Source and extracting.");
       return;
     }
     if (head && isStandaloneUrlText(head) && (value.includes("\n") || value.length > head.length + 2)) {
       setSourceMaterialRawInput(head);
       setCustomInstruction(value.slice(value.indexOf("\n")).trim());
-      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材源」。");
+      setProjectStatus("Detected URL in first line — moved to Source.");
       return;
     }
     setCustomInstruction(value);
@@ -2384,7 +2383,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   async function fetchAndApplyGenericLink(url: string): Promise<boolean> {
     const kind = detectMaterialKindFromUrl(url);
     if (kind === "youtube") {
-      setLinkExtractStatus("YouTube 请使用「转录 / 字幕」页签获取带时间戳字幕。");
+      setLinkExtractStatus("For YouTube, use the Transcript tab to get timestamped captions.");
       return false;
     }
     setLinkExtractLoading(true);
@@ -2398,12 +2397,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       });
       const data = (await res.json()) as { text?: string; title?: string; error?: string; siteName?: string };
       if (!res.ok) {
-        setLinkExtractStatus(data.error ?? `提取失败（${res.status}）`);
+        setLinkExtractStatus(data.error ?? `Extraction failed (${res.status})`);
         return false;
       }
       const raw = (data.text ?? "").trim();
       if (!raw) {
-        setLinkExtractStatus("未能从页面提取正文，可改用手动粘贴。");
+        setLinkExtractStatus("Could not extract page text. Try manual paste.");
         return false;
       }
       setLinkExtractUrl(url);
@@ -2416,16 +2415,16 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       } catch {
         hostname = "";
       }
-      setGenericMaterialTitle(data.title?.trim() || hostname || "链接内容");
+      setGenericMaterialTitle(data.title?.trim() || hostname || "Link content");
       setGenericAuthor(data.siteName?.trim() ?? "");
       setGenericRawContent(raw);
-      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "段落"));
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "Paragraph"));
       setGenericCheckedIds([]);
       setMaterialUseFullExplicit(false);
-      setGenericWorkspaceNotice("正文已拆分为可选段落。请勾选需要的块。");
+      setGenericWorkspaceNotice("Text split into selectable paragraphs. Choose the blocks you need.");
       return true;
     } catch (err) {
-      setLinkExtractStatus(err instanceof Error ? err.message : "提取失败");
+      setLinkExtractStatus(err instanceof Error ? err.message : "Extraction failed");
       return false;
     } finally {
       setLinkExtractLoading(false);
@@ -2435,7 +2434,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   async function runLinkMaterialExtract() {
     const url = linkExtractUrl.trim();
     if (!url) {
-      setLinkExtractStatus("请输入链接。");
+      setLinkExtractStatus("Enter a link.");
       return;
     }
     await fetchAndApplyGenericLink(url);
@@ -2448,19 +2447,19 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setSourceMaterialPipeline("paste");
     setGenericMaterialKind("text");
     setGenericMaterialUrl("");
-    setGenericMaterialTitle("粘贴长文");
+    setGenericMaterialTitle("Long paste");
     setGenericAuthor("");
     setGenericRawContent(text);
-    setGenericSegments(splitPlainTextIntoParagraphBlocks(text, "段落"));
+    setGenericSegments(splitPlainTextIntoParagraphBlocks(text, "Paragraph"));
     setGenericCheckedIds([]);
     setMaterialUseFullExplicit(false);
-    setGenericWorkspaceNotice("已拆分为段落块，请勾选需要的部分。");
+    setGenericWorkspaceNotice("Split into paragraph blocks. Select the parts you need.");
   }
 
   function applyPasteMaterialBlocks() {
     const raw = pasteBlockInput.trim();
     if (!raw) {
-      setGenericWorkspaceNotice("请先粘贴长文。");
+      setGenericWorkspaceNotice("Paste long-form text first.");
       return;
     }
     applyPasteMaterialBlocksFromRaw(raw);
@@ -2468,7 +2467,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
   async function transcribeAudioFile(file: File) {
     if (!file.size) {
-      setGenericWorkspaceNotice("音频文件为空。");
+      setGenericWorkspaceNotice("Audio file is empty.");
       return;
     }
     setAudioUploadLoading(true);
@@ -2481,12 +2480,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = (await res.json()) as { text?: string; error?: string };
       if (!res.ok) {
-        setGenericWorkspaceNotice(data.error ?? "转写失败");
+        setGenericWorkspaceNotice(data.error ?? "Transcription failed");
         return;
       }
       const raw = (data.text ?? "").trim();
       if (!raw) {
-        setGenericWorkspaceNotice("转写结果为空。");
+        setGenericWorkspaceNotice("Transcription result is empty.");
         return;
       }
       setSourceMaterialPipeline("audio");
@@ -2495,12 +2494,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       setGenericMaterialTitle(file.name);
       setGenericAuthor("");
       setGenericRawContent(raw);
-      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "转录段落"));
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "Transcript paragraph"));
       setGenericCheckedIds([]);
       setMaterialUseFullExplicit(false);
-      setGenericWorkspaceNotice("转写完成。按段落勾选后再分析或写入 Source。");
+      setGenericWorkspaceNotice("Transcription complete. Select paragraphs before analysis or topic saving.");
     } catch (err) {
-      setGenericWorkspaceNotice(err instanceof Error ? err.message : "转写失败");
+      setGenericWorkspaceNotice(err instanceof Error ? err.message : "Transcription failed");
     } finally {
       setAudioUploadLoading(false);
     }
@@ -2512,7 +2511,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     try {
       raw = await file.text();
     } catch {
-      setGenericWorkspaceNotice("无法读取该文件。");
+      setGenericWorkspaceNotice("Could not read this file.");
       return;
     }
     let segments: SourceSegment[] = [];
@@ -2522,7 +2521,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       segments = segmentsFromVttContent(raw);
     }
     if (!segments.length) {
-      segments = splitPlainTextIntoParagraphBlocks(raw, "段落");
+      segments = splitPlainTextIntoParagraphBlocks(raw, "Paragraph");
     }
     setSourceMaterialPipeline("document");
     setGenericMaterialKind("document");
@@ -2535,8 +2534,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setMaterialUseFullExplicit(false);
     setGenericWorkspaceNotice(
       segments.some((s) => s.startTime !== undefined)
-        ? "已识别时间轴字幕块。"
-        : "已按段落拆分，请勾选需要的部分。",
+        ? "Timed caption blocks detected."
+        : "Split into paragraphs. Select the parts you need.",
     );
   }
 
@@ -2573,13 +2572,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function replaceSourceCaptureFromMaterialSelection() {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("请先选择素材源。");
+      setMaterialAnalysisStatus("Select source material first.");
       return;
     }
     replaceSource(
       sel.text,
       "mixed_source_content",
-      "已用所选素材源替换 Source Capture。",
+      "Selected source material replaced Source Capture.",
       setMaterialAnalysisStatus,
       1,
     );
@@ -2753,30 +2752,30 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             setSourceType("youtube_url");
             setSourceMaterialPipeline("transcript");
             setInput("");
-            setAutoExtractStatus("Extracting transcript… / 正在提取字幕…");
+            setAutoExtractStatus("Extracting transcript…");
             await getTranscript(raw);
             setAutoExtractStatus(null);
             return;
           }
           if (WEBPAGE_RE.test(raw) && /\.(mp3|wav|m4a|aac|ogg)(\?|$|#)/i.test(raw)) {
             setAutoExtractStatus(
-              "Transcript not available for direct audio URL. Please paste transcript or upload audio. / 直连音频无法自动转写，请粘贴文稿或上传音频。",
+              "Transcript not available for direct audio URL. Please paste transcript or upload audio.",
             );
             return;
           }
           if (WEBPAGE_RE.test(raw)) {
-            setAutoExtractStatus("正在提取正文…");
+            setAutoExtractStatus("Extracting page text…");
             const ok = await fetchAndApplyGenericLink(raw);
-            setAutoExtractStatus(ok ? null : "页面正文提取失败，请尝试手动粘贴。");
+            setAutoExtractStatus(ok ? null : "Page text extraction failed. Try manual paste.");
             return;
           }
           const compact = raw.replace(/\s/g, "");
           if (compact.length >= 80 && (raw.includes("\n") || raw.length >= 200)) {
             applyPasteMaterialBlocksFromRaw(raw);
-            setAutoExtractStatus("已拆分为可选段落，请勾选需要的块。");
+            setAutoExtractStatus("Split into selectable paragraphs. Choose the blocks you need.");
           }
         } catch {
-          setAutoExtractStatus("自动提取失败，请使用中间栏工具手动处理。");
+          setAutoExtractStatus("Auto extraction failed. Use extraction tools manually.");
         }
       })();
     }, 750);
@@ -3106,78 +3105,322 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         onMegaItemActivate={handleMegaMenuItem}
         trailingActions={navTrailing}
       />
-      <StudioWorkspaceShell
-        topicStrip={
-          <TopicMaterialStatusStrip
-            variant={!topicMaterial ? "missing" : topicMaterialIsStale ? "stale" : "saved"}
-            sourceTypeLabel={topicMaterial ? String(topicMaterial.sourceType) : "—"}
-            wordCount={topicMaterialWordCount}
-            fullSourceAvailable={Boolean(topicMaterial?.useFullSource)}
-            preview={topicMaterial?.content ?? ""}
-            statusNote={topicMaterialStatus || undefined}
-          />
-        }
-        sourcePanel={
-          <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Your source material for the workflow.</p>
-            <pre className="ee-studio-canvas-body">
-              {(transcriptText || input).trim()
-                ? `${(transcriptText || input).trim().slice(0, 900)}${(transcriptText || input).trim().length > 900 ? "…" : ""}`
-                : "No source yet. Paste material with Open Source, then extract the parts you want to save as a topic."}
-            </pre>
-          </div>
-        }
-        sourceActions={
-          <>
-            <button type="button" className="primary" onClick={shellOpenMaterial}>
-              Open Source
-            </button>
-            <button type="button" className="secondary" onClick={shellExtractSource}>
-              Extract Source
-            </button>
-          </>
-        }
-        draftPanel={
-          <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Build the working draft from a saved topic.</p>
-            <pre className="ee-studio-canvas-body">
-              {(primaryResultOutput || essayDraftContent).trim()
-                ? `${(primaryResultOutput || essayDraftContent).trim().slice(0, 900)}${(primaryResultOutput || essayDraftContent).trim().length > 900 ? "…" : ""}`
-                : "No draft yet. Save a topic from your source, then process it to create a first draft."}
-            </pre>
-          </div>
-        }
-        draftActions={
-          <>
-            <button type="button" className={topicMaterial ? "primary" : "secondary"} onClick={shellProcessSavedTopic} disabled={!topicMaterial}>
-              Process Saved Topic
-            </button>
-            <button type="button" className="secondary" onClick={shellOpenDraftEditor}>
-              Open Draft Editor
-            </button>
-          </>
-        }
-        finalPanel={
-          <div className="ee-studio-canvas">
-            <p className="ee-studio-canvas-lead">Approved final article ready for review and export.</p>
-            <pre className="ee-studio-canvas-body">
-              {finalVersion?.content?.trim()
-                ? `${finalVersion.content.trim().slice(0, 900)}${finalVersion.content.trim().length > 900 ? "…" : ""}`
-                : "No final yet. Create a draft first, review it, then mark the approved version as final."}
-            </pre>
-          </div>
-        }
-        finalActions={
-          <>
-            <button type="button" className={topicMaterial ? "primary" : "secondary"} onClick={shellOpenReview} disabled={!topicMaterial}>
-              Open Review
-            </button>
-            <button type="button" className="secondary" onClick={shellExportFinal} disabled={!topicMaterial}>
-              Export Final
-            </button>
-          </>
-        }
-      />
+      <section className="ee-clean-workflow" data-workflow-step={mobileWorkflowStepId} aria-label="Clean workflow workspace">
+        <TopicMaterialStatusStrip
+          variant={!topicMaterial ? "missing" : topicMaterialIsStale ? "stale" : "saved"}
+          sourceTypeLabel={topicMaterial ? String(topicMaterial.sourceType) : "—"}
+          wordCount={topicMaterialWordCount}
+          fullSourceAvailable={Boolean(topicMaterial?.useFullSource)}
+          preview={topicMaterial?.content ?? ""}
+          statusNote={topicMaterialStatus || undefined}
+        />
+
+        {mobileWorkflowStepId === "source" ? (
+          <section className="ee-clean-panel ee-clean-source-panel" aria-label="Source screen">
+            <div className="layer-head">
+              <p className="eyebrow">Source</p>
+              <h1>Capture source material</h1>
+              <p>Paste or prepare the raw source here. Extraction, processing, review, export, and Advanced Studio tools stay out of this screen.</p>
+            </div>
+            <div className="source-strip" aria-label="Supported source types">
+              {SOURCE_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  className={sourceChip.label === chip.label ? "active" : ""}
+                  onClick={() => setSourceChip(chip)}
+                >
+                  {chip.label}
+                </button>
+              ))}
+              {isWebpageUrl && <strong>Webpage detected</strong>}
+              {effectiveYoutubeSource && <strong>YouTube detected</strong>}
+            </div>
+            <label className="field">
+              <span>Source input</span>
+              <textarea value={input} onChange={(e) => updateInput(e.target.value)} rows={16} placeholder={sourceChip.placeholder} />
+            </label>
+            <div className={input.trim() ? "source-helper active" : "source-helper"}>{sourceHelper}</div>
+            <div className="source-purpose source-summary-card">
+              <strong>Source preview and status</strong>
+              <dl>
+                <div>
+                  <dt>Detected type</dt>
+                  <dd>{sourceKind || userFacingDetectedSourceKind(input)}</dd>
+                </div>
+                <div>
+                  <dt>Characters</dt>
+                  <dd>{input.trim().length.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt>Approx. words</dt>
+                  <dd>{sourceSummaryDetails.words.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt>From</dt>
+                  <dd>{sourceFrom}</dd>
+                </div>
+              </dl>
+            </div>
+            {effectiveYoutubeSource && !transcriptText ? (
+              <div className="transcript-box source-fetch">
+                <div>
+                  <strong>YouTube or podcast URL detected</strong>
+                  <p className="source-fetch-note">Fetch the transcript here, then continue to Extract to select blocks or ranges.</p>
+                </div>
+                <button type="button" className="secondary" onClick={() => void getTranscript()} disabled={transcriptLoading}>
+                  {transcriptLoading ? "Fetching…" : "Fetch transcript"}
+                </button>
+                {transcriptStatus ? <span className="status">{transcriptStatus}</span> : null}
+              </div>
+            ) : null}
+            {sourceActionStatus ? <div className="source-action-status">{sourceActionStatus}</div> : null}
+            <div className="range-actions cta-row">
+              <button type="button" className="primary" onClick={() => selectWorkflowStep(1)} disabled={!input.trim() && !transcriptText.trim()}>
+                Continue to Extract
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {mobileWorkflowStepId === "request" ? (
+          <section className="ee-clean-panel" aria-label="Extract screen">
+            <ExtractionWorkspace
+              active
+              hideMaterialAnalysisPanel
+              sourceMaterialPipeline={sourceMaterialPipeline}
+              onSourceMaterialPipelineChange={(tab) => {
+                setSourceMaterialPipeline(tab);
+                setMaterialAnalysisStatus(null);
+              }}
+              materialUseFullExplicit={materialUseFullExplicit}
+              onMaterialUseFullExplicitChange={setMaterialUseFullExplicit}
+              linkExtractUrl={linkExtractUrl}
+              onLinkExtractUrlChange={setLinkExtractUrl}
+              linkExtractLoading={linkExtractLoading}
+              onRunLinkMaterialExtract={runLinkMaterialExtract}
+              linkExtractStatus={linkExtractStatus}
+              pasteBlockInput={pasteBlockInput}
+              onPasteBlockInputChange={setPasteBlockInput}
+              onApplyPasteMaterialBlocks={applyPasteMaterialBlocks}
+              audioUploadLoading={audioUploadLoading}
+              onTranscribeAudioFile={(file) => void transcribeAudioFile(file)}
+              onIngestDocumentFile={(file) => void ingestDocumentFile(file)}
+              genericWorkspaceNotice={genericWorkspaceNotice}
+              genericSegments={genericSegments}
+              genericCheckedIds={genericCheckedIds}
+              onToggleGenericSegment={toggleGenericSegment}
+              genericMaterialKind={genericMaterialKind}
+              genericMaterialTitle={genericMaterialTitle}
+              selectedMaterial={selectedSourceMaterial}
+              transcriptText={transcriptText}
+              effectiveYoutubeSource={effectiveYoutubeSource}
+              transcriptLoading={transcriptLoading}
+              onFetchTranscript={() => void getTranscript()}
+              transcriptStatus={transcriptStatus}
+              timestampChapterInput={timestampChapterInput}
+              onTimestampChapterInputChange={setTimestampChapterInput}
+              onTimestampChapterInputTouched={() => {
+                setChapterSectionsGenerated(false);
+                setCheckedChapterIds([]);
+                setChapterStatus(null);
+              }}
+              onApplyTimestampChapters={applyTimestampChapters}
+              chapterSectionsGenerated={chapterSectionsGenerated}
+              timestampChapterSections={timestampChapterSections}
+              checkedChapterIds={checkedChapterIds}
+              onToggleTimestampChapter={toggleTimestampChapter}
+              chapterStatus={chapterStatus}
+              topicInput={topicInput}
+              onTopicInputChange={setTopicInput}
+              onFindTopicSections={findTopicSections}
+              onCopyMatchedSections={copyMatchedSections}
+              onClearTopicMatches={clearTopicMatches}
+              topicMatches={topicMatches}
+              checkedTopicSectionIds={checkedTopicSectionIds}
+              onToggleTopicSection={toggleTopicSection}
+              topicStatus={topicStatus}
+              manualRanges={manualRanges}
+              onUpdateManualRange={updateManualRange}
+              onRemoveManualRange={removeManualRange}
+              onAddManualRange={addManualRange}
+              onClearManualRanges={clearManualRanges}
+              rangeStatus={rangeStatus}
+              includeTranscriptTimestamps={includeTranscriptTimestamps}
+              onIncludeTranscriptTimestampsChange={setIncludeTranscriptTimestamps}
+              onCopyCheckedFullTranscriptSections={copyCheckedFullTranscriptSections}
+              fullTranscriptSections={fullTranscriptSections}
+              checkedFullSectionIds={checkedFullSectionIds}
+              onToggleFullTranscriptSection={toggleFullTranscriptSection}
+              fullSectionStatus={fullSectionStatus}
+              formatTimestamp={formatTimestamp}
+              cleanSectionText={cleanSectionText}
+              selectedMaterialActions={
+                <button type="button" className="primary" onClick={appendTopicMaterialFromSelection} disabled={!selectedSourceMaterial}>
+                  Save as Topic
+                </button>
+              }
+            />
+          </section>
+        ) : null}
+
+        {mobileWorkflowStepId === "workpiece" ? (
+          <section className="ee-clean-panel" aria-label="Topic screen">
+            <TopicWorkspace
+              active
+              topicMaterial={topicMaterial}
+              topicMaterialStatus={topicMaterialStatus}
+              isCurrentTopicStale={topicMaterialIsStale}
+              topicMaterialWordCount={topicMaterialWordCount}
+              topicSelectedRangeLabel={topicSelectedRangeLabel}
+              canSaveAsTopic={hasSelectedMaterialForTopic()}
+              canUseFullSource={Boolean(resolveFullSourceTextForRequest()?.trim())}
+              onSaveAsTopic={handleSaveAsTopic}
+              onUseFullSource={handleUseFullSource}
+              onClearTopic={handleClearTopic}
+            />
+            <div className="range-actions cta-row">
+              <button type="button" className="primary" onClick={shellProcessSavedTopic} disabled={!topicMaterial}>
+                Process Saved Topic
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {mobileWorkflowStepId === "refine" ? (
+          <section className="ee-clean-panel" aria-label="Process screen">
+            <ProcessingWorkspace
+              active
+              variant="controls"
+              topicMaterial={topicMaterial}
+              customInstruction={customInstruction}
+              onCustomInstructionChange={handleCustomInstructionChange}
+              canRunMaterialOutput={canRunMaterialOutputNow()}
+              materialAnalysisLoading={materialAnalysisLoading}
+              materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+              onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+              quickRequestButtons={QUICK_REQUEST_BUTTONS}
+              onApplyQuickRequest={applyQuickRequest}
+              providers={providers}
+              comparisonActive={comparisonActive}
+              onToggleProvider={toggleProvider}
+              controlsCollapsed={controlsCollapsed}
+              task={task}
+              onTaskChange={setTask}
+              activeTask={activeTask}
+              showWritingPresetHint={showWritingPresetHint}
+              sourceLanguage={sourceLanguage}
+              onSourceLanguageChange={setSourceLanguage}
+              targetLanguage={targetLanguage}
+              onTargetLanguageChange={setTargetLanguage}
+              outputMode={outputMode}
+              onOutputModeChange={setOutputMode}
+              activeMode={activeMode}
+              tone={tone}
+              onToneChange={setTone}
+              instructionPreset={instructionPreset}
+              onInstructionPresetChange={setInstructionPreset}
+              sourceSummary={sourceSummary}
+              generateBlocked={generateBlocked}
+              loading={loading}
+              canGenerate={canProcessTopicMaterial(topicMaterial)}
+              runLabel={runLabel}
+              error={error}
+              onGenerate={generate}
+              generateSectionRef={(node) => {
+                generateSectionRef.current = node;
+              }}
+            />
+          </section>
+        ) : null}
+
+        {mobileWorkflowStepId === "publish" ? (
+          <section id="ee-draft-editor-clean" className="ee-clean-panel" aria-label="Review screen">
+            <ReviewProductWorkspace
+              active
+              outputPanelProps={{
+                result,
+                task,
+                selectedProviders: providers,
+                onContinueResult: continueFromResult,
+                onReadResult: readResultAloud,
+                onAddResultToDraft: (output) => appendToEssayDraft(output, "Result added to Essay Draft."),
+                onReplaceDraftWithResult: (output) => replaceEssayDraft(output, "Essay Draft replaced with selected result."),
+                onMarkFinal: markResultAsFinal,
+                finalResult,
+                resultStep: workflowStep + 1,
+              }}
+              draftWorkspaceProps={{
+                title: essayDraftTitle,
+                content: essayDraftContent,
+                updatedAt: essayDraftUpdatedAt,
+                onTitleChange: (value) => {
+                  setEssayDraftTitle(value);
+                  setEssayDraftUpdatedAt(new Date().toISOString());
+                },
+                onContentChange: (value) => {
+                  setEssayDraftContent(value);
+                  setEssayDraftUpdatedAt(new Date().toISOString());
+                },
+                onSaveDraft: saveEssayDraft,
+                onClearDraft: clearEssayDraft,
+                onCopyDraft: copyEssayDraft,
+                onMarkDraftFinal: markEssayDraftAsFinal,
+                onReadDraft: () => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+                onDownloadDraftParts: () => runTtsAction("parts", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+                onDownloadDraftMerged: () => runTtsAction("merged", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3"),
+                onDownloadDraftTxt: downloadEssayDraftTxt,
+                audioBusy: ttsLoading,
+                status: essayDraftStatus,
+              }}
+              listenPanelContent={
+                <section className="layer read-layer">
+                  <div className="layer-head">
+                    <p className="eyebrow">Listen</p>
+                    <h2>Review aloud</h2>
+                    <p>Listen to the AI output or draft while you revise and decide what should become final.</p>
+                  </div>
+                  <div className="audio-grid">
+                    <div className="audio-card">
+                      <strong>AI output</strong>
+                      <p>{primaryResultOutput ? "Generated output is ready to review." : "Generate an output first."}</p>
+                      <button type="button" className="secondary" onClick={() => runTtsAction("play", primaryResultOutput, "essayengine-result", "essayengine-result.mp3")} disabled={!primaryResultOutput || ttsLoading}>
+                        Read AI output
+                      </button>
+                    </div>
+                    <div className="audio-card">
+                      <strong>Draft</strong>
+                      <p>{essayDraftContent.trim() ? "Draft is ready to review." : "Add an output to the draft first."}</p>
+                      <button type="button" className="secondary" onClick={() => runTtsAction("play", essayDraftContent, "essayengine-draft", "essayengine-draft.mp3")} disabled={!essayDraftContent.trim() || ttsLoading}>
+                        Read draft
+                      </button>
+                    </div>
+                  </div>
+                  {ttsStatus ? <p className="tts-status">{ttsStatus}</p> : null}
+                </section>
+              }
+            />
+          </section>
+        ) : null}
+
+        {mobileWorkflowStepId === "export" ? (
+          <section className="ee-clean-panel" aria-label="Export screen">
+            <ReviewProductWorkspace
+              active
+              finalPanelProps={{
+                finalVersion,
+                onCopyFinal: copyFinalArticle,
+                onDownloadFinalTxt: downloadFinalTxt,
+                onReadFinal: () => finalVersion && runTtsAction("play", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+                onDownloadFinalAudiobook: () =>
+                  finalVersion && runTtsAction("merged", finalVersion.content, "essayengine-final", "essayengine-final.mp3"),
+                onCopyGoogleDocs: copyFinalForGoogleDocs,
+                audioBusy: ttsLoading,
+              }}
+            />
+          </section>
+        ) : null}
+      </section>
       {startFreshConfirmOpen ? (
         <div className="ee-start-fresh-dialog" role="dialog" aria-modal="true" aria-labelledby="ee-start-fresh-title">
           <div className="ee-start-fresh-card">
@@ -3217,12 +3460,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             type="button"
             className="collapse-toggle"
             onClick={() => setControlsCollapsed((value) => !value)}
-            aria-label={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
-            title={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
+            aria-label={controlsCollapsed ? "Expand engines and settings" : "Collapse engines and settings"}
+            title={controlsCollapsed ? "Expand engines and settings" : "Collapse engines and settings"}
           >
             ☰
           </button>
-          {!controlsCollapsed && <span>引擎与设置</span>}
+          {!controlsCollapsed && <span>Engines and settings</span>}
         </div>
         <MaterialWorkspace
           active
@@ -3244,8 +3487,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {transcriptText && sourceMaterialPipeline === "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
               <div className="range-head">
-                <strong>Extracted transcript / 已提取字幕（快速勾选）</strong>
-                <p>详细分段见中间栏。勾选后可用于「已选题材」或 「Generate」。</p>
+                <strong>Extracted transcript (quick select)</strong>
+                <p>Detailed segments are in the extractor. Selected text can be saved as topic material.</p>
               </div>
               <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {fullTranscriptSections.map((section) => (
@@ -3284,7 +3527,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     />
                   </label>
                   <button type="button" className="secondary" onClick={useTranscriptRangeAsSource}>
-                    Use selected range / 使用此时间范围
+                    Use selected range
                   </button>
                 </div>
               </div>
@@ -3294,7 +3537,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {genericSegments.length > 0 && sourceMaterialPipeline !== "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
               <div className="range-head">
-                <strong>Extracted blocks / 已提取段落或块</strong>
+                <strong>Extracted paragraphs or blocks</strong>
               </div>
               <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {genericSegments.map((seg, idx) => (
@@ -3317,7 +3560,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
           <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
             <div className="range-head">
-              <strong>Extraction &amp; selection / 提取与勾选</strong>
+              <strong>Extraction &amp; selection</strong>
               <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
                 Live preview of what you checked in <strong>Source Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
               </p>
@@ -3329,12 +3572,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   {labelForMaterialKind(computeSelectedSourceMaterial()!.analysisSourceType, "en")}
                 </p>
                 <p>
-                  <strong>Range / 范围:</strong> {computeSelectedSourceMaterial()?.summary}
+                  <strong>Range:</strong> {computeSelectedSourceMaterial()?.summary}
                 </p>
                 <textarea readOnly className="transcript-preview" rows={4} value={computeSelectedSourceMaterial()?.text ?? ""} />
               </>
             ) : (
-              <p className="transcript-note">尚未选择可用素材源。请先勾选上方块或时间范围，或勾选「使用完整素材源」。</p>
+              <p className="transcript-note">No usable source material selected yet. Select blocks or a time range, or opt in to Use full source.</p>
             )}
             <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
@@ -4461,7 +4704,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
           primaryWorkspaceDisabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}
-          primaryWorkspaceLabel={loading ? "Generating…" : "生成本轮产出"}
+          primaryWorkspaceLabel={loading ? "Generating…" : "Generate output"}
         />
 
         <div id="ee-active-workspace" className="ee-active-workspace-anchor" aria-hidden="true" />
@@ -4574,16 +4817,16 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow">可选</span>
-          <strong className="ee-mobile-classic-title">完整编辑区</strong>
-          <span className="ee-mobile-classic-hint">草稿与本轮产出快捷入口 — 可选；主流程使用上方五步。</span>
+          <span className="eyebrow">Advanced Studio</span>
+          <strong className="ee-mobile-classic-title">Optional draft and AI output shortcuts</strong>
+          <span className="ee-mobile-classic-hint">Optional shortcuts; the main workflow uses the steps above.</span>
         </summary>
         <div className="ee-mobile-classic-body">
-          <nav className="mobile-primary-tabs" aria-label="完整编辑区面板">
+          <nav className="mobile-primary-tabs" aria-label="Optional draft and AI output shortcuts">
             {(
               [
                 { id: "draft" as const, label: "Draft" },
-                { id: "result" as const, label: "本轮产出" },
+                { id: "result" as const, label: "AI output" },
               ]
             ).map((tab) => (
               <button
@@ -4601,7 +4844,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             <section className="mobile-panel mobile-draft-panel">
               <div className="mobile-panel-head">
                 <strong>Draft</strong>
-                <span>用于润色与发布 — 不属于 Source / 素材源步骤</span>
+                <span>For review and export — not part of the Source step</span>
               </div>
               <input
                 value={essayDraftTitle}
@@ -4646,11 +4889,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {mobileActiveTab === "result" && (
             <section className="mobile-panel mobile-result-panel">
               <div className="mobile-panel-head">
-                <strong>本轮产出</strong>
-                <span>最新生成的 AI 输出</span>
+                <strong>AI output</strong>
+                <span>Latest generated AI output</span>
               </div>
               <div className="mobile-result-output" data-selectable-output="true">
-                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材源生成。"}
+                {primaryResultOutput || "No AI output yet. Generate from the saved topic first."}
               </div>
               <div className="mobile-action-grid">
                 <button

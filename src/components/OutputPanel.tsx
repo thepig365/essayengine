@@ -15,8 +15,8 @@ type Props = {
   result: EngineResponse | null;
   task: EngineTask;
   selectedProviders: LLMProvider[];
-  onReplaceResultSource: (output: string) => void;
-  onAddResultToSource: (output: string) => void;
+  onReplaceResultSource?: (output: string) => void;
+  onAddResultToSource?: (output: string) => void;
   onContinueResult: (output: string, task: EngineTask) => void;
   onReadResult: (output: string) => void;
   onAddResultToDraft: (output: string) => void;
@@ -83,8 +83,8 @@ function ResultCard({
   result: ProviderResult;
   task: EngineTask;
   outputMode: string;
-  onReplaceResultSource: (output: string) => void;
-  onAddResultToSource: (output: string) => void;
+  onReplaceResultSource?: (output: string) => void;
+  onAddResultToSource?: (output: string) => void;
   onContinueResult: (output: string, task: EngineTask) => void;
   onReadResult: (output: string) => void;
   onAddResultToDraft: (output: string) => void;
@@ -116,7 +116,7 @@ function ResultCard({
       <div className="output-text selectable-output" data-selectable-output="true">{result.output || "(no output)"}</div>
 
       <div className="suggested-action">Suggested: {suggestion}</div>
-      <div className="flow-hint">Source → AI output → 润色 / 发布</div>
+      <div className="flow-hint">Source → AI output → review / publish</div>
 
       <section className="assessment">
         <h4>Assessment notes</h4>
@@ -128,26 +128,30 @@ function ResultCard({
       </section>
 
       <div className="actions">
-        <button
-          type="button"
-          onClick={() => {
-            onReplaceResultSource(result.output);
-            setActionStatus("Result promoted to a new source version.");
-          }}
-          disabled={!result.output}
-        >
-          {compactLabels ? "Promote source" : "Promote to new source version"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onAddResultToSource(result.output);
-            setActionStatus("Result added to Source Capture.");
-          }}
-          disabled={!result.output}
-        >
-          {compactLabels ? "Add to source" : "Add this result to source"}
-        </button>
+        {onReplaceResultSource ? (
+          <button
+            type="button"
+            onClick={() => {
+              onReplaceResultSource(result.output);
+              setActionStatus("Result promoted to a new source version.");
+            }}
+            disabled={!result.output}
+          >
+            {compactLabels ? "Promote source" : "Promote to new source version"}
+          </button>
+        ) : null}
+        {onAddResultToSource ? (
+          <button
+            type="button"
+            onClick={() => {
+              onAddResultToSource(result.output);
+              setActionStatus("Result added to Source Capture.");
+            }}
+            disabled={!result.output}
+          >
+            {compactLabels ? "Add to source" : "Add this result to source"}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={async () => {
@@ -595,10 +599,10 @@ export function OutputPanel({
   return (
     <section className="result-layer">
       <div className="layer-head">
-        <p className="eyebrow">本轮产出</p>
+        <p className="eyebrow">AI output</p>
         <div className="title-row">
           <div>
-            <h2>本轮产出</h2>
+            <h2>AI output</h2>
             <p>
               {isMulti
                 ? "Compare engine outputs side by side, then choose the best result to polish or publish."
@@ -667,7 +671,7 @@ export function OutputPanel({
                     onAddResultToDraft={onAddResultToDraft}
                     onReplaceDraftWithResult={onReplaceDraftWithResult}
                     onMarkFinal={onMarkFinal}
-                    stepLabel="本轮产出"
+                    stepLabel="AI output"
                     compactLabels={compactLabels}
                   />
                 </div>
@@ -687,7 +691,7 @@ export function OutputPanel({
                   onAddResultToDraft={onAddResultToDraft}
                   onReplaceDraftWithResult={onReplaceDraftWithResult}
                   onMarkFinal={onMarkFinal}
-                  stepLabel="本轮产出"
+                  stepLabel="AI output"
                   compactLabels={compactLabels}
                 />
               ))}
@@ -697,28 +701,32 @@ export function OutputPanel({
             <div className="fallback-wrap">
               <div className="fallback-output">{result.output || "(no output)"}</div>
               <div className="fallback-actions">
-                <button
-                  type="button"
-                  className="read-result primary-action"
-                  onClick={() => {
-                    onReplaceResultSource(result.output);
-                    setFallbackStatus("Result promoted to a new source version.");
-                  }}
-                  disabled={!result.output}
-                >
-                  Promote to new source version
-                </button>
-                <button
-                  type="button"
-                  className="read-result"
-                  onClick={() => {
-                    onAddResultToSource(result.output);
-                    setFallbackStatus("Result added to Source Capture.");
-                  }}
-                  disabled={!result.output}
-                >
-                  Add this result to source
-                </button>
+                {onReplaceResultSource ? (
+                  <button
+                    type="button"
+                    className="read-result primary-action"
+                    onClick={() => {
+                      onReplaceResultSource(result.output);
+                      setFallbackStatus("Result promoted to a new source version.");
+                    }}
+                    disabled={!result.output}
+                  >
+                    Promote to new source version
+                  </button>
+                ) : null}
+                {onAddResultToSource ? (
+                  <button
+                    type="button"
+                    className="read-result"
+                    onClick={() => {
+                      onAddResultToSource(result.output);
+                      setFallbackStatus("Result added to Source Capture.");
+                    }}
+                    disabled={!result.output}
+                  >
+                    Add this result to source
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="read-result"

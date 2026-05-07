@@ -133,6 +133,40 @@ select,
   box-sizing: border-box;
 }
 
+
+.ee-clean-workflow {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.ee-clean-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #d8e0e8;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #17202a;
+  box-shadow: 0 18px 44px rgba(31, 45, 61, 0.08);
+}
+
+.ee-clean-panel > .layer,
+.ee-clean-panel .extraction-workspace,
+.ee-clean-panel .topic-workspace {
+  margin: 0;
+}
+
+.ee-clean-source-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ee-clean-workflow .topic-material-status-strip {
+  margin-bottom: 0;
+}
+
 .ee-studio-canvas {
   flex: 1;
   min-height: 160px;

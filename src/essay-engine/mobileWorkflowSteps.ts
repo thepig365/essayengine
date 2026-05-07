@@ -6,6 +6,7 @@ export const MOBILE_WORKFLOW_STEPS = [
   /** Main canvas: full Processing Studio (`ProcessingWorkspace` controls) mounts in `work-column` on this step — see EngineForm. */
   { id: "refine", label: "Process", short: "Process" },
   { id: "publish", label: "Review", short: "Review" },
+  { id: "export", label: "Export", short: "Export" },
 ] as const;
 
 export type MobileWorkflowStepId = (typeof MOBILE_WORKFLOW_STEPS)[number]["id"];
@@ -42,6 +43,8 @@ export function resolveMobileWorkflowPanelMode(
       return "slice-refine";
     case "publish":
       return "slice-polish";
+    case "export":
+      return "slice-off";
     default:
       return "slice-off";
   }
