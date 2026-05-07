@@ -4731,9 +4731,17 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow ee-mobile-classic-eyebrow">Optional shortcuts</span>
-          <strong className="ee-mobile-classic-title">Advanced Studio</strong>
-          <span className="ee-mobile-classic-hint">Draft and output tools are available when needed.</span>
+          <div className="ee-mobile-classic-summary-stack">
+            <div className="ee-mobile-classic-summary-row">
+              <span className="eyebrow ee-mobile-classic-eyebrow">Optional shortcuts</span>
+            </div>
+            <div className="ee-mobile-classic-summary-row">
+              <strong className="ee-mobile-classic-title">Advanced Studio</strong>
+            </div>
+            <div className="ee-mobile-classic-summary-row">
+              <span className="ee-mobile-classic-hint">Draft and output tools are available when needed.</span>
+            </div>
+          </div>
         </summary>
         <div className="ee-mobile-classic-body">
           <nav className="mobile-primary-tabs" aria-label="Advanced Studio panels">
@@ -6650,9 +6658,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           }
           .workspace.ee-narrow .ee-mobile-classic-summary {
             cursor: pointer;
-            display: grid;
-            gap: 4px;
-            padding: 12px 14px;
+            display: block;
+            padding: 14px 16px;
             border: 1px solid #dfe5ec;
             border-radius: 14px;
             background: #ffffff;
@@ -6662,19 +6669,36 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           .workspace.ee-narrow .ee-mobile-classic-summary::-webkit-details-marker {
             display: none;
           }
+          .workspace.ee-narrow .ee-mobile-classic-summary-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+          }
+          .workspace.ee-narrow .ee-mobile-classic-summary-row {
+            display: block;
+            width: 100%;
+            min-width: 0;
+          }
           .workspace.ee-narrow .ee-mobile-classic-summary .ee-mobile-classic-eyebrow {
             display: block;
-            margin-bottom: 2px;
+            margin: 0;
           }
           .workspace.ee-narrow .ee-mobile-classic-title {
+            display: block;
             color: #17202a;
             font-size: 17px;
-            line-height: 1.2;
+            line-height: 1.25;
+            margin: 0;
           }
           .workspace.ee-narrow .ee-mobile-classic-hint {
+            display: block;
+            margin: 0;
             color: #617080;
             font-size: 13px;
             font-weight: 650;
+            line-height: 1.45;
           }
           .workspace.ee-narrow .ee-mobile-classic-body {
             margin-top: 12px;

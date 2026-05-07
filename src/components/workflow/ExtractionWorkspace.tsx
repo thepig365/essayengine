@@ -245,7 +245,7 @@ export function ExtractionWorkspace({
           </p>
         </div>
 
-        <div className="range-actions cta-row ee-extraction-tab-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
+        <div className="range-actions cta-row ee-extraction-tab-row">
           {EXTRACTION_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -258,8 +258,8 @@ export function ExtractionWorkspace({
           ))}
         </div>
 
-        <details className="ee-analyzer-saved-topic-notes">
-          <summary className="ee-analyzer-saved-topic-notes-summary">Saved topic &amp; full source options</summary>
+        <div className="ee-analyzer-saved-topic-panel">
+          <p className="ee-analyzer-saved-topic-heading">Saved topic &amp; full source options</p>
           <div className="ee-analyzer-saved-topic-notes-body">
             <p className="ee-analyzer-guidance-copy">
               Every source becomes selectable blocks here. Pick ranges or paragraphs, then save as <strong>saved topic</strong> below. Processing uses saved
@@ -274,7 +274,7 @@ export function ExtractionWorkspace({
               full text require this option or Use full transcript in Source below.
             </p>
           </div>
-        </details>
+        </div>
       </div>
 
       {sourceMaterialPipeline === "link" && (
@@ -493,7 +493,10 @@ export function ExtractionWorkspace({
 
       {sourceMaterialPipeline === "transcript" && transcriptText && (
         <div className="transcript-tools">
-          <details open className="priority-section">
+          <details className="ee-extraction-more-tools">
+            <summary className="ee-extraction-more-tools-summary">More extraction tools</summary>
+            <div className="ee-extraction-more-tools-body">
+          <details className="priority-section">
             <summary>1. Timestamp Chapters</summary>
             <div className="timestamp-chapters">
               <div className="range-head">
@@ -559,7 +562,7 @@ export function ExtractionWorkspace({
             </div>
           </details>
 
-          <details open>
+          <details className="priority-section">
             <summary>2. Topic Filter</summary>
             <div className="topic-filter">
               <div className="range-head">
@@ -718,6 +721,8 @@ export function ExtractionWorkspace({
             <summary>5. Raw Transcript</summary>
             <p className="transcript-note">Preview only. Source is not updated unless you use Add or Replace.</p>
             <textarea className="transcript-preview" value={transcriptText} readOnly rows={8} />
+          </details>
+            </div>
           </details>
         </div>
       )}
