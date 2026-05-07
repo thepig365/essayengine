@@ -85,27 +85,27 @@ export default function HomePage() {
 
       <style jsx>{`
         .page {
-          --bg-main: #0B1117;
-          --bg-panel: #111A22;
-          --bg-card: #16212B;
-          --bg-card-soft: #1B2935;
-          --bg-input: #0E1720;
-          --bg-elevated: #1A2632;
-          --border-soft: #263746;
-          --border-medium: #334657;
-          --border-focus: #3F8F8A;
-          --text-primary: #E6EDF3;
-          --text-secondary: #A8B3C1;
-          --text-muted: #748395;
-          --text-disabled: #526170;
-          --accent-primary: #3F8F8A;
-          --accent-primary-hover: #4FA7A0;
-          --accent-secondary: #6C7DDC;
-          --accent-soft: #1E3A3A;
-          --success: #7DBE8A;
-          --warning: #D6A85C;
-          --error: #E07A7A;
-          --info: #7BA7D9;
+          --bg-main: var(--ee-bg);
+          --bg-panel: var(--ee-surface);
+          --bg-card: var(--ee-card);
+          --bg-card-soft: var(--ee-surface-soft);
+          --bg-input: var(--ee-surface);
+          --bg-elevated: var(--ee-card);
+          --border-soft: var(--ee-border);
+          --border-medium: var(--ee-border);
+          --border-focus: var(--ee-primary);
+          --text-primary: var(--ee-text);
+          --text-secondary: var(--ee-muted);
+          --text-muted: var(--ee-muted);
+          --text-disabled: var(--ee-disabled);
+          --accent-primary: var(--ee-primary);
+          --accent-primary-hover: var(--ee-primary-hover);
+          --accent-secondary: var(--ee-secondary);
+          --accent-soft: var(--ee-secondary);
+          --success: #6f7f4f;
+          --warning: #9b6f35;
+          --error: #9f453d;
+          --info: #806a70;
           --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
           --font-size-body: 16px;
           --font-size-body-mobile: 18px;
@@ -119,14 +119,14 @@ export default function HomePage() {
           --font-size-prose-mobile: 20px;
           min-height: 100vh;
           background:
-            radial-gradient(circle at top left, rgba(63, 143, 138, 0.12), transparent 34rem),
-            linear-gradient(180deg, var(--bg-main), #0d141b 42%, var(--bg-main));
+            radial-gradient(circle at top left, rgba(185, 90, 78, 0.12), transparent 34rem),
+            linear-gradient(180deg, var(--ee-bg), #fbf3ed 42%, var(--ee-bg));
           color: var(--text-primary);
           font-family: var(--font-system);
           font-size: var(--font-size-body);
           line-height: 1.6;
           padding: 28px;
-          color-scheme: dark;
+          color-scheme: light;
         }
         .hero {
           display: flex;
@@ -138,7 +138,7 @@ export default function HomePage() {
         }
         .hero p {
           margin: 0 0 5px;
-          color: #7fb7b3;
+          color: var(--ee-primary);
           font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.06em;
@@ -146,7 +146,7 @@ export default function HomePage() {
         }
         .hero h1 {
           margin: 0;
-          color: #edf2f7;
+          color: var(--ee-text);
           font-size: 34px;
           line-height: 1.05;
           letter-spacing: 0;
@@ -161,7 +161,7 @@ export default function HomePage() {
           margin: 0;
           flex: 1;
           min-width: 0;
-          color: #94a3b8;
+          color: var(--ee-muted);
           font-size: 15px;
           font-weight: 650;
           line-height: 1.5;
@@ -180,7 +180,7 @@ export default function HomePage() {
         }
         .hero-actions span {
           max-width: 520px;
-          color: #94a3b8;
+          color: var(--ee-muted);
           font-size: 15px;
           line-height: 1.55;
           text-align: right;
@@ -246,8 +246,8 @@ export default function HomePage() {
           margin: 0 auto;
         }
         :global(*::selection) {
-          background: rgba(93, 168, 166, 0.35);
-          color: #f8fafc;
+          background: rgba(185, 90, 78, 0.24);
+          color: var(--ee-text);
         }
         :global(.layer),
         :global(.mobile-workflow-panel),
@@ -256,15 +256,15 @@ export default function HomePage() {
         :global(.final-panel),
         :global(.result-layer),
         :global(.guide-panel) {
-          border-color: #263241 !important;
-          background: #111821 !important;
-          color: #d8dee8 !important;
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28) !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-surface) !important;
+          color: var(--ee-text) !important;
+          box-shadow: 0 18px 42px rgba(86, 55, 48, 0.12) !important;
         }
         :global(.control-column),
         :global(.transcript-column),
         :global(.work-column) {
-          color: #d8dee8 !important;
+          color: var(--ee-text) !important;
         }
         :global(.layer-head h2),
         :global(.panel-head h2),
@@ -299,32 +299,32 @@ export default function HomePage() {
         :global(.diagnosis),
         :global(.structure small),
         :global(.paragraph span) {
-          color: #9aa8ba !important;
+          color: var(--ee-muted) !important;
         }
         :global(.eyebrow),
         :global(.workflow-step > span),
         :global(.guide-head p) {
-          color: #7fc7c2 !important;
+          color: var(--ee-primary) !important;
         }
         :global(textarea),
         :global(input),
         :global(select) {
-          border-color: #334155 !important;
-          background: #0b111a !important;
-          color: #e5edf7 !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-surface) !important;
+          color: var(--ee-text) !important;
           box-shadow: none !important;
-          caret-color: #8fd3cf;
+          caret-color: var(--ee-primary);
         }
         :global(textarea::placeholder),
         :global(input::placeholder) {
-          color: #6f7f92 !important;
+          color: var(--ee-disabled) !important;
         }
         :global(textarea:focus),
         :global(input:focus),
         :global(select:focus) {
-          border-color: #5da8a6 !important;
-          background: #0d1520 !important;
-          box-shadow: 0 0 0 3px rgba(93, 168, 166, 0.18) !important;
+          border-color: var(--ee-primary) !important;
+          background: var(--ee-surface) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.16) !important;
         }
         :global(button),
         :global(.secondary),
@@ -336,9 +336,9 @@ export default function HomePage() {
         :global(.paragraph),
         :global(.show-older),
         :global(.fresh-button) {
-          border-color: #334155 !important;
-          background: #151e29 !important;
-          color: #dbe4ef !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-secondary) !important;
+          color: var(--ee-text) !important;
           box-shadow: none !important;
         }
         :global(button:hover:not(:disabled)),
@@ -346,10 +346,10 @@ export default function HomePage() {
         :global(.copy-action:hover:not(:disabled)),
         :global(.task-icon-button:hover),
         :global(.task-icon-button:focus-visible) {
-          border-color: #5da8a6 !important;
-          background: #1a2935 !important;
-          color: #f3f8fb !important;
-          box-shadow: 0 0 0 3px rgba(93, 168, 166, 0.13) !important;
+          border-color: var(--ee-primary) !important;
+          background: var(--ee-surface-soft) !important;
+          color: var(--ee-text) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(.primary),
         :global(.task-icon-button.active),
@@ -358,10 +358,10 @@ export default function HomePage() {
         :global(.player-main-button),
         :global(.player-pause),
         :global(.mobile-player button:nth-child(2)) {
-          border-color: #5da8a6 !important;
-          background: #1f6f77 !important;
-          color: #f3fbfb !important;
-          box-shadow: 0 0 0 3px rgba(93, 168, 166, 0.12) !important;
+          border-color: var(--ee-primary) !important;
+          background: var(--ee-primary) !important;
+          color: var(--ee-surface) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(button:disabled),
         :global(.primary:disabled),
@@ -404,9 +404,9 @@ export default function HomePage() {
         :global(.flow-chart),
         :global(.concepts div),
         :global(.guide-panel section) {
-          border-color: #263241 !important;
-          background: #0f1722 !important;
-          color: #cbd5e1 !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-card) !important;
+          color: var(--ee-muted) !important;
           box-shadow: none !important;
         }
         :global(.source-strip button),
@@ -416,62 +416,62 @@ export default function HomePage() {
         :global(.final-meta span),
         :global(.version-top span),
         :global(.version-top strong) {
-          border-color: #314052 !important;
-          background: #121c27 !important;
-          color: #b8c5d4 !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-card-muted) !important;
+          color: var(--ee-muted) !important;
         }
         :global(.source-strip button.active),
         :global(.source-strip strong),
         :global(.structure.selected),
         :global(.paragraph.marked),
         :global(.version-card.current) {
-          border-color: #5da8a6 !important;
-          background: #12272d !important;
-          color: #dff7f5 !important;
-          box-shadow: 0 0 0 3px rgba(93, 168, 166, 0.12) !important;
+          border-color: var(--ee-primary) !important;
+          background: var(--ee-secondary) !important;
+          color: var(--ee-text) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(.error),
         :global(.voice-error),
         :global(.provider-error) {
           border-color: #7f2f3f !important;
-          background: #2a1118 !important;
-          color: #f2b8c3 !important;
+          background: #f7ded8 !important;
+          color: var(--ee-primary-hover) !important;
         }
         :global(.writing-hint),
         :global(.validation-card),
         :global(.tts-status) {
           border-color: #6e5522 !important;
-          background: #241c10 !important;
-          color: #e9d49b !important;
+          background: #f6ead0 !important;
+          color: #7a5427 !important;
         }
         :global(.media-player),
         :global(.mobile-player),
         :global(.mobile-listening-panel) {
-          border-color: #365765 !important;
-          background: rgba(13, 20, 30, 0.98) !important;
-          color: #d8dee8 !important;
-          box-shadow: 0 18px 38px rgba(0, 0, 0, 0.38) !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-card) !important;
+          color: var(--ee-text) !important;
+          box-shadow: 0 18px 38px rgba(86, 55, 48, 0.14) !important;
         }
         :global(input[type="range"]) {
-          accent-color: #6fc6c1;
+          accent-color: var(--ee-primary);
         }
         :global(audio) {
           width: 100%;
-          color-scheme: dark;
+          color-scheme: light;
         }
         :global(.guide-backdrop) {
-          background: rgba(2, 6, 12, 0.72) !important;
+          background: rgba(58, 32, 40, 0.20) !important;
         }
         :global(.guide-button),
         :global(.close-button) {
-          border-color: #38515f !important;
-          background: #13202c !important;
-          color: #d8edf0 !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-secondary) !important;
+          color: var(--ee-text) !important;
         }
         :global(.flow-item strong) {
-          color: #7fc7c2 !important;
+          color: var(--ee-primary) !important;
         }
-        /* Final true-night override: keep every MVP surface low-glare. */
+        /* Warm editorial override: keep MVP surfaces aligned with the product shell. */
         :global(.layer),
         :global(.mobile-workflow-panel),
         :global(.workflow-timeline),
@@ -496,7 +496,7 @@ export default function HomePage() {
           border-color: var(--border-soft) !important;
           background: var(--bg-panel) !important;
           color: var(--text-primary) !important;
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28) !important;
+          box-shadow: 0 18px 42px rgba(86, 55, 48, 0.12) !important;
         }
         :global(.source-helper),
         :global(.source-helper.active),
@@ -679,8 +679,8 @@ export default function HomePage() {
         :global(input:focus),
         :global(select:focus) {
           border-color: var(--border-focus) !important;
-          background: #101c26 !important;
-          box-shadow: 0 0 0 3px rgba(63, 143, 138, 0.18) !important;
+          background: var(--ee-surface) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.16) !important;
         }
         :global(button),
         :global(.secondary),
@@ -696,8 +696,8 @@ export default function HomePage() {
         :global(.guide-button),
         :global(.close-button) {
           border-color: var(--border-medium) !important;
-          background: #1C2A36 !important;
-          color: #D9E3EC !important;
+          background: var(--ee-secondary) !important;
+          color: var(--ee-text) !important;
           font-size: var(--font-size-button) !important;
           line-height: 1.3 !important;
           font-weight: 700 !important;
@@ -710,9 +710,9 @@ export default function HomePage() {
         :global(.task-icon-button:focus-visible),
         :global(.read-result:hover:not(:disabled)) {
           border-color: var(--accent-primary-hover) !important;
-          background: #263847 !important;
+          background: var(--ee-surface-soft) !important;
           color: var(--text-primary) !important;
-          box-shadow: 0 0 0 3px rgba(63, 143, 138, 0.12) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(.primary),
         :global(.primary-action),
@@ -727,9 +727,9 @@ export default function HomePage() {
         :global(.project-actions button:first-child),
         :global(.mobile-action-grid button:first-child) {
           border-color: var(--accent-primary) !important;
-          background: #2F7F7A !important;
-          color: #F2FBFA !important;
-          box-shadow: 0 0 0 3px rgba(63, 143, 138, 0.12) !important;
+          background: var(--ee-primary) !important;
+          color: var(--ee-surface) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(.primary:hover:not(:disabled)),
         :global(.primary-action:hover:not(:disabled)),
@@ -738,15 +738,15 @@ export default function HomePage() {
         :global(.button-row button:first-child:hover:not(:disabled)),
         :global(.workflow-step > button:first-of-type:hover:not(:disabled)) {
           border-color: var(--accent-primary-hover) !important;
-          background: #3F9A94 !important;
-          color: #F2FBFA !important;
+          background: var(--ee-primary-hover) !important;
+          color: var(--ee-surface) !important;
         }
         :global(button:disabled),
         :global(.primary:disabled),
         :global(.secondary:disabled),
         :global(.copy-action:disabled) {
-          border-color: #243342 !important;
-          background: #1A222C !important;
+          border-color: var(--ee-border) !important;
+          background: var(--ee-card-muted) !important;
           color: var(--text-disabled) !important;
           opacity: 0.65 !important;
           cursor: not-allowed !important;
@@ -754,13 +754,13 @@ export default function HomePage() {
         }
         :global(.source-clear),
         :global(button[disabled] + button:last-child) {
-          color: #FFE4E4;
+          color: var(--ee-primary-hover);
         }
         :global(.error),
         :global(.voice-error),
         :global(.provider-error) {
-          border-color: #6d3438 !important;
-          background: #2b1519 !important;
+          border-color: #d9a49b !important;
+          background: #f7ded8 !important;
           color: var(--error) !important;
         }
         :global(.writing-hint),
@@ -768,13 +768,13 @@ export default function HomePage() {
         :global(.tts-status),
         :global(.rough-warning),
         :global(.warnings) {
-          border-color: #6a4b22 !important;
-          background: #2a2115 !important;
+          border-color: #d8bd8f !important;
+          background: #f6ead0 !important;
           color: var(--warning) !important;
         }
         :global(.warnings.empty) {
-          border-color: #2f5438 !important;
-          background: #17281d !important;
+          border-color: #c5cda5 !important;
+          background: #eef1df !important;
           color: var(--success) !important;
         }
         :global(.source-strip button.active),
@@ -787,17 +787,34 @@ export default function HomePage() {
         :global(.flow-hint) {
           border-color: var(--accent-primary) !important;
           background: var(--accent-soft) !important;
-          color: #DFF7F5 !important;
-          box-shadow: 0 0 0 3px rgba(63, 143, 138, 0.12) !important;
+          color: var(--ee-text) !important;
+          box-shadow: 0 0 0 3px rgba(185, 90, 78, 0.12) !important;
         }
         :global(.flow-item span) {
           border-color: var(--accent-primary) !important;
-          background: #123C38 !important;
-          color: #DFF7F5 !important;
+          background: var(--ee-secondary) !important;
+          color: var(--ee-text) !important;
           box-shadow: none !important;
         }
         :global(audio) {
           background: var(--bg-input) !important;
+        }
+
+        :global(.output-text),
+        :global(.fallback-output),
+        :global(.preview-output),
+        :global(.final-output-preview),
+        :global(.mobile-result-output),
+        :global(.essay-draft-workspace textarea),
+        :global(.mobile-panel textarea),
+        :global(.source-layer textarea),
+        :global(.source-capture textarea),
+        :global(.transcript-column textarea),
+        :global(.work-column textarea) {
+          border-color: rgba(255, 246, 239, 0.16) !important;
+          background: var(--ee-editor-bg) !important;
+          color: var(--ee-editor-text) !important;
+          caret-color: var(--ee-primary);
         }
         :global(.output-text),
         :global(.fallback-output),

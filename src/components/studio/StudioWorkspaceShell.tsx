@@ -55,9 +55,9 @@ export function StudioWorkspaceShell({
           align-items: stretch;
         }
         .ee-studio-col {
-          border: 1px solid #2c3d4e;
+          border: 1px solid var(--ee-border);
           border-radius: 16px;
-          background: rgba(14, 20, 28, 0.65);
+          background: var(--ee-card);
           padding: 18px 18px 22px;
           min-height: 280px;
           display: flex;
@@ -71,7 +71,7 @@ export function StudioWorkspaceShell({
           font-weight: 820;
           letter-spacing: 0.07em;
           text-transform: uppercase;
-          color: #7dd3c0;
+          color: var(--ee-primary);
         }
         @media (max-width: 1023px) {
           .ee-studio-triptych {

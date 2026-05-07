@@ -62,9 +62,9 @@ export function TopicMaterialStatusStrip({
       )}
       <style jsx>{`
         .ee-topic-strip {
-          border: 1px solid #2f4152;
+          border: 1px solid var(--ee-border);
           border-radius: 12px;
-          background: linear-gradient(180deg, #15202a, #121a22);
+          background: linear-gradient(180deg, var(--ee-card), var(--ee-surface-soft));
           padding: 10px 14px 12px;
           margin-bottom: 14px;
         }
@@ -80,53 +80,53 @@ export function TopicMaterialStatusStrip({
           letter-spacing: 0.04em;
           padding: 5px 9px;
           border-radius: 999px;
-          border: 1px solid #334657;
-          background: #111921;
-          color: #cbd5e1;
+          border: 1px solid var(--ee-border);
+          background: var(--ee-surface);
+          color: var(--ee-text);
         }
         .ee-topic-badge--saved {
-          border-color: #2f6f73;
-          background: #132a2c;
-          color: #a7f3d0;
+          border-color: var(--ee-primary);
+          background: var(--ee-secondary);
+          color: var(--ee-primary-hover);
         }
         .ee-topic-badge--stale {
-          border-color: #8a6918;
-          background: #2a2115;
-          color: #fcd34d;
+          border-color: #c79657;
+          background: #f6ead0;
+          color: #8a5a26;
         }
         .ee-topic-badge--missing {
-          border-color: #4b5563;
-          color: #9ca3af;
+          border-color: var(--ee-border);
+          color: var(--ee-disabled);
         }
         .ee-topic-meta {
           font-size: 12px;
           font-weight: 650;
-          color: #94a3b8;
+          color: var(--ee-muted);
         }
         .ee-topic-meta-key {
           font-weight: 800;
-          color: #64748b;
+          color: var(--ee-muted);
           margin-right: 4px;
         }
         .ee-topic-stale-msg {
           margin: 8px 0 0;
           font-size: 12px;
           line-height: 1.45;
-          color: #fcd34d;
+          color: #8a5a26;
         }
         .ee-topic-note {
           margin: 6px 0 0;
           font-size: 12px;
-          color: #7dd3c0;
+          color: var(--ee-primary);
         }
         .ee-topic-preview {
           margin: 8px 0 0;
           font-size: 13px;
           line-height: 1.45;
-          color: #cbd5e1;
+          color: var(--ee-text);
         }
         .ee-topic-preview--empty {
-          color: #64748b;
+          color: var(--ee-muted);
           font-style: italic;
         }
         .ee-topic-preview-label {
@@ -135,7 +135,7 @@ export function TopicMaterialStatusStrip({
           font-weight: 800;
           letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: #5eead4;
+          color: var(--ee-primary);
           margin-bottom: 3px;
         }
       `}</style>
