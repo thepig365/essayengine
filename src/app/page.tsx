@@ -71,8 +71,8 @@ export default function HomePage() {
                     type="button"
                     className="console-view-toggle console-view-toggle--icon"
                     onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
-                    aria-label={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
-                    title={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
+                    aria-label={effectiveIsMobileLayout ? "Desktop layout" : "Mobile layout"}
+                    title={effectiveIsMobileLayout ? "Desktop layout" : "Mobile layout"}
                   >
                     <span aria-hidden="true">{effectiveIsMobileLayout ? "🖥" : "📱"}</span>
                   </button>
@@ -85,27 +85,27 @@ export default function HomePage() {
 
       <style jsx>{`
         .page {
-          --bg-main: #0B1117;
-          --bg-panel: #111A22;
-          --bg-card: #16212B;
-          --bg-card-soft: #1B2935;
-          --bg-input: #0E1720;
-          --bg-elevated: #1A2632;
-          --border-soft: #263746;
-          --border-medium: #334657;
-          --border-focus: #3F8F8A;
-          --text-primary: #E6EDF3;
-          --text-secondary: #A8B3C1;
-          --text-muted: #748395;
-          --text-disabled: #526170;
-          --accent-primary: #3F8F8A;
-          --accent-primary-hover: #4FA7A0;
-          --accent-secondary: #6C7DDC;
-          --accent-soft: #1E3A3A;
-          --success: #7DBE8A;
-          --warning: #D6A85C;
-          --error: #E07A7A;
-          --info: #7BA7D9;
+          --bg-main: #fbf3ef;
+          --bg-panel: #fff8f5;
+          --bg-card: #f8ece7;
+          --bg-card-soft: #f1dfd8;
+          --bg-input: #fffaf7;
+          --bg-elevated: #f7e5df;
+          --border-soft: #ead8d0;
+          --border-medium: #ddc4bb;
+          --border-focus: #c7665e;
+          --text-primary: #352322;
+          --text-secondary: #7e6863;
+          --text-muted: #a48c86;
+          --text-disabled: #b5a09a;
+          --accent-primary: #b65a57;
+          --accent-primary-hover: #c7665e;
+          --accent-secondary: #b9909f;
+          --accent-soft: #efd7d0;
+          --success: #7f9b72;
+          --warning: #c8924b;
+          --error: #b94a4a;
+          --info: #9f7d98;
           --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
           --font-size-body: 16px;
           --font-size-body-mobile: 18px;
@@ -119,14 +119,14 @@ export default function HomePage() {
           --font-size-prose-mobile: 20px;
           min-height: 100vh;
           background:
-            radial-gradient(circle at top left, rgba(63, 143, 138, 0.12), transparent 34rem),
-            linear-gradient(180deg, var(--bg-main), #0d141b 42%, var(--bg-main));
+            radial-gradient(circle at top left, rgba(198, 102, 94, 0.16), transparent 34rem),
+            linear-gradient(180deg, var(--bg-main), #fff8f5 42%, var(--bg-main));
           color: var(--text-primary);
           font-family: var(--font-system);
           font-size: var(--font-size-body);
           line-height: 1.6;
           padding: 28px;
-          color-scheme: dark;
+          color-scheme: light;
         }
         .hero {
           display: flex;
@@ -138,7 +138,7 @@ export default function HomePage() {
         }
         .hero p {
           margin: 0 0 5px;
-          color: #7fb7b3;
+          color: #9d4f51;
           font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.06em;
@@ -146,7 +146,7 @@ export default function HomePage() {
         }
         .hero h1 {
           margin: 0;
-          color: #edf2f7;
+          color: #352322;
           font-size: 34px;
           line-height: 1.05;
           letter-spacing: 0;
@@ -161,7 +161,7 @@ export default function HomePage() {
           margin: 0;
           flex: 1;
           min-width: 0;
-          color: #94a3b8;
+          color: #7e6863;
           font-size: 15px;
           font-weight: 650;
           line-height: 1.5;
@@ -180,7 +180,7 @@ export default function HomePage() {
         }
         .hero-actions span {
           max-width: 520px;
-          color: #94a3b8;
+          color: #7e6863;
           font-size: 15px;
           line-height: 1.55;
           text-align: right;
@@ -247,7 +247,7 @@ export default function HomePage() {
         }
         :global(*::selection) {
           background: rgba(93, 168, 166, 0.35);
-          color: #f8fafc;
+          color: #fffaf7;
         }
         :global(.layer),
         :global(.mobile-workflow-panel),
@@ -430,6 +430,144 @@ export default function HomePage() {
           color: #dff7f5 !important;
           box-shadow: 0 0 0 3px rgba(93, 168, 166, 0.12) !important;
         }
+
+        /* Warm creative-studio override: keep dark surfaces only for editor/document text areas. */
+        :global(.ee-engine-v2-shell),
+        :global(.workspace) {
+          color: var(--text-primary) !important;
+        }
+        :global(.layer),
+        :global(.mobile-workflow-panel),
+        :global(.workflow-timeline),
+        :global(.essay-draft-workspace),
+        :global(.final-panel),
+        :global(.result-layer),
+        :global(.guide-panel),
+        :global(.project-layer),
+        :global(.transcript-library-panel),
+        :global(.mobile-classic-head),
+        :global(.mobile-panel),
+        :global(.mobile-primary-tabs),
+        :global(.result-card),
+        :global(.preview-card),
+        :global(.final-result-card),
+        :global(.version-card),
+        :global(.workflow-step),
+        :global(.audio-card),
+        :global(.empty-final),
+        :global(.transcript-empty),
+        :global(.topic-material-panel) {
+          border-color: var(--border-soft) !important;
+          background: linear-gradient(180deg, #fffaf7, #f8ece7) !important;
+          color: var(--text-primary) !important;
+          box-shadow: 0 18px 42px rgba(112, 55, 50, 0.08) !important;
+        }
+        :global(.source-helper),
+        :global(.source-state),
+        :global(.source-action-status),
+        :global(.ready-summary),
+        :global(.selected-description),
+        :global(.draft-helper),
+        :global(.draft-status),
+        :global(.range-status),
+        :global(.workflow-status),
+        :global(.value-box),
+        :global(.voice-capture-box),
+        :global(.link-capture-box),
+        :global(.project-meta),
+        :global(.chain),
+        :global(.final-output-preview),
+        :global(.mobile-result-output),
+        :global(.chapter-card),
+        :global(.section-card),
+        :global(.topic-card),
+        :global(.run-summary div),
+        :global(.source-summary-card div),
+        :global(.workspace-section),
+        :global(.manual-range-row),
+        :global(.library-inline-form) {
+          border-color: var(--border-soft) !important;
+          background: #fff8f5 !important;
+          color: var(--text-secondary) !important;
+          box-shadow: none !important;
+        }
+        :global(textarea),
+        :global(input),
+        :global(select) {
+          border-color: var(--border-medium) !important;
+          background: #fffaf7 !important;
+          color: var(--text-primary) !important;
+          caret-color: var(--accent-primary) !important;
+        }
+        :global(.source-layer > textarea),
+        :global(.transcript-preview),
+        :global(.chapter-input),
+        :global(.essay-draft-workspace textarea),
+        :global(.output-text),
+        :global(.fallback-output),
+        :global(.preview-output),
+        :global(.final-result),
+        :global(.ee-studio-canvas-body) {
+          background: #1f2328 !important;
+          border-color: #343a40 !important;
+          color: #f4eee9 !important;
+        }
+        :global(button),
+        :global(.secondary),
+        :global(.copy-action),
+        :global(.source-read),
+        :global(.task-icon-button),
+        :global(.library-button),
+        :global(.read-result),
+        :global(.guide-button),
+        :global(.close-button) {
+          border-color: var(--border-medium) !important;
+          background: #fff8f5 !important;
+          color: var(--text-primary) !important;
+          border-radius: 14px !important;
+        }
+        :global(.primary),
+        :global(.primary-action),
+        :global(.task-icon-button.active),
+        :global(.segmented button.active),
+        :global(.mobile-primary-tabs button.active),
+        :global(.project-actions button:first-child),
+        :global(.mobile-action-grid button:first-child) {
+          border-color: var(--accent-primary) !important;
+          background: var(--accent-primary) !important;
+          color: #fffaf7 !important;
+          box-shadow: 0 10px 24px rgba(182, 90, 87, 0.18) !important;
+        }
+        :global(button:hover:not(:disabled)),
+        :global(.secondary:hover:not(:disabled)),
+        :global(.copy-action:hover:not(:disabled)) {
+          border-color: var(--accent-primary-hover) !important;
+          background: var(--accent-soft) !important;
+          color: var(--text-primary) !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)) {
+          grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.55fr) minmax(260px, 0.86fr) !important;
+          gap: 18px !important;
+          align-items: start !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .control-column) {
+          gap: 16px !important;
+          align-self: start !important;
+        }
+        :global(.library-grid) {
+          display: grid !important;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+          gap: 10px !important;
+          align-items: end !important;
+        }
+        :global(.library-button) {
+          min-height: 44px !important;
+          white-space: nowrap !important;
+          padding: 10px 12px !important;
+          width: auto !important;
+        }
         :global(.error),
         :global(.voice-error),
         :global(.provider-error) {
@@ -457,10 +595,10 @@ export default function HomePage() {
         }
         :global(audio) {
           width: 100%;
-          color-scheme: dark;
+          color-scheme: light;
         }
         :global(.guide-backdrop) {
-          background: rgba(2, 6, 12, 0.72) !important;
+          background: rgba(53, 35, 34, 0.28) !important;
         }
         :global(.guide-button),
         :global(.close-button) {
@@ -842,6 +980,207 @@ export default function HomePage() {
             font-size: 16px !important;
             line-height: 1.65 !important;
           }
+        }
+        /* Warm creative-studio override: keep dark surfaces only for editor/document text areas. */
+        :global(.ee-engine-v2-shell),
+        :global(.workspace) {
+          color: var(--text-primary) !important;
+        }
+        :global(.layer),
+        :global(.mobile-workflow-panel),
+        :global(.workflow-timeline),
+        :global(.essay-draft-workspace),
+        :global(.final-panel),
+        :global(.result-layer),
+        :global(.guide-panel),
+        :global(.project-layer),
+        :global(.transcript-library-panel),
+        :global(.mobile-classic-head),
+        :global(.mobile-panel),
+        :global(.mobile-primary-tabs),
+        :global(.result-card),
+        :global(.preview-card),
+        :global(.final-result-card),
+        :global(.version-card),
+        :global(.workflow-step),
+        :global(.audio-card),
+        :global(.empty-final),
+        :global(.transcript-empty),
+        :global(.topic-material-panel) {
+          border-color: var(--border-soft) !important;
+          background: linear-gradient(180deg, #fffaf7, #f8ece7) !important;
+          color: var(--text-primary) !important;
+          box-shadow: 0 18px 42px rgba(112, 55, 50, 0.08) !important;
+        }
+        :global(.source-helper),
+        :global(.source-state),
+        :global(.source-action-status),
+        :global(.ready-summary),
+        :global(.selected-description),
+        :global(.draft-helper),
+        :global(.draft-status),
+        :global(.range-status),
+        :global(.workflow-status),
+        :global(.value-box),
+        :global(.voice-capture-box),
+        :global(.link-capture-box),
+        :global(.project-meta),
+        :global(.chain),
+        :global(.final-output-preview),
+        :global(.mobile-result-output),
+        :global(.chapter-card),
+        :global(.section-card),
+        :global(.topic-card),
+        :global(.run-summary div),
+        :global(.source-summary-card div),
+        :global(.workspace-section),
+        :global(.manual-range-row),
+        :global(.library-inline-form) {
+          border-color: var(--border-soft) !important;
+          background: #fff8f5 !important;
+          color: var(--text-secondary) !important;
+          box-shadow: none !important;
+        }
+        :global(textarea),
+        :global(input),
+        :global(select) {
+          border-color: var(--border-medium) !important;
+          background: #fffaf7 !important;
+          color: var(--text-primary) !important;
+          caret-color: var(--accent-primary) !important;
+        }
+        :global(.source-layer > textarea),
+        :global(.transcript-preview),
+        :global(.chapter-input),
+        :global(.essay-draft-workspace textarea),
+        :global(.output-text),
+        :global(.fallback-output),
+        :global(.preview-output),
+        :global(.final-result),
+        :global(.ee-studio-canvas-body) {
+          background: #1f2328 !important;
+          border-color: #343a40 !important;
+          color: #f4eee9 !important;
+        }
+        :global(button),
+        :global(.secondary),
+        :global(.copy-action),
+        :global(.source-read),
+        :global(.task-icon-button),
+        :global(.library-button),
+        :global(.read-result),
+        :global(.guide-button),
+        :global(.close-button) {
+          border-color: var(--border-medium) !important;
+          background: #fff8f5 !important;
+          color: var(--text-primary) !important;
+          border-radius: 14px !important;
+        }
+        :global(.primary),
+        :global(.primary-action),
+        :global(.task-icon-button.active),
+        :global(.segmented button.active),
+        :global(.mobile-primary-tabs button.active),
+        :global(.project-actions button:first-child),
+        :global(.mobile-action-grid button:first-child) {
+          border-color: var(--accent-primary) !important;
+          background: var(--accent-primary) !important;
+          color: #fffaf7 !important;
+          box-shadow: 0 10px 24px rgba(182, 90, 87, 0.18) !important;
+        }
+        :global(button:hover:not(:disabled)),
+        :global(.secondary:hover:not(:disabled)),
+        :global(.copy-action:hover:not(:disabled)) {
+          border-color: var(--accent-primary-hover) !important;
+          background: var(--accent-soft) !important;
+          color: var(--text-primary) !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)) {
+          grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.55fr) minmax(260px, 0.86fr) !important;
+          gap: 18px !important;
+          align-items: start !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow) .control-column) {
+          gap: 16px !important;
+          align-self: start !important;
+        }
+        :global(.library-grid) {
+          display: grid !important;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+          gap: 10px !important;
+          align-items: end !important;
+        }
+        :global(.library-button) {
+          min-height: 44px !important;
+          white-space: nowrap !important;
+          padding: 10px 12px !important;
+          width: auto !important;
+        }
+        /* Clean workflow stage visibility inside Advanced Studio. */
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > aside),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > section.transcript-column),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] .desktop-console-layout > .work-column) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="source"] .ee-grid-source) {
+          display: flex !important;
+          position: static !important;
+          max-height: none !important;
+          overflow: visible !important;
+          grid-column: 1 / -1 !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > aside),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="request"] .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > .work-column) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="request"] .desktop-console-layout > section.transcript-column) {
+          display: flex !important;
+          position: static !important;
+          max-height: none !important;
+          overflow: visible !important;
+          grid-column: 1 / -1 !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > aside),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .ee-triptych-mid),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .ee-triptych-draft-row) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="workpiece"] .desktop-console-layout > section.transcript-column) {
+          display: flex !important;
+          position: static !important;
+          max-height: none !important;
+          overflow: visible !important;
+          grid-column: 1 / -1 !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > section.transcript-column),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .ee-triptych-draft-row) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > aside) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column) {
+          grid-column: 1 / -1 !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="refine"] .desktop-console-layout > .work-column > .ee-triptych-mid) {
+          display: flex !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > aside),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-grid-source),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > section.transcript-column),
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .ee-triptych-mid) {
+          display: none !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > .work-column) {
+          grid-column: 1 / -1 !important;
+        }
+        :global(.workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step="publish"] .desktop-console-layout > .work-column > .ee-triptych-draft-row) {
+          display: grid !important;
         }
         @media (max-width: 820px) {
           .page {

@@ -50,20 +50,21 @@ export function StudioWorkspaceShell({
         }
         .ee-studio-triptych {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.92fr);
           gap: 18px;
-          align-items: stretch;
+          align-items: start;
         }
         .ee-studio-col {
-          border: 1px solid #2c3d4e;
-          border-radius: 16px;
-          background: rgba(14, 20, 28, 0.65);
+          border: 1px solid #ead8d0;
+          border-radius: 20px;
+          background: linear-gradient(180deg, #fffaf7, #f8ede9);
           padding: 18px 18px 22px;
           min-height: 280px;
           display: flex;
           flex-direction: column;
           gap: 12px;
           min-width: 0;
+          box-shadow: 0 18px 44px rgba(112, 55, 50, 0.08);
         }
         .ee-studio-heading {
           margin: 0;
@@ -71,7 +72,13 @@ export function StudioWorkspaceShell({
           font-weight: 820;
           letter-spacing: 0.07em;
           text-transform: uppercase;
-          color: #7dd3c0;
+          color: #9d4f51;
+        }
+        .ee-studio-panel-actions {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 10px;
+          margin-top: auto;
         }
         @media (max-width: 1023px) {
           .ee-studio-triptych {

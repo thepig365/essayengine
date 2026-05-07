@@ -242,6 +242,12 @@ const STUDIO_GROUPS: StudioGroupSpec[] = [
         blurb: "Softer, literary or therapeutic voice.",
         hint: "No separate pipeline yet — use Translate + tone / instruction preset.",
       },
+      {
+        kind: "disabled",
+        title: "Compare translations",
+        blurb: "Side-by-side translation comparison.",
+        hint: "Unavailable in this workflow — use Functions or Advanced Studio if added later.",
+      },
     ],
   },
   {
@@ -250,6 +256,12 @@ const STUDIO_GROUPS: StudioGroupSpec[] = [
     intro: "Style-focused rewrites — cards reserved until matching quick actions exist.",
     icon: "spark",
     cards: [
+      {
+        kind: "disabled",
+        title: "Rewrite",
+        blurb: "Rewrite the saved topic with new style or clarity.",
+        hint: "Available in Task settings / Advanced Studio.",
+      },
       {
         kind: "disabled",
         title: "More natural",
@@ -293,7 +305,7 @@ function StudioGroupIcon({ name }: { name: StudioGroupSpec["icon"] }) {
     xmlns: "http://www.w3.org/2000/svg",
     "aria-hidden": true as const,
   };
-  const stroke = "#7fc7c2";
+  const stroke = "#b65a57";
   switch (name) {
     case "eye":
       return (
@@ -447,51 +459,29 @@ export function ProcessingWorkspace({
     return (
       <section className="layer ee-request-workspace-desktop" aria-label="Processing workspace overview">
         <div className="layer-head">
-          <p className="eyebrow">PROCESSING / 加工</p>
+          <p className="eyebrow">PROCESSING</p>
           <h2>Processing Studio</h2>
           <p>
             Choose grouped actions and settings in the <strong>Processing Studio</strong> on the left, then run <strong>Generate</strong>. Processing
             always uses your saved <strong>topic text</strong>.
           </p>
         </div>
-        <div className="request-workspace-summary">
-          <strong>Current setup (read-only)</strong>
-          <dl>
-            <div>
-              <dt>Task</dt>
-              <dd>{activeTask.label}</dd>
-            </div>
-            <div>
-              <dt>Engines</dt>
-              <dd>
-                {providers.length === 0
-                  ? "None selected"
-                  : providers.map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p).join(", ")}
-              </dd>
-            </div>
-            <div>
-              <dt>Target language</dt>
-              <dd>{targetLanguage}</dd>
-            </div>
-            <div>
-              <dt>Output behavior</dt>
-              <dd>{activeMode.label}</dd>
-            </div>
-            <div>
-              <dt>Tone</dt>
-              <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
-            </div>
-            <div>
-              <dt>Custom processing</dt>
-              <dd>
-                {customInstruction.trim()
-                  ? customInstruction.trim().length > 220
-                    ? `${customInstruction.trim().slice(0, 220)}…`
-                    : customInstruction.trim()
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
+        <div className="request-workspace-summary request-workspace-summary--compact">
+          <strong>Current setup</strong>
+          <p className="request-setup-line">
+            {activeTask.label} · {targetLanguage} · {providers.length === 0
+              ? "No engine selected"
+              : providers.map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p).join(", ")}
+          </p>
+          <p>Output style: {activeMode.label}</p>
+          <p>Tone: {TONES.find((t) => t.value === tone)?.label ?? (tone || "Default")}</p>
+          <p>
+            Custom instruction: {customInstruction.trim()
+              ? customInstruction.trim().length > 140
+                ? `${customInstruction.trim().slice(0, 140)}…`
+                : customInstruction.trim()
+              : "None"}
+          </p>
         </div>
         <div className="request-workspace-actions">
           <button type="button" onClick={onOpenControlConsole}>
@@ -510,7 +500,7 @@ export function ProcessingWorkspace({
       <>
         <section className="layer request-layer ps-studio-root" aria-label="Processing studio">
           <header className="ps-studio-header">
-            <p className="eyebrow">PROCESSING / 加工</p>
+            <p className="eyebrow">PROCESSING</p>
             <h2>Processing Studio</h2>
             <p className="ps-studio-lede">Choose how to transform the saved topic. Processing uses saved topic text only.</p>
           </header>
@@ -760,8 +750,7 @@ export function ProcessingWorkspace({
             Custom processing text and studio cards live above. Use tone and presets here for voice-level shaping.
           </div>
           <div className="writing-hint">
-            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any
-            specific writer.
+            For lyrical prose, use “Modern Chinese lyrical prose”. It asks for a gentle, subtle, detailed modern essay voice without directly imitating any specific writer.
           </div>
         </details>
 
@@ -778,9 +767,9 @@ export function ProcessingWorkspace({
               <li>
                 {providers.length} engine{providers.length === 1 ? "" : "s"}
               </li>
-              <li>Task: {task}</li>
+              <li>Task: {activeTask.label}</li>
               <li>Target: {targetLanguage}</li>
-              <li>Behavior: {outputMode}</li>
+              <li>Behavior: {activeMode.label}</li>
             </ul>
           </div>
           <dl className="run-summary">
@@ -839,11 +828,11 @@ export function ProcessingWorkspace({
             gap: 1.35rem;
           }
           .ps-studio-group {
-            border: 1px solid rgba(63, 143, 138, 0.22);
+            border: 1px solid rgba(182, 90, 87, 0.22);
             border-radius: 14px;
             padding: 1rem 1.1rem 1.15rem;
-            background: linear-gradient(165deg, rgba(22, 33, 43, 0.98), rgba(14, 22, 30, 0.92));
-            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+            background: linear-gradient(165deg, #fffaf7, #f5e4de);
+            box-shadow: 0 14px 32px rgba(112, 55, 50, 0.08);
           }
           .ps-studio-group-head {
             display: flex;
@@ -859,8 +848,8 @@ export function ProcessingWorkspace({
             width: 38px;
             height: 38px;
             border-radius: 10px;
-            background: rgba(63, 143, 138, 0.12);
-            border: 1px solid rgba(63, 143, 138, 0.25);
+            background: rgba(182, 90, 87, 0.12);
+            border: 1px solid rgba(182, 90, 87, 0.25);
           }
           .ps-studio-group-title {
             margin: 0;
@@ -868,13 +857,13 @@ export function ProcessingWorkspace({
             font-weight: 800;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: #9aa8ba;
+            color: #7e6863;
           }
           .ps-studio-group-intro {
             margin: 0.2rem 0 0;
             font-size: 0.82rem;
             line-height: 1.45;
-            color: #8c9aac;
+            color: #8a706b;
           }
           .ps-studio-card-grid {
             display: grid;
@@ -895,9 +884,9 @@ export function ProcessingWorkspace({
             min-height: 78px;
             padding: 0.75rem 0.85rem;
             border-radius: 12px;
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            background: rgba(15, 23, 32, 0.85);
-            color: #e6edf3;
+            border: 1px solid #ead8d0;
+            background: #fff8f5;
+            color: #352322;
             cursor: pointer;
             font: inherit;
             transition:
@@ -906,9 +895,9 @@ export function ProcessingWorkspace({
               box-shadow 0.15s ease;
           }
           .ps-studio-card:hover:not(:disabled) {
-            border-color: rgba(95, 168, 166, 0.45);
-            background: rgba(30, 58, 58, 0.35);
-            box-shadow: 0 0 0 1px rgba(95, 168, 166, 0.12);
+            border-color: rgba(199, 102, 94, 0.45);
+            background: #f1dfd8;
+            box-shadow: 0 0 0 1px rgba(199, 102, 94, 0.12);
           }
           .ps-studio-card--wait:disabled {
             opacity: 0.5;
@@ -927,13 +916,13 @@ export function ProcessingWorkspace({
           .ps-studio-card-blurb {
             font-size: 0.75rem;
             line-height: 1.4;
-            color: #94a3b8;
+            color: #7e6863;
           }
           .ps-studio-overflow {
-            border: 1px dashed rgba(148, 163, 184, 0.22);
+            border: 1px dashed #ddc4bb;
             border-radius: 12px;
             padding: 0.65rem 0.85rem;
-            background: rgba(10, 15, 22, 0.45);
+            background: #fff8f5;
           }
           .ps-studio-overflow summary {
             cursor: pointer;
@@ -976,7 +965,7 @@ export function ProcessingWorkspace({
           }
           .ps-settings-summary-hint {
             font-size: 0.78rem;
-            color: #8c9aac;
+            color: #8a706b;
             font-weight: 600;
           }
           .ps-settings-details[open] .ps-settings-summary {

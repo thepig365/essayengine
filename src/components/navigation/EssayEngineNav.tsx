@@ -124,10 +124,10 @@ export function EssayEngineNav({
           position: relative;
           z-index: 30;
           margin-bottom: 18px;
-          border: 1px solid #263746;
+          border: 1px solid #ead8d0;
           border-radius: 16px;
-          background: rgba(17, 26, 34, 0.92);
-          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+          background: #fff8f5;
+          box-shadow: 0 18px 44px rgba(112, 55, 50, 0.1);
           backdrop-filter: blur(10px);
         }
         .ee-top-nav-inner {
@@ -137,7 +137,7 @@ export function EssayEngineNav({
           justify-content: space-between;
           gap: 12px 20px;
           padding: 14px 18px 10px;
-          border-bottom: 1px solid rgba(38, 55, 70, 0.85);
+          border-bottom: 1px solid #ead8d0;
         }
         .ee-nav-brand {
           display: flex;
@@ -149,12 +149,12 @@ export function EssayEngineNav({
           font-size: 1.15rem;
           font-weight: 820;
           letter-spacing: -0.02em;
-          color: #f1f5f9;
+          color: #352322;
         }
         .ee-wordmark-sub {
           font-size: 11px;
           font-weight: 650;
-          color: #64748b;
+          color: #8a706b;
           letter-spacing: 0.04em;
         }
         .ee-nav-primary {
@@ -178,8 +178,8 @@ export function EssayEngineNav({
         .ee-nav-trigger {
           border: 1px solid transparent;
           border-radius: 999px;
-          background: rgba(15, 23, 32, 0.9);
-          color: #cbd5e1;
+          background: #f5e8e3;
+          color: #5a403e;
           padding: 10px 16px;
           font: inherit;
           font-size: 13px;
@@ -196,14 +196,14 @@ export function EssayEngineNav({
           line-height: 1;
         }
         .ee-nav-trigger:hover {
-          border-color: #3f8f8a;
-          color: #f8fafc;
-          background: rgba(30, 58, 58, 0.55);
+          border-color: #c7665e;
+          color: #352322;
+          background: #efd7d0;
         }
         .ee-nav-trigger--open {
-          border-color: #5da8a6;
-          background: rgba(30, 58, 58, 0.8);
-          color: #ecfeff;
+          border-color: #b65a57;
+          background: #b65a57;
+          color: #fffaf7;
         }
         @media (max-width: 720px) {
           .ee-top-nav-inner {
