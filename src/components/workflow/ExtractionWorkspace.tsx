@@ -134,6 +134,8 @@ type Props = {
   afterSelectedMaterial?: ReactNode;
   /** Hide the "Analyze Source" tool wall (tools live in Feature Section on desktop). */
   hideMaterialAnalysisPanel?: boolean;
+  /** Desktop banner row vs scrollable transcript column — adjusts sticky chrome only. */
+  layoutSurface?: "transcriptColumn" | "studioBanner";
 };
 
 export function ExtractionWorkspace({
@@ -224,45 +226,50 @@ export function ExtractionWorkspace({
   savedTopicCompatibility,
   afterSelectedMaterial,
   hideMaterialAnalysisPanel = false,
+  layoutSurface = "transcriptColumn",
 }: Props) {
   return (
     <section
-      className="extraction-workspace"
+      className={`extraction-workspace${layoutSurface === "studioBanner" ? " ee-extraction-workspace--banner" : ""}`}
       data-stage="extraction"
       hidden={!active}
       aria-label="Extraction — segment selection"
     >
-      <div className="layer-head">
-        <p className="eyebrow">Source Extractor</p>
-        <h2>Content Source Analyzer</h2>
-        <p>
-          <strong>Extraction &amp; selection:</strong> every source becomes selectable blocks here. Pick ranges or paragraphs, then save as{" "}
-          <strong>saved topic</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
+      <div id="ee-content-source-analyzer" className="ee-extraction-sticky-hero">
+        <div className="layer-head ee-extraction-hero-head">
+          <p className="eyebrow">Source Extractor</p>
+          <h2 id="ee-content-source-analyzer-heading">Content Source Analyzer</h2>
+          <p className="ee-extraction-hero-lead">
+            Extract useful parts from transcripts, links, pasted text, audio, or captions.
+          </p>
+          <p>
+            Every source becomes selectable blocks here. Pick ranges or paragraphs, then save as <strong>saved topic</strong> below. Processing uses saved topic
+            text, not this panel alone. Full text is optional via the checkbox below.
+          </p>
+        </div>
+
+        <div className="range-actions cta-row ee-extraction-tab-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
+          {EXTRACTION_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={sourceMaterialPipeline === tab.id ? "primary" : "secondary"}
+              onClick={() => onSourceMaterialPipelineChange?.(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="organize-option" style={{ marginTop: "0.75rem" }}>
+          <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
+          <span>Use full source text (only when explicitly checked)</span>
+        </label>
+        <p className="transcript-note">
+          When unchecked, analysis, custom extraction, and your saved topic use only the sections or paragraphs you select. Summaries of an entire video or
+          full text require this option or Use full transcript in Source below.
         </p>
-        <p>Every source becomes optional text blocks before analysis and capture; full text is not used by default.</p>
       </div>
-
-      <div className="range-actions cta-row" style={{ flexWrap: "wrap", gap: "0.35rem" }}>
-        {EXTRACTION_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={sourceMaterialPipeline === tab.id ? "primary" : "secondary"}
-            onClick={() => onSourceMaterialPipelineChange?.(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <label className="organize-option" style={{ marginTop: "0.75rem" }}>
-        <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
-        <span>Use full source text (only when explicitly checked)</span>
-      </label>
-      <p className="transcript-note">
-        When unchecked, analysis, custom extraction, and your saved topic use only the sections or paragraphs you select. Summaries of an entire video or
-        full text require this option or Use full transcript in Source below.
-      </p>
 
       {sourceMaterialPipeline === "link" && (
         <div className="topic-filter" style={{ marginTop: "1rem" }}>

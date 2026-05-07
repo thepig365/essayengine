@@ -12,13 +12,10 @@ body {
 }
 
 /* Ensure mobile can select/copy engine output and final text; inputs stay editable. */
-input,
-textarea,
-select,
-[contenteditable="true"] {
-  user-select: text;
-  -webkit-user-select: text;
-  touch-action: manipulation;
+textarea::placeholder,
+input::placeholder {
+  color: #64748b;
+  opacity: 1;
 }
 
 .selectable-output,
@@ -62,11 +59,10 @@ select,
 }
 
 .ee-advanced-summary-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
+  gap: 12px 18px;
 }
 
 .ee-advanced-summary-text {
@@ -74,11 +70,11 @@ select,
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  flex: 1;
 }
 
 .ee-advanced-open-pill {
   flex-shrink: 0;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -503,4 +499,464 @@ select,
   .ee-functions-head {
     top: -14px;
   }
+}
+
+/* --- Advanced Studio: summary alignment uses grid above --- */
+
+@media (max-width: 560px) {
+  .ee-advanced-summary-row {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+
+  .ee-advanced-open-pill {
+    justify-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/*
+ * Advanced Studio body — dark panels (scoped helpers live outside styled-jsx children).
+ * Fixes harsh white cards; aligns placeholders via textarea/input padding.
+ */
+.ee-advanced-studio-body .workspace .layer {
+  background: linear-gradient(180deg, #1a2432, #141c26);
+  border-color: #2c3f52;
+  color: #e2e8f0;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42);
+}
+
+.ee-advanced-studio-body .workspace .layer-head h2 {
+  color: #f1f5f9;
+}
+
+.ee-advanced-studio-body .workspace .layer-head p:not(.eyebrow),
+.ee-advanced-studio-body .workspace .transcript-note,
+.ee-advanced-studio-body .workspace .input-label,
+.ee-advanced-studio-body .workspace .field span {
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .eyebrow {
+  color: #7dd3c0;
+}
+
+.ee-advanced-studio-body .workspace textarea,
+.ee-advanced-studio-body .workspace input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.ee-advanced-studio-body .workspace select {
+  background: #0e1720;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace textarea::placeholder,
+.ee-advanced-studio-body .workspace input::placeholder {
+  color: #7d8ea3;
+  line-height: 1.5;
+}
+
+.ee-advanced-studio-body .workspace textarea {
+  padding: 14px 16px;
+  line-height: 1.55;
+}
+
+.ee-advanced-studio-body .workspace .field textarea {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.ee-advanced-studio-body .workspace .source-layer > textarea,
+.ee-advanced-studio-body .workspace .source-input-layer textarea.instruction {
+  background: #0f1822;
+  border-color: #3d5268;
+}
+
+.ee-advanced-studio-body .workspace .source-summary-card,
+.ee-advanced-studio-body .workspace .source-purpose,
+.ee-advanced-studio-body .workspace .source-helper {
+  background: rgba(15, 23, 32, 0.92);
+  border-color: #334657;
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .source-summary-card div {
+  background: #121b26;
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .source-summary-card dd {
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .control-panel-toggle {
+  background: #171f2c;
+  border-color: #334657;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.ee-advanced-studio-body .workspace .control-panel-toggle span {
+  color: #cbd5e1;
+}
+
+.ee-advanced-studio-body .workspace .topic-material-panel,
+.ee-advanced-studio-body .workspace .transcript-library-panel {
+  background: rgba(17, 24, 34, 0.96);
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .range-status,
+.ee-advanced-studio-body .workspace .field-meta {
+  background: rgba(23, 36, 48, 0.95);
+  border-color: #334657;
+  color: #a8c9c6;
+}
+
+.ee-advanced-studio-body .mobile-workflow-shell {
+  background: linear-gradient(180deg, #1a2432, #151e29);
+  border-color: #334657;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+.ee-advanced-studio-body .mobile-workflow-app-title {
+  color: #f1f5f9;
+}
+
+.ee-advanced-studio-body .mobile-workflow-step-pill {
+  border-color: #334657;
+  background: rgba(23, 36, 48, 0.92);
+  color: #a7f3d0;
+}
+
+/* Processing overview chips — beat EngineForm styled-jsx; cover desktop triptych + narrow shell. */
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .request-workspace-summary,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .request-workspace-summary {
+  border-color: #334657;
+  background: rgba(23, 31, 44, 0.92);
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .request-workspace-summary-heading,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .request-workspace-summary-heading {
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .request-workspace-chips,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .request-workspace-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .rw-chip,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .rw-chip {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid #3d5268;
+  background: #121b26;
+  box-sizing: border-box;
+}
+
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .rw-chip-label,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .rw-chip-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7dd3c0;
+}
+
+.ee-advanced-studio-body .workspace.ee-desktop-triptych .ee-request-workspace-desktop .rw-chip-value,
+.ee-advanced-studio-body .workspace.ee-narrow .ee-request-workspace-desktop .rw-chip-value {
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+  color: #f1f5f9;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Content Source Analyzer — sticky hero inside scrolling transcript column */
+.extraction-workspace .ee-extraction-sticky-hero {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: -20px -20px 18px;
+  padding: 16px 20px 14px;
+  background: linear-gradient(180deg, rgba(22, 32, 46, 0.98), rgba(17, 24, 34, 0.96));
+  border-bottom: 1px solid rgba(63, 143, 138, 0.38);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.extraction-workspace .ee-extraction-hero-kicker {
+  margin: 0 0 10px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  background: rgba(30, 58, 58, 0.35);
+  color: #b8ffe8;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.extraction-workspace .ee-extraction-sticky-hero .layer-head {
+  margin-bottom: 12px;
+}
+
+.extraction-workspace .ee-extraction-sticky-hero .layer-head h2 {
+  margin-top: 4px;
+}
+
+.extraction-workspace .ee-extraction-tab-row {
+  margin-bottom: 0;
+}
+
+/* Scoped inputs: consistent placeholder alignment (single-line fields). */
+.ee-advanced-studio-body .workspace .field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+  padding: 12px 14px;
+  line-height: 1.45;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Essay draft, mobile workflow cards, AI output cards — replace harsh white surfaces. */
+.ee-advanced-studio-body .workspace .essay-draft-workspace,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel {
+  background: linear-gradient(180deg, #1c2736, #161f2c);
+  border-color: #334657;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42);
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .eyebrow,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel .eyebrow {
+  color: #7dd3c0;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace h2,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel h2,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel h3 {
+  color: #f1f5f9;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .layer-head p:not(.eyebrow),
+.ee-advanced-studio-body .workspace .mobile-workflow-panel .panel-head p,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel .helper {
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .draft-helper {
+  background: rgba(56, 45, 18, 0.55);
+  border-color: rgba(212, 175, 55, 0.35);
+  color: #fde68a;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .field span,
+.ee-advanced-studio-body .workspace .mobile-workflow-panel label:not(.choice) {
+  color: #cbd5e1;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace input,
+.ee-advanced-studio-body .workspace .essay-draft-workspace textarea {
+  background: #0e1720;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace input:focus,
+.ee-advanced-studio-body .workspace .essay-draft-workspace textarea:focus {
+  background: #121b26;
+  border-color: #3f8f8a;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .draft-metrics span {
+  background: #121b26;
+  border-color: #334657;
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace button:not(.primary) {
+  background: #171f2c;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .essay-draft-workspace .draft-status {
+  background: rgba(23, 44, 48, 0.92);
+  border-color: #334657;
+  color: #a8e6df;
+}
+
+.ee-advanced-studio-body .workspace .workflow-step {
+  background: rgba(14, 23, 34, 0.92);
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .workflow-step > span {
+  color: #7dd3c0;
+}
+
+.ee-advanced-studio-body .workspace .mobile-workflow-panel .mini-card {
+  background: #121b26;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .result-card,
+.ee-advanced-studio-body .workspace .result-layer .preview-card {
+  background: linear-gradient(180deg, #1c2736, #161f2c);
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .card-head h3,
+.ee-advanced-studio-body .workspace .result-layer .preview-output {
+  color: #f1f5f9;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .output-text {
+  background: #0e1720;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+/* Desktop Advanced Studio — full-width analyzer strip */
+.ee-advanced-studio-body .workspace .ee-studio-analyzer-banner {
+  padding: 18px 20px 16px;
+}
+
+/* Analyzer hero: sticky only in narrow transcript column */
+.extraction-workspace.ee-extraction-workspace--banner .ee-extraction-sticky-hero {
+  position: static;
+  margin: 0 0 16px;
+  padding: 0 0 14px;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-bottom: 1px solid rgba(63, 143, 138, 0.38);
+  background: transparent;
+}
+
+.extraction-workspace .ee-extraction-hero-lead {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+/* Collapsed/demoted panel groups */
+.ee-advanced-studio-body .ee-studio-panel-details,
+.ee-advanced-studio-body .ee-studio-more-advanced {
+  margin-bottom: 10px;
+  border: 1px solid #334657;
+  border-radius: 12px;
+  background: rgba(14, 20, 30, 0.92);
+}
+
+.ee-advanced-studio-body .ee-studio-panel-details-summary,
+.ee-advanced-studio-body .ee-studio-more-advanced-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 820;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .ee-studio-panel-details-summary::-webkit-details-marker,
+.ee-advanced-studio-body .ee-studio-more-advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ee-advanced-studio-body .ee-studio-panel-details-body,
+.ee-advanced-studio-body .ee-studio-more-advanced-body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* AI Output / Listen — remove leftover white shells inside Advanced Studio */
+.ee-advanced-studio-body .workspace .result-layer {
+  background: linear-gradient(180deg, #1c2736, #161f2c);
+  border-color: #334657;
+  color: #cbd5e1;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .layer-head h2,
+.ee-advanced-studio-body .workspace .result-layer .title-row p {
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .empty-state {
+  background: rgba(14, 23, 34, 0.88);
+  border-color: #334657;
+  color: #94a3b8;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .empty-state strong {
+  color: #f1f5f9;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .result-explainer,
+.ee-advanced-studio-body .workspace .result-layer .final-result {
+  background: rgba(14, 23, 34, 0.92);
+  border-color: #334657;
+  color: #cbd5e1;
+}
+
+.ee-advanced-studio-body .workspace .result-layer .run-meta div {
+  background: #121b26;
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .audio-panel,
+.ee-advanced-studio-body .workspace .final-panel {
+  background: linear-gradient(180deg, #1a2432, #141c26);
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .audio-card,
+.ee-advanced-studio-body .workspace .final-result-card,
+.ee-advanced-studio-body .workspace .empty-final,
+.ee-advanced-studio-body .workspace .final-output-preview {
+  background: #121b26;
+  border-color: #334657;
+  color: #e2e8f0;
+}
+
+.ee-advanced-studio-body .workspace .media-player {
+  background: rgba(14, 23, 34, 0.95);
+  border-color: #334657;
+}
+
+.ee-advanced-studio-body .workspace .run-layer .primary {
+  width: auto;
+  align-self: flex-start;
+  max-width: min(420px, 100%);
+}
+
+/* Narrow shell — Advanced Studio summary line breaks */
+.workspace.ee-narrow .ee-mobile-classic-summary .ee-mobile-classic-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.workspace.ee-narrow .ee-mobile-classic-summary .ee-mobile-classic-title {
+  display: block;
+}
+
+.workspace.ee-narrow .ee-mobile-classic-summary .ee-mobile-classic-hint {
+  display: block;
+  margin-top: 4px;
 }

@@ -332,6 +332,7 @@ export default function HomePage() {
         :global(.source-read),
         :global(.task-icon-button),
         :global(.library-button),
+        :global(.ee-lib-btn),
         :global(.structure),
         :global(.paragraph),
         :global(.show-older),
@@ -688,6 +689,7 @@ export default function HomePage() {
         :global(.source-read),
         :global(.task-icon-button),
         :global(.library-button),
+        :global(.ee-lib-btn),
         :global(.structure),
         :global(.paragraph),
         :global(.show-older),
@@ -933,6 +935,7 @@ export default function HomePage() {
           :global(.source-read),
           :global(.task-icon-button),
           :global(.library-button),
+          :global(.ee-lib-btn),
           :global(.structure),
           :global(.paragraph),
           :global(.read-result) {

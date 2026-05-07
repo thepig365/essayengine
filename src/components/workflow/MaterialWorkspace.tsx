@@ -120,7 +120,7 @@ export function MaterialWorkspace({
             placeholder="Paste YouTube URL, podcast URL, LinkedIn post, article text, transcript, or social post here..."
           />
         </label>
-        <p>
+        <p className="field-meta">
           <strong>Detected source type:</strong> {detectedSourceKind}
         </p>
         {autoExtractStatus ? <p className="range-status">{autoExtractStatus}</p> : null}
@@ -274,7 +274,7 @@ function MaterialWorkspaceStyles() {
         padding: 20px;
       }
       .source-layer {
-        min-height: 520px;
+        min-height: 300px;
         background: linear-gradient(180deg, #ffffff, #fbfdfd);
       }
       .layer-head {
@@ -445,13 +445,15 @@ function MaterialWorkspaceStyles() {
         transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
       }
       textarea {
-        min-height: 360px;
+        min-height: 120px;
         resize: vertical;
-        padding: 14px;
-        font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.55;
+        font-family: inherit;
       }
       .instruction {
-        min-height: 92px;
+        min-height: 100px;
         font-family: inherit;
       }
       .source-layer > textarea {
@@ -476,6 +478,18 @@ function MaterialWorkspaceStyles() {
         color: #344252;
         font-size: 12px;
         font-weight: 750;
+        line-height: 1.35;
+      }
+      .field-meta {
+        margin: 6px 0 0;
+        padding: 0;
+        font-size: 12px;
+        line-height: 1.45;
+        color: #526171;
+      }
+      .field-meta strong {
+        color: #344252;
+        font-weight: 800;
       }
       .secondary,
       .copy-action {

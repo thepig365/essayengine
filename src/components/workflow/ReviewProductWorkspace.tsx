@@ -29,6 +29,11 @@ type Props = {
   finalPanelProps?: ComponentProps<typeof FinalPanel>;
   /** Desktop canvas: stack (default) vs split draft/final columns inside `work-column`. */
   layout?: "stack" | "split";
+  /**
+   * Desktop Advanced Studio: group AI Output + Draft and Listen + Final into closed `<details>` sections
+   * instead of a wide two-column split (panels stay mounted; handlers unchanged).
+   */
+  reviewPanelsAsCollapsedDetails?: boolean;
 };
 
 export function ReviewProductWorkspace({
@@ -42,6 +47,7 @@ export function ReviewProductWorkspace({
   beforeFinalPanel,
   finalPanelProps,
   layout = "stack",
+  reviewPanelsAsCollapsedDetails = false,
 }: Props) {
   const hasDraft = (drafts?.length ?? 0) > 0;
   const hasFinal = (finalProducts?.length ?? 0) > 0;
@@ -77,6 +83,22 @@ export function ReviewProductWorkspace({
   );
 
   if (hasExtractedPanels) {
+    if (layout === "split" && reviewPanelsAsCollapsedDetails) {
+      return (
+        <>
+          <details className="ee-studio-panel-details ee-studio-panel-details--output">
+            <summary className="ee-studio-panel-details-summary">Output and Draft</summary>
+            <div className="ee-studio-panel-details-body">{draftStack}</div>
+          </details>
+          <details className="ee-studio-panel-details ee-studio-panel-details--listen">
+            <summary className="ee-studio-panel-details-summary">Listen and Final</summary>
+            <div className="ee-studio-panel-details-body">{finalStack}</div>
+          </details>
+          {children}
+        </>
+      );
+    }
+
     if (layout === "split") {
       return (
         <>

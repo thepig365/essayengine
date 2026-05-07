@@ -454,44 +454,44 @@ export function ProcessingWorkspace({
             always uses your saved <strong>topic text</strong>.
           </p>
         </div>
-        <div className="request-workspace-summary">
-          <strong>Current setup (read-only)</strong>
-          <dl>
-            <div>
-              <dt>Task</dt>
-              <dd>{activeTask.label}</dd>
-            </div>
-            <div>
-              <dt>Engines</dt>
-              <dd>
+        <div className="request-workspace-summary request-workspace-summary--compact">
+          <strong className="request-workspace-summary-heading">Current setup</strong>
+          <div className="request-workspace-chips">
+            <span className="rw-chip">
+              <span className="rw-chip-label">Task</span>
+              <span className="rw-chip-value">{activeTask.label}</span>
+            </span>
+            <span className="rw-chip">
+              <span className="rw-chip-label">Engines</span>
+              <span className="rw-chip-value">
                 {providers.length === 0
                   ? "None selected"
                   : providers.map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p).join(", ")}
-              </dd>
-            </div>
-            <div>
-              <dt>Target language</dt>
-              <dd>{targetLanguage}</dd>
-            </div>
-            <div>
-              <dt>Output behavior</dt>
-              <dd>{activeMode.label}</dd>
-            </div>
-            <div>
-              <dt>Tone</dt>
-              <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
-            </div>
-            <div>
-              <dt>Custom processing</dt>
-              <dd>
+              </span>
+            </span>
+            <span className="rw-chip">
+              <span className="rw-chip-label">Language</span>
+              <span className="rw-chip-value">{targetLanguage}</span>
+            </span>
+            <span className="rw-chip">
+              <span className="rw-chip-label">Output</span>
+              <span className="rw-chip-value">{activeMode.label}</span>
+            </span>
+            <span className="rw-chip">
+              <span className="rw-chip-label">Tone</span>
+              <span className="rw-chip-value">{TONES.find((t) => t.value === tone)?.label ?? (tone.trim() ? tone : "—")}</span>
+            </span>
+            <span className="rw-chip">
+              <span className="rw-chip-label">Custom</span>
+              <span className="rw-chip-value">
                 {customInstruction.trim()
                   ? customInstruction.trim().length > 220
                     ? `${customInstruction.trim().slice(0, 220)}…`
                     : customInstruction.trim()
                   : "—"}
-              </dd>
-            </div>
-          </dl>
+              </span>
+            </span>
+          </div>
         </div>
         <div className="request-workspace-actions">
           <button type="button" onClick={onOpenControlConsole}>

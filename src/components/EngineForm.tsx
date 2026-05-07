@@ -2918,7 +2918,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       case "material-transcript":
         setSourceMaterialPipeline("transcript");
         scrollToAdvancedStudio();
-        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
+        afterAdvancedStudioOpen(() => scrollToEl("ee-content-source-analyzer"));
         break;
       case "material-audio":
         setSourceMaterialPipeline("audio");
@@ -2937,7 +2937,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       case "extract-transcript-blocks":
         setSourceMaterialPipeline("transcript");
         scrollToAdvancedStudio();
-        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
+        afterAdvancedStudioOpen(() => scrollToEl("ee-content-source-analyzer"));
         break;
       case "extract-time-range":
         scrollToAdvancedStudio();
@@ -2950,7 +2950,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       case "extract-topic-filter":
         findTopicSections();
         scrollToAdvancedStudio();
-        afterAdvancedStudioOpen(() => scrollToEl("ee-panel-transcript"));
+        afterAdvancedStudioOpen(() => scrollToEl("ee-content-source-analyzer"));
         break;
       case "process-story-beats":
         runAnalysisByLabel("Story beats");
@@ -2961,14 +2961,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       case "extract-copy-selected":
         scrollToAdvancedStudio();
         afterAdvancedStudioOpen(() => {
-          scrollToEl("ee-panel-transcript");
+          scrollToEl("ee-content-source-analyzer");
           copyCheckedSectionsCleanText();
         });
         break;
       case "extract-replace-source-selection":
         scrollToAdvancedStudio();
         afterAdvancedStudioOpen(() => {
-          scrollToEl("ee-panel-transcript");
+          scrollToEl("ee-content-source-analyzer");
           replaceSourceWithCheckedSections();
         });
         break;
@@ -3211,6 +3211,140 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       className={`workspace${effectiveIsMobileLayout ? " ee-narrow ee-shell-workspace" : ""}${effectiveIsDesktopConsole ? " ee-desktop-triptych" : ""}`}
       data-workflow-step={mobileWorkflowStepId}
     >
+      {effectiveIsDesktopConsole ? (
+        <section
+          id="ee-studio-analyzer-banner"
+          className="layer ee-studio-analyzer-banner"
+          aria-labelledby="ee-content-source-analyzer-heading"
+        >
+        <ExtractionWorkspace
+          active
+          layoutSurface="studioBanner"
+          hideMaterialAnalysisPanel={effectiveIsDesktopConsole}
+          sourceMaterialPipeline={sourceMaterialPipeline}
+          onSourceMaterialPipelineChange={(tab) => {
+            setSourceMaterialPipeline(tab);
+            setMaterialAnalysisStatus(null);
+          }}
+          materialUseFullExplicit={materialUseFullExplicit}
+          onMaterialUseFullExplicitChange={setMaterialUseFullExplicit}
+          linkExtractUrl={linkExtractUrl}
+          onLinkExtractUrlChange={setLinkExtractUrl}
+          linkExtractLoading={linkExtractLoading}
+          onRunLinkMaterialExtract={runLinkMaterialExtract}
+          linkExtractStatus={linkExtractStatus}
+          pasteBlockInput={pasteBlockInput}
+          onPasteBlockInputChange={setPasteBlockInput}
+          onApplyPasteMaterialBlocks={applyPasteMaterialBlocks}
+          audioUploadLoading={audioUploadLoading}
+          onTranscribeAudioFile={(file) => void transcribeAudioFile(file)}
+          onIngestDocumentFile={(file) => void ingestDocumentFile(file)}
+          genericWorkspaceNotice={genericWorkspaceNotice}
+          genericSegments={genericSegments}
+          genericCheckedIds={genericCheckedIds}
+          onToggleGenericSegment={toggleGenericSegment}
+          genericMaterialKind={genericMaterialKind}
+          genericMaterialTitle={genericMaterialTitle}
+          selectedMaterial={selectedSourceMaterial}
+          onReplaceSourceCaptureFromMaterialSelection={replaceSourceCaptureFromMaterialSelection}
+          onUseFullTranscriptAsSource={useFullTranscriptAsSource}
+          transcriptText={transcriptText}
+          effectiveYoutubeSource={effectiveYoutubeSource}
+          transcriptLoading={transcriptLoading}
+          onFetchTranscript={() => void getTranscript()}
+          transcriptStatus={transcriptStatus}
+          timestampChapterInput={timestampChapterInput}
+          onTimestampChapterInputChange={setTimestampChapterInput}
+          onTimestampChapterInputTouched={() => {
+            setChapterSectionsGenerated(false);
+            setCheckedChapterIds([]);
+            setChapterStatus(null);
+          }}
+          onApplyTimestampChapters={applyTimestampChapters}
+          onReplaceSourceWithCheckedSections={replaceSourceWithCheckedSections}
+          onAddCheckedSectionsToSource={addCheckedSectionsToSource}
+          onAddCheckedSectionsToDraft={addCheckedSectionsToDraft}
+          onCopyCheckedSectionsCleanText={copyCheckedSectionsCleanText}
+          chapterSectionsGenerated={chapterSectionsGenerated}
+          timestampChapterSections={timestampChapterSections}
+          checkedChapterIds={checkedChapterIds}
+          onToggleTimestampChapter={toggleTimestampChapter}
+          chapterStatus={chapterStatus}
+          topicInput={topicInput}
+          onTopicInputChange={setTopicInput}
+          onFindTopicSections={findTopicSections}
+          onReplaceSourceWithMatchedSections={replaceSourceWithMatchedSections}
+          onAddMatchedSectionsToSource={addMatchedSectionsToSource}
+          onAddMatchedSectionsToDraft={addMatchedSectionsToDraft}
+          onCopyMatchedSections={copyMatchedSections}
+          onClearTopicMatches={clearTopicMatches}
+          topicMatches={topicMatches}
+          checkedTopicSectionIds={checkedTopicSectionIds}
+          onToggleTopicSection={toggleTopicSection}
+          topicStatus={topicStatus}
+          manualRanges={manualRanges}
+          onUpdateManualRange={updateManualRange}
+          onRemoveManualRange={removeManualRange}
+          onAddManualRange={addManualRange}
+          onReplaceSourceWithManualRanges={replaceSourceWithManualRanges}
+          onAddManualRangesToSource={addManualRangesToSource}
+          onAddManualRangesToDraft={addManualRangesToDraft}
+          onClearManualRanges={clearManualRanges}
+          rangeStatus={rangeStatus}
+          includeTranscriptTimestamps={includeTranscriptTimestamps}
+          onIncludeTranscriptTimestampsChange={setIncludeTranscriptTimestamps}
+          onReplaceSourceWithCheckedFullTranscriptSections={replaceSourceWithCheckedFullTranscriptSections}
+          onAddCheckedFullTranscriptSectionsToSource={addCheckedFullTranscriptSectionsToSource}
+          onAddCheckedFullTranscriptSectionsToDraft={addCheckedFullTranscriptSectionsToDraft}
+          onCopyCheckedFullTranscriptSections={copyCheckedFullTranscriptSections}
+          fullTranscriptSections={fullTranscriptSections}
+          checkedFullSectionIds={checkedFullSectionIds}
+          onToggleFullTranscriptSection={toggleFullTranscriptSection}
+          fullSectionStatus={fullSectionStatus}
+          formatTimestamp={formatTimestamp}
+          cleanSectionText={cleanSectionText}
+          materialAnalysisButtons={MATERIAL_ANALYSIS_BUTTONS}
+          materialAnalysisLoading={materialAnalysisLoading}
+          onRunMaterialAnalysisTask={runMaterialAnalysisTask}
+          materialCustomPrompt={materialCustomPrompt}
+          onMaterialCustomPromptChange={setMaterialCustomPrompt}
+          materialAnalysisStatus={materialAnalysisStatus}
+          selectedMaterialActions={
+            <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!selectedSourceMaterial}>
+              Save as Topic
+            </button>
+          }
+          savedTopicCompatibility={
+            savedTopicMaterial.trim() ? (
+              <label className="field">
+                <span>Saved topic (also merged into prompts when not duplicated in your task)</span>
+                <textarea className="transcript-preview" readOnly rows={4} value={savedTopicMaterial} />
+                <button type="button" className="copy-action" onClick={() => setSavedTopicMaterial("")}>
+                  Clear saved topic
+                </button>
+              </label>
+            ) : null
+          }
+          afterSelectedMaterial={
+            <TopicWorkspace
+              compact={effectiveIsDesktopConsole}
+              active
+              topicMaterial={topicMaterial}
+              topicMaterialStatus={topicMaterialStatus}
+              isCurrentTopicStale={topicMaterialIsStale}
+              topicMaterialWordCount={topicMaterialWordCount}
+              topicSelectedRangeLabel={topicSelectedRangeLabel}
+              canSaveAsTopic={hasSelectedMaterialForTopic()}
+              canUseFullSource={Boolean(resolveFullSourceTextForRequest()?.trim())}
+              onSaveAsTopic={handleSaveAsTopic}
+              onUseFullSource={handleUseFullSource}
+              onClearTopic={handleClearTopic}
+            />
+          }
+        />
+        </section>
+      ) : null}
+
       <DesktopConsoleLayout>
       <aside id="ee-panel-engines" className={controlsCollapsed ? "control-column collapsed" : "control-column"}>
         <EngineSelectionPanel>
@@ -3591,8 +3725,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       >
       <section id="ee-panel-transcript" className="layer transcript-column">
         <TranscriptWorkspacePanel className="ee-narrow-step-transcript">
+        {!effectiveIsDesktopConsole ? (
         <ExtractionWorkspace
           active
+          layoutSurface="transcriptColumn"
           hideMaterialAnalysisPanel={effectiveIsDesktopConsole}
           sourceMaterialPipeline={sourceMaterialPipeline}
           onSourceMaterialPipelineChange={(tab) => {
@@ -3715,6 +3851,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             />
           }
         />
+        ) : null}
 
         <details className="ee-transcript-library-drawer" open={effectiveIsDesktopConsole}>
           <summary className="ee-transcript-library-summary">
@@ -3728,8 +3865,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 materials. Projects save your full workspace; Transcript Library saves fetched transcripts by topic.
               </p>
             </div>
-            <div className="library-grid">
-              <label className="field">
+            <div className="transcript-library-toolbar transcript-library-toolbar--folders">
+              <label className="field ee-lib-folder-field">
                 <span>Folder</span>
                 <select
                   value={selectedTranscriptFolderId}
@@ -3745,37 +3882,39 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   ))}
                 </select>
               </label>
-              <button
-                type="button"
-                className="secondary library-button"
-                onClick={() => {
-                  setFolderFormMode("create");
-                  setNewTranscriptFolderName("");
-                  setTranscriptLibraryStatus(null);
-                }}
-              >
-                New folder
-              </button>
-              <button
-                type="button"
-                className="secondary library-button"
-                onClick={() => {
-                  setFolderFormMode("rename");
-                  setFolderRenameName(selectedTranscriptFolder?.name ?? "");
-                  setTranscriptLibraryStatus(null);
-                }}
-                disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
-              >
-                Rename folder
-              </button>
-              <button
-                type="button"
-                className="copy-action library-button"
-                onClick={deleteCurrentLibraryFolder}
-                disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
-              >
-                Delete folder
-              </button>
+              <div className="ee-lib-folder-actions">
+                <button
+                  type="button"
+                  className="secondary ee-lib-btn"
+                  onClick={() => {
+                    setFolderFormMode("create");
+                    setNewTranscriptFolderName("");
+                    setTranscriptLibraryStatus(null);
+                  }}
+                >
+                  New folder
+                </button>
+                <button
+                  type="button"
+                  className="secondary ee-lib-btn"
+                  onClick={() => {
+                    setFolderFormMode("rename");
+                    setFolderRenameName(selectedTranscriptFolder?.name ?? "");
+                    setTranscriptLibraryStatus(null);
+                  }}
+                  disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
+                >
+                  Rename folder
+                </button>
+                <button
+                  type="button"
+                  className="copy-action ee-lib-btn"
+                  onClick={deleteCurrentLibraryFolder}
+                  disabled={!selectedTranscriptFolder || selectedFolderIsUnsorted}
+                >
+                  Delete folder
+                </button>
+              </div>
             </div>
             {folderFormMode === "create" && (
               <div className="library-inline-form">
@@ -3787,10 +3926,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     placeholder="Mend, AI Trading, Psychology, Writing Ideas"
                   />
                 </label>
-                <button type="button" className="primary library-button" onClick={createLibraryFolder} disabled={!canCreateTranscriptFolder}>
+                <button type="button" className="primary ee-lib-btn" onClick={createLibraryFolder} disabled={!canCreateTranscriptFolder}>
                   Create
                 </button>
-                <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
+                <button type="button" className="secondary ee-lib-btn" onClick={() => setFolderFormMode("idle")}>
                   Cancel
                 </button>
               </div>
@@ -3805,10 +3944,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     placeholder="New folder name"
                   />
                 </label>
-                <button type="button" className="primary library-button" onClick={renameCurrentLibraryFolder} disabled={!canRenameTranscriptFolder}>
+                <button type="button" className="primary ee-lib-btn" onClick={renameCurrentLibraryFolder} disabled={!canRenameTranscriptFolder}>
                   Rename
                 </button>
-                <button type="button" className="secondary library-button" onClick={() => setFolderFormMode("idle")}>
+                <button type="button" className="secondary ee-lib-btn" onClick={() => setFolderFormMode("idle")}>
                   Cancel
                 </button>
               </div>
@@ -3821,14 +3960,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 placeholder="Lisa Barrett — Anxiety and Body Budget"
               />
             </label>
-            <div className="library-grid">
-              <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
-                {effectiveIsDesktopConsole ? "Save transcript to folder" : "Save transcript"}
+            <div className="transcript-library-toolbar transcript-library-toolbar--transcripts">
+              <button type="button" className="primary ee-lib-btn" onClick={saveCurrentTranscriptToLibrary}>
+                Save Transcript
               </button>
-              <label className="field">
-                <span>Load transcript</span>
+              <label className="field ee-lib-field ee-lib-field--select">
+                <span>Choose Saved Transcript</span>
                 <select value={selectedTranscriptId} onChange={(e) => setSelectedTranscriptId(e.target.value)}>
-                  <option value="">Choose saved transcript</option>
+                  <option value="">Select a saved transcript…</option>
                   {folderTranscripts.map((transcript) => (
                     <option key={transcript.id} value={transcript.id}>
                       {transcript.title}
@@ -3836,14 +3975,16 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   ))}
                 </select>
               </label>
-              <button type="button" className="secondary library-button" onClick={loadSelectedLibraryTranscript}>
-                Load transcript
+              <button type="button" className="secondary ee-lib-btn" onClick={loadSelectedLibraryTranscript}>
+                Load Transcript
               </button>
-              <button type="button" className="copy-action library-button" onClick={duplicateSelectedLibraryTranscript}>
-                Duplicate transcript
+              <button type="button" className="secondary ee-lib-btn" onClick={duplicateSelectedLibraryTranscript}>
+                Duplicate Transcript
               </button>
-              <button type="button" className="copy-action library-button" onClick={deleteSelectedLibraryTranscript}>
-                Delete transcript
+            </div>
+            <div className="transcript-library-toolbar transcript-library-toolbar--delete">
+              <button type="button" className="copy-action ee-lib-btn" onClick={deleteSelectedLibraryTranscript}>
+                Delete Transcript
               </button>
             </div>
             {transcriptLibraryStatus && <span className="range-status">{transcriptLibraryStatus}</span>}
@@ -3947,72 +4088,77 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 />
               </div>
             ) : null}
-            <ProcessingWorkspace
-              active
-              variant="desktopOverview"
-              topicMaterial={topicMaterial}
-              activeTask={activeTask}
-              providers={providers}
-              targetLanguage={targetLanguage}
-              activeMode={activeMode}
-              tone={tone}
-              customInstruction={customInstruction}
-              onOpenControlConsole={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              onJumpToGenerate={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            />
+            <details className="ee-studio-more-advanced">
+              <summary className="ee-studio-more-advanced-summary">More advanced panels</summary>
+              <div className="ee-studio-more-advanced-body">
+                <ProcessingWorkspace
+                  active
+                  variant="desktopOverview"
+                  topicMaterial={topicMaterial}
+                  activeTask={activeTask}
+                  providers={providers}
+                  targetLanguage={targetLanguage}
+                  activeMode={activeMode}
+                  tone={tone}
+                  customInstruction={customInstruction}
+                  onOpenControlConsole={() => document.getElementById("ee-panel-engines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  onJumpToGenerate={() => generateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                />
 
-            <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
-            <MobileWorkflowPanel
-              captureIdea={mobileWorkflow.captureIdea}
-              voiceCapture={mobileWorkflow.voiceCapture}
-              voiceRecorder={mobileWorkflow.voiceRecorder}
-              linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
-              linkCapture={mobileWorkflow.linkCapture}
-              coreValue={mobileWorkflow.coreValue}
-              structures={mobileWorkflow.workflowStructures}
-              selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
-              draftContent={essayDraftContent}
-              markedParagraphs={mobileWorkflow.markedParagraphs}
-              revisionInstruction={mobileWorkflow.revisionInstruction}
-              diagnosis={mobileWorkflow.workflowDiagnosis}
-              polishVersions={mobileWorkflow.polishVersions}
-              repurposeOutputs={mobileWorkflow.repurposeOutputs}
-              busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
-              status={mobileWorkflow.mobileWorkflowStatus}
-              onCaptureChange={mobileWorkflow.setCaptureIdea}
-              onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
-              onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
-              onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
-              onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
-              onExtractValue={mobileWorkflow.extractCoreWritingValue}
-              onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
-              onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
-              onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
-              onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
-              onCreateStructures={() => runWithTopicMaterialGuard(mobileWorkflow.createWorkflowStructures)}
-              onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
-              onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
-              onGenerateDraft={() => runWithTopicMaterialGuard(mobileWorkflow.generateStructuredDraft)}
-              onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
-              onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
-              onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
-              onRequestRevision={() => runWithTopicMaterialGuard(mobileWorkflow.reviseMarkedDraft)}
-              onDiagnose={() => runWithTopicMaterialGuard(mobileWorkflow.diagnoseDraftQuality)}
-              onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
-              selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
-              onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
-              onCreatePolishVersions={() => runWithTopicMaterialGuard(mobileWorkflow.createPolishVersions)}
-              onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
-              onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
-              selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
-              onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
-              onRepurpose={() => runWithTopicMaterialGuard(mobileWorkflow.createRepurposeOutputs)}
-              onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
-              mode={mobileWorkflowPanelMode}
-              compactLabels={effectiveIsMobileLayout}
-              supportRailSourceSummary={sourceSummaryDetails}
-            />
-            </StructureBuilderPanel>
+                <StructureBuilderPanel className="ee-work-support ee-narrow-step-structure ee-narrow-step-draft ee-narrow-step-mark ee-narrow-step-revise ee-narrow-step-validate ee-narrow-step-assemble ee-narrow-step-publish">
+                  <MobileWorkflowPanel
+                    captureIdea={mobileWorkflow.captureIdea}
+                    voiceCapture={mobileWorkflow.voiceCapture}
+                    voiceRecorder={mobileWorkflow.voiceRecorder}
+                    linkCaptureUrl={mobileWorkflow.linkCaptureUrl}
+                    linkCapture={mobileWorkflow.linkCapture}
+                    coreValue={mobileWorkflow.coreValue}
+                    structures={mobileWorkflow.workflowStructures}
+                    selectedStructureId={mobileWorkflow.selectedWorkflowStructureId}
+                    draftContent={essayDraftContent}
+                    markedParagraphs={mobileWorkflow.markedParagraphs}
+                    revisionInstruction={mobileWorkflow.revisionInstruction}
+                    diagnosis={mobileWorkflow.workflowDiagnosis}
+                    polishVersions={mobileWorkflow.polishVersions}
+                    repurposeOutputs={mobileWorkflow.repurposeOutputs}
+                    busy={loading || ttsLoading || mobileWorkflow.mobileWorkflowBusy}
+                    status={mobileWorkflow.mobileWorkflowStatus}
+                    onCaptureChange={mobileWorkflow.setCaptureIdea}
+                    onLinkCaptureUrlChange={mobileWorkflow.setLinkCaptureUrl}
+                    onAnalyzeLinkCapture={mobileWorkflow.analyzeLinkCapture}
+                    onSaveLinkCapture={mobileWorkflow.saveLinkCapture}
+                    onCopyLinkCapture={mobileWorkflow.copyLinkCapture}
+                    onExtractValue={mobileWorkflow.extractCoreWritingValue}
+                    onUseCaptureAsSource={mobileWorkflow.useCaptureAsSource}
+                    onSaveVoiceCapture={mobileWorkflow.saveVoiceCapture}
+                    onDiscardVoiceCapture={mobileWorkflow.discardVoiceCapture}
+                    onCopyVoiceTranscript={mobileWorkflow.copyVoiceTranscript}
+                    onCreateStructures={() => runWithTopicMaterialGuard(mobileWorkflow.createWorkflowStructures)}
+                    onSelectStructure={mobileWorkflow.setSelectedWorkflowStructureId}
+                    onCopySelectedStructureOutline={mobileWorkflow.copySelectedStructureOutline}
+                    onGenerateDraft={() => runWithTopicMaterialGuard(mobileWorkflow.generateStructuredDraft)}
+                    onEnterListenMode={mobileWorkflow.enterListenAndMarkMode}
+                    onToggleParagraphMark={mobileWorkflow.toggleDraftParagraphMark}
+                    onRevisionInstructionChange={mobileWorkflow.setRevisionInstruction}
+                    onRequestRevision={() => runWithTopicMaterialGuard(mobileWorkflow.reviseMarkedDraft)}
+                    onDiagnose={() => runWithTopicMaterialGuard(mobileWorkflow.diagnoseDraftQuality)}
+                    onCopyDiagnosis={mobileWorkflow.copyDiagnosis}
+                    selectedPolishDirections={mobileWorkflow.selectedPolishDirections}
+                    onTogglePolishDirection={mobileWorkflow.togglePolishDirection}
+                    onCreatePolishVersions={() => runWithTopicMaterialGuard(mobileWorkflow.createPolishVersions)}
+                    onUsePolishVersion={mobileWorkflow.usePolishAsDraft}
+                    onCopyPolishVersion={mobileWorkflow.copyPolishVersion}
+                    selectedRepurposeFormats={mobileWorkflow.selectedRepurposeFormats}
+                    onToggleRepurposeFormat={mobileWorkflow.toggleRepurposeFormat}
+                    onRepurpose={() => runWithTopicMaterialGuard(mobileWorkflow.createRepurposeOutputs)}
+                    onCopyRepurposeOutput={mobileWorkflow.copyRepurposeOutput}
+                    mode={mobileWorkflowPanelMode}
+                    compactLabels={effectiveIsMobileLayout}
+                    supportRailSourceSummary={sourceSummaryDetails}
+                  />
+                </StructureBuilderPanel>
+              </div>
+            </details>
           </div>
         ) : (
           <>
@@ -4179,6 +4325,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         <ReviewProductWorkspace
           active
           layout={effectiveIsDesktopConsole ? "split" : "stack"}
+          reviewPanelsAsCollapsedDetails={effectiveIsDesktopConsole}
           outputPanelProps={{
             result,
             task,
@@ -4728,6 +4875,32 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           min-width: 0;
           box-sizing: border-box;
         }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) {
+          grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.68fr) minmax(0, 0.62fr);
+          grid-template-rows: auto minmax(0, 1fr);
+          gap: 14px 18px;
+          align-items: start;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) > .ee-studio-analyzer-banner {
+          grid-column: 1 / -1;
+          grid-row: 1;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) > aside.control-column {
+          grid-column: 1;
+          grid-row: 2;
+          position: static;
+          align-self: start;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) > .ee-grid-source {
+          grid-column: 2;
+          grid-row: 2;
+          align-self: start;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) > .work-column {
+          grid-column: 3;
+          grid-row: 2;
+          align-self: start;
+        }
         .control-column {
           display: flex;
           flex-direction: column;
@@ -4787,6 +4960,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           overflow: auto;
           position: sticky;
           top: 18px;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) .transcript-column {
+          max-height: none;
+          overflow: visible;
+          position: static;
         }
         .ee-desktop-workflow-nav {
           display: none;
@@ -4850,12 +5028,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .workspace.ee-desktop-triptych:not(.ee-narrow) .ee-grid-source {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 14px;
           min-width: 0;
-          max-height: calc(100vh - 36px);
-          overflow: auto;
-          position: sticky;
-          top: 18px;
+          max-height: none;
+          overflow: visible;
+          position: static;
         }
         .workspace.ee-desktop-triptych:not(.ee-narrow) .desktop-console-layout > .work-column {
           display: flex;
@@ -4885,6 +5062,15 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           flex: 1;
           min-height: 0;
         }
+        .workspace.ee-desktop-triptych:not(.ee-narrow) #ee-draft-editor {
+          display: contents;
+        }
+        .workspace.ee-desktop-triptych:not(.ee-narrow)[data-workflow-step]
+          .desktop-console-layout
+          > .work-column
+          > .ee-studio-panel-details {
+          display: block !important;
+        }
         .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-actions {
           display: flex;
           flex-wrap: wrap;
@@ -4896,11 +5082,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           border-radius: 10px;
           background: #f1f8f7;
           color: #174447;
-          padding: 10px 14px;
+          padding: 10px 16px;
+          min-height: 42px;
           font: inherit;
           font-size: 13px;
           font-weight: 800;
+          line-height: 1.25;
           cursor: pointer;
+          box-sizing: border-box;
         }
         .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary {
           margin-top: 12px;
@@ -4911,20 +5100,48 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           font-size: 13px;
           line-height: 1.45;
         }
-        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dl {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 6px 14px;
-          margin: 10px 0 0;
-        }
-        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dt {
-          margin: 0;
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary-heading {
+          display: block;
+          margin: 0 0 10px;
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
           color: #526171;
-          font-weight: 800;
         }
-        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-summary dd {
-          margin: 0;
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .request-workspace-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: flex-start;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .rw-chip {
+          display: inline-flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 6px 10px;
+          max-width: 100%;
+          padding: 6px 11px;
+          border-radius: 999px;
+          border: 1px solid #cfe8e5;
+          background: #ffffff;
+          box-sizing: border-box;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .rw-chip-label {
+          flex-shrink: 0;
+          font-size: 10px;
+          font-weight: 850;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #617080;
+        }
+        .workspace:not(.ee-narrow) .ee-request-workspace-desktop .rw-chip-value {
+          font-size: 12px;
+          font-weight: 760;
+          line-height: 1.35;
           color: #17202a;
+          overflow-wrap: anywhere;
+          min-width: 0;
         }
         .layer {
           border: 1px solid #dfe5ec;
@@ -4934,7 +5151,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           padding: 20px;
         }
         .source-layer {
-          min-height: 520px;
+          min-height: 300px;
           background: linear-gradient(180deg, #ffffff, #fbfdfd);
         }
         .layer-head {
@@ -5093,8 +5310,18 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .source-draft-actions {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 10px;
+          align-items: center;
           margin-bottom: 10px;
+        }
+        .source-draft-actions button {
+          min-height: 42px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.25;
+          box-sizing: border-box;
         }
         .source-read {
           border: 1px solid #cfd8e3;
@@ -5126,10 +5353,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
         }
         textarea {
-          min-height: 360px;
+          min-height: 240px;
           resize: vertical;
           padding: 14px;
-          font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 14px;
+          line-height: 1.55;
+          font-family: inherit;
         }
         .source-layer > textarea {
           border-color: #c9d8e5;
@@ -5161,6 +5390,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           color: #344252;
           font-size: 12px;
           font-weight: 750;
+          line-height: 1.35;
         }
         .field-grid {
           display: grid;
@@ -5520,11 +5750,50 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           font-weight: 760;
           overflow-wrap: anywhere;
         }
-        .library-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto auto auto;
-          gap: 10px;
-          align-items: end;
+        .transcript-library-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-end;
+          gap: 10px 12px;
+        }
+        .transcript-library-toolbar--folders .ee-lib-folder-field {
+          flex: 1 1 220px;
+          min-width: 0;
+        }
+        .transcript-library-toolbar--folders .ee-lib-folder-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+        .transcript-library-toolbar--transcripts .ee-lib-field--select {
+          flex: 1 1 240px;
+          min-width: 180px;
+          max-width: min(100%, 340px);
+        }
+        .ee-lib-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 42px;
+          padding: 0 14px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.25;
+          box-sizing: border-box;
+          white-space: nowrap;
+          font-family: inherit;
+          cursor: pointer;
+        }
+        .ee-lib-btn:disabled {
+          opacity: 0.52;
+          cursor: not-allowed;
+        }
+        .transcript-library-toolbar--delete {
+          padding-top: 2px;
+          border-top: 1px solid rgba(207, 227, 225, 0.65);
+          margin-top: 2px;
         }
         .library-inline-form {
           display: grid;
@@ -5536,10 +5805,6 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           background: #ffffff;
           padding: 10px;
         }
-        .library-button {
-          align-self: end;
-          min-height: 42px;
-        }
         .transcript-tools {
           grid-column: 1 / -1;
           display: grid;
@@ -5547,10 +5812,22 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .priority-section {
           border-color: #a9d6d3 !important;
-          box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.08);
+          box-shadow: 0 0 0 1px rgba(47, 111, 115, 0.12);
         }
         .cta-row {
           align-items: center;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .cta-row button {
+          min-height: 42px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.25;
+          box-sizing: border-box;
         }
         .rough-warning {
           border: 1px solid #f0d48a;
@@ -5634,10 +5911,24 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           background: #fbfcfe;
           padding: 10px;
         }
+        .manual-range-row .copy-action {
+          min-height: 42px;
+          padding: 0 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          align-self: end;
+          box-sizing: border-box;
+          white-space: nowrap;
+        }
+        .manual-range-row .field input {
+          height: 42px;
+        }
         .range-actions {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
+          align-items: center;
         }
         .range-actions.ee-quick-action-grid {
           display: grid;
@@ -5792,19 +6083,22 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .transcript-preview {
           grid-column: 1 / -1;
-          min-height: 148px;
-          max-height: 148px;
+          min-height: 120px;
+          max-height: min(220px, 32vh);
           resize: vertical;
           overflow: auto;
           white-space: pre-wrap;
           word-break: break-word;
           margin: 0;
-          border: 1px solid #cfe3e1;
-          border-radius: 6px;
-          background: #ffffff;
+          border: 1px solid #cfd8e3;
+          border-radius: 8px;
+          background: #fbfcfe;
           color: #22303f;
-          padding: 10px;
-          font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+          padding: 12px 14px;
+          font-size: 13px;
+          line-height: 1.55;
+          font-family: inherit;
+          box-sizing: border-box;
         }
         .mode-badge {
           margin-bottom: 12px;
@@ -6670,12 +6964,28 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           .transcript-box,
           .run-summary,
           .audio-grid,
-          .library-grid,
           .library-inline-form,
           .topic-material-metrics,
           .source-summary-card dl,
           .mobile-bottom-bar {
             grid-template-columns: 1fr;
+          }
+          .transcript-library-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .transcript-library-toolbar .ee-lib-btn {
+            width: 100%;
+            justify-content: center;
+            white-space: normal;
+            text-align: center;
+          }
+          .transcript-library-toolbar--folders .ee-lib-folder-actions {
+            flex-direction: column;
+            width: 100%;
+          }
+          .transcript-library-toolbar--folders .ee-lib-folder-actions .ee-lib-btn {
+            width: 100%;
           }
           .player-progress-row {
             grid-template-columns: 1fr;
@@ -6723,7 +7033,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             grid-template-columns: 1fr;
           }
           .project-actions button,
-          .library-button,
+          .ee-lib-btn,
           .copy-action,
           .secondary {
             width: 100%;
