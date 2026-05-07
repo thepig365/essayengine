@@ -154,6 +154,23 @@ export function TopicWorkspace({
           font-weight: 760;
           overflow-wrap: anywhere;
         }
+        .topic-material-panel .ee-quick-action-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 10px;
+          align-items: stretch;
+          width: 100%;
+        }
+        .topic-material-panel .ee-quick-action-grid button {
+          min-height: 44px;
+          width: 100%;
+          box-sizing: border-box;
+          justify-self: stretch;
+        }
+        .topic-workspace--compact .topic-material-panel .ee-quick-action-grid {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 8px;
+        }
         .topic-workspace--compact .topic-material-panel {
           border-color: rgba(100, 116, 139, 0.35);
           background: rgba(15, 23, 32, 0.75);
