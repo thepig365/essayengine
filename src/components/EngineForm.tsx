@@ -3724,7 +3724,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 materials. Projects save your full workspace; Transcript Library saves fetched transcripts by topic.
               </p>
             </div>
-            <div className="library-grid">
+            <div className="library-grid library-folder-row">
               <label className="field">
                 <span>Folder</span>
                 <select
@@ -3817,8 +3817,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                 placeholder="Lisa Barrett — Anxiety and Body Budget"
               />
             </label>
-            <div className="library-grid">
-              <button type="button" className="primary library-button" onClick={saveCurrentTranscriptToLibrary}>
+            <div className="library-grid library-transcript-row">
+              <button type="button" className="primary library-button library-save-button" onClick={saveCurrentTranscriptToLibrary}>
                 {effectiveIsDesktopConsole ? "Save transcript to folder" : "Save transcript"}
               </button>
               <label className="field">
@@ -3939,7 +3939,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   generateSectionRef={(node) => {
                     generateSectionRef.current = node;
                   }}
-                  hideToolGrid={effectiveIsDesktopConsole}
+                  hideToolGrid={false}
                 />
               </div>
             ) : null}
@@ -4716,8 +4716,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .workspace {
           display: grid;
-          grid-template-columns: minmax(0, 0.75fr) minmax(0, 2.3fr) minmax(0, 1fr);
-          gap: 18px;
+          grid-template-columns: minmax(240px, 0.82fr) minmax(0, 1.72fr) minmax(280px, 0.92fr);
+          gap: 16px;
           align-items: start;
           width: 100%;
           max-width: 100%;
@@ -4731,6 +4731,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           min-width: 0;
           position: sticky;
           top: 18px;
+          align-self: start;
         }
         .control-column.collapsed {
           gap: 10px;
@@ -4775,8 +4776,9 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .work-column {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 16px;
           min-width: 0;
+          align-self: start;
         }
         .transcript-column {
           max-height: calc(100vh - 36px);
@@ -4924,13 +4926,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .layer {
           border: 1px solid #dfe5ec;
-          border-radius: 12px;
+          border-radius: 14px;
           background: #ffffff;
           box-shadow: 0 14px 34px rgba(31, 45, 61, 0.07);
-          padding: 20px;
+          padding: 18px;
         }
         .source-layer {
-          min-height: 520px;
           background: linear-gradient(180deg, #ffffff, #fbfdfd);
         }
         .layer-head {
@@ -5114,17 +5115,24 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           width: 100%;
           box-sizing: border-box;
           border: 1px solid #cfd8e3;
-          border-radius: 8px;
+          border-radius: 10px;
           background: #fbfcfe;
           color: #17202a;
           font: inherit;
+          font-size: 14px;
+          line-height: 1.5;
           outline: none;
           transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
         }
+        textarea::placeholder,
+        input::placeholder {
+          color: #8a97a8;
+          opacity: 1;
+        }
         textarea {
-          min-height: 360px;
+          min-height: 300px;
           resize: vertical;
-          padding: 14px;
+          padding: 12px 14px;
           font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
         }
         .source-layer > textarea {
@@ -5152,11 +5160,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           flex-direction: column;
           gap: 6px;
           min-width: 0;
+          width: 100%;
         }
         .field span {
+          display: block;
           color: #344252;
           font-size: 12px;
-          font-weight: 750;
+          font-weight: 780;
+          line-height: 1.35;
         }
         .field-grid {
           display: grid;
@@ -5252,12 +5263,20 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .primary,
         .secondary,
         .copy-action {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 42px;
           border: 1px solid #cfd8e3;
-          border-radius: 8px;
+          border-radius: 10px;
           background: #f8fafc;
           color: #22303f;
           font: inherit;
+          font-size: 13px;
+          line-height: 1.25;
           cursor: pointer;
+          text-align: center;
+          vertical-align: top;
         }
         .segmented button {
           min-height: 46px;
@@ -5339,26 +5358,27 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           font-size: 13px;
         }
         .primary {
-          padding: 12px 16px;
+          padding: 0 16px;
           border-color: #1d5f63;
           background: #1d5f63;
           color: white;
-          font-weight: 800;
+          font-weight: 820;
+          white-space: nowrap;
         }
         .run-layer .primary {
           width: 100%;
         }
         .secondary {
-          padding: 8px 12px;
-          font-weight: 750;
+          padding: 0 14px;
+          font-weight: 780;
           white-space: nowrap;
         }
         .copy-action {
-          padding: 8px 12px;
+          padding: 0 14px;
           border-color: #d7e3ee;
           background: #ffffff;
           color: #526171;
-          font-weight: 750;
+          font-weight: 780;
           white-space: nowrap;
         }
         .source-clear {
@@ -5518,9 +5538,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         }
         .library-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) auto auto auto;
           gap: 10px;
           align-items: end;
+        }
+        .library-folder-row {
+          grid-template-columns: minmax(180px, 1fr) repeat(3, max-content);
+        }
+        .library-transcript-row {
+          grid-template-columns: max-content minmax(220px, 1fr) repeat(3, max-content);
         }
         .library-inline-form {
           display: grid;
@@ -5535,6 +5560,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .library-button {
           align-self: end;
           min-height: 42px;
+          height: 42px;
+          max-width: 100%;
+        }
+        .library-save-button {
+          min-width: 176px;
         }
         .transcript-tools {
           grid-column: 1 / -1;
@@ -5789,18 +5819,18 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .transcript-preview {
           grid-column: 1 / -1;
           min-height: 148px;
-          max-height: 148px;
+          max-height: 220px;
           resize: vertical;
           overflow: auto;
           white-space: pre-wrap;
           word-break: break-word;
           margin: 0;
           border: 1px solid #cfe3e1;
-          border-radius: 6px;
+          border-radius: 10px;
           background: #ffffff;
           color: #22303f;
-          padding: 10px;
-          font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+          padding: 12px 14px;
+          font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
         }
         .mode-badge {
           margin-bottom: 12px;
@@ -6663,6 +6693,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           .run-summary,
           .audio-grid,
           .library-grid,
+          .library-folder-row,
+          .library-transcript-row,
           .library-inline-form,
           .topic-material-metrics,
           .source-summary-card dl,
