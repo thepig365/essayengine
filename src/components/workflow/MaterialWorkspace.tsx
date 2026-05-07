@@ -155,27 +155,48 @@ export function MaterialWorkspace({
             </p>
           </div>
           {sourceSummaryDetails ? (
-            <div className="source-purpose source-summary-card">
-              <strong>Source summary:</strong>
-              <dl>
-                <div>
-                  <dt>Type</dt>
-                  <dd>{sourceSummaryDetails.type}</dd>
-                </div>
-                <div>
-                  <dt>Sections</dt>
-                  <dd>{sourceSummaryDetails.sections}</dd>
-                </div>
-                <div>
-                  <dt>Approx. words</dt>
-                  <dd>{sourceSummaryDetails.words.toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt>From</dt>
-                  <dd>{sourceSummaryDetails.from}</dd>
-                </div>
-              </dl>
-            </div>
+            demoteConfirmedSourceEditor ? (
+              <div className="ee-confirmed-source-summary-chips" aria-label="Source summary">
+                <span className="ee-sum-chip">
+                  <span className="ee-sum-chip-label">Type</span>
+                  <span className="ee-sum-chip-value">{sourceSummaryDetails.type}</span>
+                </span>
+                <span className="ee-sum-chip">
+                  <span className="ee-sum-chip-label">Sections</span>
+                  <span className="ee-sum-chip-value">{sourceSummaryDetails.sections}</span>
+                </span>
+                <span className="ee-sum-chip">
+                  <span className="ee-sum-chip-label">Words</span>
+                  <span className="ee-sum-chip-value">{sourceSummaryDetails.words.toLocaleString()}</span>
+                </span>
+                <span className="ee-sum-chip ee-sum-chip--grow">
+                  <span className="ee-sum-chip-label">From</span>
+                  <span className="ee-sum-chip-value">{sourceSummaryDetails.from}</span>
+                </span>
+              </div>
+            ) : (
+              <div className="source-purpose source-summary-card">
+                <strong>Source summary:</strong>
+                <dl>
+                  <div>
+                    <dt>Type</dt>
+                    <dd>{sourceSummaryDetails.type}</dd>
+                  </div>
+                  <div>
+                    <dt>Sections</dt>
+                    <dd>{sourceSummaryDetails.sections}</dd>
+                  </div>
+                  <div>
+                    <dt>Approx. words</dt>
+                    <dd>{sourceSummaryDetails.words.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt>From</dt>
+                    <dd>{sourceSummaryDetails.from}</dd>
+                  </div>
+                </dl>
+              </div>
+            )
           ) : null}
 
           <div className="source-strip" aria-label="Supported source types">
@@ -398,6 +419,42 @@ function MaterialWorkspaceStyles() {
         color: #17202a;
         font-size: 13px;
         font-weight: 760;
+      }
+      .ee-confirmed-source-summary-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin: 2px 0 12px;
+      }
+      .ee-sum-chip {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid #e3e9ef;
+        background: #f8fafc;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .ee-sum-chip--grow {
+        flex: 1 1 11rem;
+        min-width: min(100%, 9rem);
+      }
+      .ee-sum-chip-label {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #617080;
+      }
+      .ee-sum-chip-value {
+        font-size: 12px;
+        font-weight: 760;
+        color: #17202a;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
       }
       .source-strip {
         display: flex;

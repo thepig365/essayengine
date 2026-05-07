@@ -3326,7 +3326,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           }
           afterSelectedMaterial={
             <TopicWorkspace
-              compact={effectiveIsDesktopConsole}
+              compact
               active
               topicMaterial={topicMaterial}
               topicMaterialStatus={topicMaterialStatus}
@@ -3837,7 +3837,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           }
           afterSelectedMaterial={
             <TopicWorkspace
-              compact={effectiveIsDesktopConsole}
+              compact
               active
               topicMaterial={topicMaterial}
               topicMaterialStatus={topicMaterialStatus}
@@ -4729,6 +4729,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         </div>
       </div>
 
+      {mobileWorkflowStepId !== "source" ? (
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
           <div className="ee-mobile-classic-summary-stack">
@@ -4839,6 +4840,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           )}
         </div>
       </details>
+      ) : null}
 
       <style jsx>{`
         .ee-start-fresh-dialog {
@@ -6503,7 +6505,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .mobile-task-toolbar,
         .mobile-bottom-bar,
         .mobile-listening-panel,
-        .mobile-player {
+        .mobile-player,
+        .ee-mobile-classic-editor {
           display: none;
         }
         .workspace.ee-narrow {
@@ -6650,6 +6653,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             display: none;
           }
           .workspace.ee-narrow .ee-mobile-classic-editor {
+            display: block;
             min-width: 0;
             max-width: 100%;
             grid-column: 1 / -1;

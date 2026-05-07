@@ -245,12 +245,14 @@ export function ExtractionWorkspace({
           </p>
         </div>
 
-        <div className="range-actions cta-row ee-extraction-tab-row">
+        <div className="ee-analyzer-source-tabs" role="tablist" aria-label="Source input type">
           {EXTRACTION_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
-              className={sourceMaterialPipeline === tab.id ? "primary" : "secondary"}
+              role="tab"
+              aria-selected={sourceMaterialPipeline === tab.id}
+              className={`ee-analyzer-tab${sourceMaterialPipeline === tab.id ? " ee-analyzer-tab--active" : ""}`}
               onClick={() => onSourceMaterialPipelineChange?.(tab.id)}
             >
               {tab.label}
@@ -494,7 +496,17 @@ export function ExtractionWorkspace({
       {sourceMaterialPipeline === "transcript" && transcriptText && (
         <div className="transcript-tools">
           <details className="ee-extraction-more-tools">
-            <summary className="ee-extraction-more-tools-summary">More extraction tools</summary>
+            <summary className="ee-extraction-more-tools-summary">
+              <span className="ee-extraction-more-tools-summary-inner">
+                <span className="ee-extraction-more-tools-title-row">
+                  <span className="ee-extraction-more-tools-chevron" aria-hidden />
+                  <span className="ee-extraction-more-tools-title">More extraction tools</span>
+                </span>
+                <span className="ee-extraction-more-tools-sub">
+                  Timestamp chapters, topic filter, manual ranges, and raw transcript.
+                </span>
+              </span>
+            </summary>
             <div className="ee-extraction-more-tools-body">
           <details className="priority-section">
             <summary>1. Timestamp Chapters</summary>
