@@ -233,8 +233,8 @@ export function ExtractionWorkspace({
       aria-label="Extraction — segment selection"
     >
       <div className="layer-head">
-        <p className="eyebrow">Source Material Extractor / 素材提取器</p>
-        <h2>Content Source Analyzer / 内容素材分析器</h2>
+        <p className="eyebrow">Source Extractor / 素材源提取器</p>
+        <h2>Content Source Analyzer / 内容素材源分析器</h2>
         <p>
           <strong>Extraction &amp; selection:</strong> every source becomes selectable blocks here. Pick ranges or paragraphs, then save as{" "}
           <strong>saved topic</strong> below. Processing (left / mobile) runs on saved topic text, not on this panel alone.
@@ -257,10 +257,10 @@ export function ExtractionWorkspace({
 
       <label className="organize-option" style={{ marginTop: "0.75rem" }}>
         <input type="checkbox" checked={materialUseFullExplicit} onChange={(e) => onMaterialUseFullExplicitChange?.(e.target.checked)} />
-        <span>使用完整素材（仅显式勾选时启用全文）</span>
+        <span>使用完整素材源（仅显式勾选时启用全文）</span>
       </label>
       <p className="transcript-note">
-        未勾选时：分析、自定义提取与「已选题材」仅使用你勾选的章节/段落块。口头摘要整段视频/全文需要先勾选此项或使用下方「使用完整素材替换 Source」。
+        未勾选时：分析、自定义提取与「已选题材」仅使用你勾选的章节/段落块。口头摘要整段视频/全文需要先勾选此项或使用下方「使用完整素材源替换 Source」。
       </p>
 
       {sourceMaterialPipeline === "link" && (
@@ -275,7 +275,7 @@ export function ExtractionWorkspace({
           </label>
           <div className="range-actions cta-row">
             <button type="button" className="primary" disabled={linkExtractLoading} onClick={onRunLinkMaterialExtract}>
-              {linkExtractLoading ? "提取中…" : "提取素材"}
+              {linkExtractLoading ? "提取中…" : "提取素材源"}
             </button>
           </div>
           {linkExtractStatus && <span className="range-status">{linkExtractStatus}</span>}
@@ -382,7 +382,7 @@ export function ExtractionWorkspace({
         <summary>Extraction &amp; selection / 提取与勾选</summary>
         <div className="timestamp-chapters">
           <p className="transcript-note">
-            当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材"}</strong> · 类型：
+            当前页签：<strong>{sourceMaterialPipeline === "transcript" ? "转录 / 字幕" : "通用素材源"}</strong> · 类型：
             <strong> {sourceMaterialPipeline === "transcript" ? labelForMaterialKind("youtube", "zh") : labelForMaterialKind(genericMaterialKind, "zh")}</strong>
           </p>
           {selectedMaterial ? (
@@ -393,7 +393,7 @@ export function ExtractionWorkspace({
               <textarea className="transcript-preview" readOnly rows={6} value={selectedMaterial.text} />
             </>
           ) : (
-            <p className="transcript-note">尚未选择可用素材。请勾选章节/段落，或勾选「使用完整素材」。</p>
+            <p className="transcript-note">尚未选择可用素材源。请勾选章节/段落，或勾选「使用完整素材源」。</p>
           )}
           <div className="range-actions cta-row ee-quick-action-grid">
             <button type="button" className="primary" onClick={onReplaceSourceCaptureFromMaterialSelection} disabled={!selectedMaterial}>
@@ -435,7 +435,7 @@ export function ExtractionWorkspace({
             ))}
           </div>
           <label className="field">
-            <span>你想从这段素材里提取什么？</span>
+            <span>你想从这段素材源里提取什么？</span>
             <textarea
               rows={3}
               value={materialCustomPrompt}
@@ -463,12 +463,12 @@ export function ExtractionWorkspace({
           <strong>{effectiveYoutubeSource ? "检测到 YouTube 链接" : "暂无转录文本"}</strong>
           <p>
             {effectiveYoutubeSource
-              ? "点击提取素材，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
+              ? "点击提取素材源，再用时间戳章节/粗分段/主题筛选勾选后写入 Source。"
               : "在 Source 粘贴 YouTube 链接并切回本页签，或使用「链接抓取 / 粘贴 / 音频」处理其他来源。"}
           </p>
           {effectiveYoutubeSource && (
             <button type="button" className="primary transcript-fetch" onClick={onFetchTranscript} disabled={transcriptLoading}>
-              {transcriptLoading ? "提取中…" : "提取素材"}
+              {transcriptLoading ? "提取中…" : "提取素材源"}
             </button>
           )}
           {transcriptStatus && <span className="range-status">{transcriptStatus}</span>}
