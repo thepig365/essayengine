@@ -447,51 +447,36 @@ export function ProcessingWorkspace({
     return (
       <section className="layer ee-request-workspace-desktop" aria-label="Processing workspace overview">
         <div className="layer-head">
-          <p className="eyebrow">PROCESSING / 加工</p>
+          <p className="eyebrow">PROCESSING</p>
           <h2>Processing Studio</h2>
           <p>
             Choose grouped actions and settings in the <strong>Processing Studio</strong> on the left, then run <strong>Generate</strong>. Processing
             always uses your saved <strong>topic text</strong>.
           </p>
         </div>
-        <div className="request-workspace-summary">
-          <strong>Current setup (read-only)</strong>
-          <dl>
-            <div>
-              <dt>Task</dt>
-              <dd>{activeTask.label}</dd>
-            </div>
-            <div>
-              <dt>Engines</dt>
-              <dd>
-                {providers.length === 0
-                  ? "None selected"
-                  : providers.map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p).join(", ")}
-              </dd>
-            </div>
-            <div>
-              <dt>Target language</dt>
-              <dd>{targetLanguage}</dd>
-            </div>
-            <div>
-              <dt>Output behavior</dt>
-              <dd>{activeMode.label}</dd>
-            </div>
-            <div>
-              <dt>Tone</dt>
-              <dd>{TONES.find((t) => t.value === tone)?.label ?? tone}</dd>
-            </div>
-            <div>
-              <dt>Custom processing</dt>
-              <dd>
-                {customInstruction.trim()
-                  ? customInstruction.trim().length > 220
-                    ? `${customInstruction.trim().slice(0, 220)}…`
-                    : customInstruction.trim()
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
+        <div className="request-workspace-summary ee-current-setup-card">
+          <strong>Current setup</strong>
+          <p className="ee-current-setup-line">
+            {activeTask.label} · {targetLanguage} · {providers.length === 0
+              ? "No engine selected"
+              : providers.map((p) => PROVIDER_OPTIONS.find((o) => o.value === p)?.label ?? p).join(", ")}
+          </p>
+          <ul className="ee-current-setup-list">
+            <li>
+              <span>Output style:</span> {activeMode.label}
+            </li>
+            <li>
+              <span>Tone:</span> {TONES.find((t) => t.value === tone)?.label ?? tone}
+            </li>
+            <li>
+              <span>Custom instruction:</span>{" "}
+              {customInstruction.trim()
+                ? customInstruction.trim().length > 160
+                  ? `${customInstruction.trim().slice(0, 160)}…`
+                  : customInstruction.trim()
+                : "None"}
+            </li>
+          </ul>
         </div>
         <div className="request-workspace-actions">
           <button type="button" onClick={onOpenControlConsole}>
@@ -510,7 +495,7 @@ export function ProcessingWorkspace({
       <>
         <section className="layer request-layer ps-studio-root" aria-label="Processing studio">
           <header className="ps-studio-header">
-            <p className="eyebrow">PROCESSING / 加工</p>
+            <p className="eyebrow">PROCESSING</p>
             <h2>Processing Studio</h2>
             <p className="ps-studio-lede">Choose how to transform the saved topic. Processing uses saved topic text only.</p>
           </header>
@@ -760,8 +745,7 @@ export function ProcessingWorkspace({
             Custom processing text and studio cards live above. Use tone and presets here for voice-level shaping.
           </div>
           <div className="writing-hint">
-            For Chinese lyrical prose, use “Modern Chinese lyrical prose”. It asks for a清雅、含蓄、细腻的现代散文气质 without directly imitating any
-            specific writer.
+            For lyrical prose in Chinese, use “Modern Chinese lyrical prose”. It asks for an elegant, subtle, and delicate modern prose quality without directly imitating any specific writer.
           </div>
         </details>
 

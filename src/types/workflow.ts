@@ -125,7 +125,7 @@ export const DEFAULT_PROCESSING_STYLE_SETTINGS: ProcessingStyleSettings = {
   writingStyle: "reflective",
   tone: "calm",
   emotionalIntensity: "medium",
-  audience: "疗愈读者",
+  audience: "Healing readers",
   format: "article",
   length: "medium",
   listeningMode: "read_aloud",

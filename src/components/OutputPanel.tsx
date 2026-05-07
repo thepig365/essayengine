@@ -116,7 +116,7 @@ function ResultCard({
       <div className="output-text selectable-output" data-selectable-output="true">{result.output || "(no output)"}</div>
 
       <div className="suggested-action">Suggested: {suggestion}</div>
-      <div className="flow-hint">Source → AI output → 润色 / 发布</div>
+      <div className="flow-hint">Source → AI output → Refine / Publish</div>
 
       <section className="assessment">
         <h4>Assessment notes</h4>
@@ -595,10 +595,10 @@ export function OutputPanel({
   return (
     <section className="result-layer">
       <div className="layer-head">
-        <p className="eyebrow">本轮产出</p>
+        <p className="eyebrow">Current Output</p>
         <div className="title-row">
           <div>
-            <h2>本轮产出</h2>
+            <h2>Current Output</h2>
             <p>
               {isMulti
                 ? "Compare engine outputs side by side, then choose the best result to polish or publish."
@@ -667,7 +667,7 @@ export function OutputPanel({
                     onAddResultToDraft={onAddResultToDraft}
                     onReplaceDraftWithResult={onReplaceDraftWithResult}
                     onMarkFinal={onMarkFinal}
-                    stepLabel="本轮产出"
+                    stepLabel="Current Output"
                     compactLabels={compactLabels}
                   />
                 </div>
@@ -687,7 +687,7 @@ export function OutputPanel({
                   onAddResultToDraft={onAddResultToDraft}
                   onReplaceDraftWithResult={onReplaceDraftWithResult}
                   onMarkFinal={onMarkFinal}
-                  stepLabel="本轮产出"
+                  stepLabel="Current Output"
                   compactLabels={compactLabels}
                 />
               ))}

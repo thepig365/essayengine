@@ -56,8 +56,8 @@ export function isTopicMaterialStale(
 
 /** Standard bilingual block message for guards that prevent processing. */
 export const TOPIC_MATERIAL_REQUIRED_MESSAGE =
-  "请先在“题材”阶段保存题材，再进行加工。 / Save a topic in the Topic stage before processing.";
+  "Save a topic in the Topic stage before processing.";
 
 /** Standard bilingual stale-topic warning for the Topic preview panel. */
 export const TOPIC_MATERIAL_STALE_MESSAGE =
-  "题材可能已过期：素材已被修改，请重新保存题材。 / Topic may be stale — the source has changed since this topic was saved. Please save again.";
+  "Topic may be stale — the source has changed since this topic was saved. Please save again.";
