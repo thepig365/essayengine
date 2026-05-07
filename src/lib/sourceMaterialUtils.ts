@@ -92,19 +92,8 @@ export function userFacingDetectedSourceKind(raw: string): string {
   return "Text";
 }
 
-export function labelForMaterialKind(kind: SourceMaterialType, locale: "en" | "zh" = "zh"): string {
-  const zh: Record<SourceMaterialType, string> = {
-    youtube: "YouTube 视频",
-    podcast: "播客 / 音频网页",
-    audio: "上传音频",
-    linkedin: "LinkedIn",
-    stackback: "论坛 / 问答帖",
-    social_post: "社交媒体帖文",
-    article: "网页文章",
-    text: "粘贴文本",
-    document: "文档 / 字幕文件",
-  };
-  const en: Record<SourceMaterialType, string> = {
+export function labelForMaterialKind(kind: SourceMaterialType, _locale: "en" | "zh" = "en"): string {
+  const labels: Record<SourceMaterialType, string> = {
     youtube: "YouTube video",
     podcast: "Podcast / audio page",
     audio: "Uploaded audio",
@@ -115,7 +104,7 @@ export function labelForMaterialKind(kind: SourceMaterialType, locale: "en" | "z
     text: "Pasted text",
     document: "Document / captions file",
   };
-  return locale === "zh" ? zh[kind] : en[kind];
+  return labels[kind];
 }
 
 function hoursMinutesToSeconds(h: number, m: number, s: number, frac = 0): number {

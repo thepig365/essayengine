@@ -91,8 +91,8 @@ export function EssayEngineNav({
         <span className="ee-workflow-track-label">Progress</span>
         <div className="ee-workflow-ribbon" aria-label="Workflow progress">
           {WORKFLOW_RIBBON.map((label, i) => {
-            const isActive =
-              (i < 5 && i === activeWorkflowStepIndex) || (i === 5 && activeWorkflowStepIndex === 4);
+            /** Ribbon shows Export as the final label; mobile workflow has five indexed steps (0–4). */
+            const isActive = i === activeWorkflowStepIndex && i < 5;
             const isExportStep = i === 5;
             return (
               <span

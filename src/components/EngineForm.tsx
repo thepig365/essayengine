@@ -1199,15 +1199,15 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       setLoading(false);
       setError(
         isProbablyUrl(customInstruction, { anywhere: true })
-          ? "这看起来是素材源链接。请先放到“Source / 素材源”阶段提取并保存为题材。"
-          : "请先在“题材”阶段保存题材，再进行加工。",
+          ? "This looks like a source URL. Extract it in the Source stage and save a topic first."
+          : "Save a topic in the Topic stage before processing.",
       );
       return;
     }
     const payloadInput = topicMaterial.content.trim();
     if (!payloadInput) {
       setLoading(false);
-      setError("请先在“题材”阶段保存题材，再进行加工。");
+      setError("Save a topic in the Topic stage before processing.");
       return;
     }
     try {
@@ -1246,7 +1246,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setTranscriptStatus(null);
     const sourceUrl = (overrideUrl ?? (sourceMaterialRawInput.trim() || input.trim())).trim();
     if (!sourceUrl) {
-      setTranscriptStatus("缺少可提取的链接。");
+      setTranscriptStatus("No extractable URL.");
       setTranscriptLoading(false);
       return;
     }
@@ -1286,7 +1286,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         setTopicStatus(null);
         setSourceMaterialPipeline("transcript");
         setMaterialUseFullExplicit(false);
-        setTranscriptStatus("素材源已提取。请勾选章节或片段后再写入 Source。");
+        setTranscriptStatus("Source extracted. Select chapters or segments before writing to Source.");
       } else {
         setTranscriptText("");
         setTranscriptSegments([]);
@@ -1301,7 +1301,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         setChapterStatus(null);
         setRangeStatus(null);
         setTopicStatus(null);
-        setTranscriptStatus(data.warnings?.[0] ?? "暂不可用该链接的字幕/转录。");
+        setTranscriptStatus(data.warnings?.[0] ?? "Transcript or captions are not available for this link.");
       }
     } catch (err) {
       setTranscriptStatus(err instanceof Error ? err.message : "Unknown error.");
@@ -1524,7 +1524,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
   function useFullTranscriptAsSource() {
     if (!transcriptText.trim()) {
-      setTranscriptStatus("暂无转录预览。请先提取素材源。");
+      setTranscriptStatus("No transcript preview yet. Extract the source first.");
       return;
     }
     const content = formatTranscriptText(transcriptText);
@@ -1537,10 +1537,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     createSourceVersion({
       content,
       origin: "transcript_selection",
-      label: "使用完整素材源（转录全文）",
+      label: "Full source (transcript)",
       parentVersionId: currentSourceVersionId ?? undefined,
     });
-    setTranscriptStatus("已使用完整素材源替换 Source Capture（显式）。");
+    setTranscriptStatus("Replaced Source Capture with full source text (explicit).");
     setRangeStatus(null);
   }
 
@@ -1960,35 +1960,35 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (materialUseFullExplicit) {
       return {
         text: formatTranscriptText(transcriptText),
-        summary: "使用完整素材源（字幕 / 转录全文）",
+        summary: "Full source (captions / transcript)",
       };
     }
     const ch = checkedWorkspaceSections();
     if (ch.length > 0) {
       return {
         text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
-        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        summary: `Timestamp chapters · ${ch.length} selected`,
       };
     }
     const full = checkedFullTranscriptSections();
     if (full.length > 0) {
       return {
         text: cleanSectionsText(full, true, includeTranscriptTimestamps),
-        summary: `粗分段 · 已选 ${full.length} 段`,
+        summary: `Rough sections · ${full.length} selected`,
       };
     }
     const topic = checkedTopicSections();
     if (topic.length > 0) {
       return {
         text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
-        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        summary: `Topic filter · ${topic.length} selected`,
       };
     }
     const manual = manualRangeBlocks({ silent: true });
     if (manual && manual.length > 0) {
       return {
         text: formatManualRangesForSource(manual),
-        summary: `手动时间范围 · ${manual.length} 段`,
+        summary: `Manual time ranges · ${manual.length} segments`,
       };
     }
     return null;
@@ -2027,7 +2027,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       .join("\n\n");
     return {
       text: body,
-      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      summary: hasTs ? `${picked.length} caption blocks selected` : `${picked.length} paragraph blocks selected`,
     };
   }
 
@@ -2090,7 +2090,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (ch.length > 0) {
       return {
         text: cleanSectionsText(ch, true, includeTranscriptTimestamps),
-        summary: `时间戳章节 · 已选 ${ch.length} 段`,
+        summary: `Timestamp chapters · ${ch.length} selected`,
         selectedSegmentIds: ch.map((section) => section.id),
       };
     }
@@ -2098,7 +2098,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (full.length > 0) {
       return {
         text: cleanSectionsText(full, true, includeTranscriptTimestamps),
-        summary: `粗分段 · 已选 ${full.length} 段`,
+        summary: `Rough sections · ${full.length} selected`,
         selectedSegmentIds: full.map((section) => section.id),
       };
     }
@@ -2106,7 +2106,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (topic.length > 0) {
       return {
         text: cleanSectionsText(topic, true, includeTranscriptTimestamps),
-        summary: `主题筛选 · 已选 ${topic.length} 段`,
+        summary: `Topic filter · ${topic.length} selected`,
         selectedSegmentIds: topic.map((section) => section.id),
       };
     }
@@ -2116,7 +2116,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       const last = manual[manual.length - 1];
       return {
         text: formatManualRangesForSource(manual),
-        summary: `手动时间范围 · ${manual.length} 段`,
+        summary: `Manual time ranges · ${manual.length} segments`,
         selectedSegmentIds: manual.map((block, index) => `manual-range-${index + 1}-${block.start}-${block.end}`),
         selectedRange: {
           startTime: first.start,
@@ -2149,7 +2149,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     const timed = picked.filter((segment) => segment.startTime !== undefined);
     return {
       text: body,
-      summary: hasTs ? `已选 ${picked.length} 条字幕块` : `已选 ${picked.length} 个段落块`,
+      summary: hasTs ? `${picked.length} caption blocks selected` : `${picked.length} paragraph blocks selected`,
       selectedSegmentIds: picked.map((segment) => segment.id),
       selectedRange: timed.length
         ? {
@@ -2213,7 +2213,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleSaveAsTopic() {
     const nextTopicMaterial = createTopicMaterialFromCurrentSelection();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("请先选择素材源。");
+      setTopicMaterialStatus("Select source material first.");
       setMaterialAnalysisStatus("No selected material to save.");
       return;
     }
@@ -2221,20 +2221,20 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       prev.trim() ? `${prev.trim()}\n\n---\n\n${nextTopicMaterial.content}` : nextTopicMaterial.content,
     );
     appendBlockToCustomInstruction("Saved topic material", nextTopicMaterial.content);
-    saveTopicMaterial(nextTopicMaterial, "题材已保存。");
+    saveTopicMaterial(nextTopicMaterial, "Topic saved.");
     setMaterialAnalysisStatus("Saved to topic stash and appended to your task instruction.");
   }
 
   function handleUseFullSource() {
     const nextTopicMaterial = createTopicMaterialFromFullSource();
     if (!nextTopicMaterial) {
-      setTopicMaterialStatus("没有可用的完整素材源。");
+      setTopicMaterialStatus("No full source text available.");
       setMaterialAnalysisStatus("No transcript or document text available as full source.");
       return;
     }
     setMaterialUseFullExplicit(true);
     appendBlockToCustomInstruction("Full source material", nextTopicMaterial.content);
-    saveTopicMaterial(nextTopicMaterial, "已使用完整素材源保存题材。");
+    saveTopicMaterial(nextTopicMaterial, "Saved topic using full source.");
     setMaterialAnalysisStatus("Full source is on; material was appended to your task instruction.");
     setProjectStatus("Full source enabled and saved as topic material.");
   }
@@ -2242,14 +2242,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function handleClearTopic() {
     setTopicMaterial(null);
     setTopicMaterialFingerprint(null);
-    setTopicMaterialStatus("题材已清除。");
+    setTopicMaterialStatus("Topic cleared.");
   }
 
   function runWithTopicMaterialGuard(action: () => void | Promise<void>) {
     if (!canProcessTopicMaterial(topicMaterial)) {
-      setError("请先在“题材”阶段保存题材，再进行加工。");
-      setTopicMaterialStatus("请先在“题材”阶段保存题材，再进行加工。");
-      setProjectStatus("请先在“题材”阶段保存题材，再进行加工。");
+      setError("Save a topic in the Topic stage before processing.");
+      setTopicMaterialStatus("Save a topic in the Topic stage before processing.");
+      setProjectStatus("Save a topic in the Topic stage before processing.");
       return;
     }
     void action();
@@ -2289,13 +2289,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     if (isStandaloneUrlText(value.trim())) {
       setSourceMaterialRawInput(value.trim());
       setCustomInstruction("");
-      setProjectStatus("This looks like a source URL — moved to Source / 已将链接移到「素材源」，正在提取。");
+      setProjectStatus("This looks like a source URL — moved to Source; extracting.");
       return;
     }
     if (head && isStandaloneUrlText(head) && (value.includes("\n") || value.length > head.length + 2)) {
       setSourceMaterialRawInput(head);
       setCustomInstruction(value.slice(value.indexOf("\n")).trim());
-      setProjectStatus("Detected URL in first line — moved to Source / 首行链接已移到「素材源」。");
+      setProjectStatus("Detected URL in first line — moved to Source.");
       return;
     }
     setCustomInstruction(value);
@@ -2343,7 +2343,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setError(null);
     try {
       const userInstruction = buildMaterialAnalysisInstruction({
-        sourceType: `${labelForMaterialKind(sel.analysisSourceType, "zh")} (${sel.analysisSourceType})`,
+        sourceType: `${labelForMaterialKind(sel.analysisSourceType, "en")} (${sel.analysisSourceType})`,
         sourceMetadata: buildSourceMetadataForAnalysis(),
         selectedMaterial: sel.text,
         task: userTask,
@@ -2384,7 +2384,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   async function fetchAndApplyGenericLink(url: string): Promise<boolean> {
     const kind = detectMaterialKindFromUrl(url);
     if (kind === "youtube") {
-      setLinkExtractStatus("YouTube 请使用「转录 / 字幕」页签获取带时间戳字幕。");
+      setLinkExtractStatus("For YouTube, use the Transcript / captions tab for timed captions.");
       return false;
     }
     setLinkExtractLoading(true);
@@ -2398,12 +2398,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       });
       const data = (await res.json()) as { text?: string; title?: string; error?: string; siteName?: string };
       if (!res.ok) {
-        setLinkExtractStatus(data.error ?? `提取失败（${res.status}）`);
+        setLinkExtractStatus(data.error ?? `Extract failed (${res.status})`);
         return false;
       }
       const raw = (data.text ?? "").trim();
       if (!raw) {
-        setLinkExtractStatus("未能从页面提取正文，可改用手动粘贴。");
+        setLinkExtractStatus("Could not extract page text. Try pasting manually.");
         return false;
       }
       setLinkExtractUrl(url);
@@ -2416,16 +2416,16 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       } catch {
         hostname = "";
       }
-      setGenericMaterialTitle(data.title?.trim() || hostname || "链接内容");
+      setGenericMaterialTitle(data.title?.trim() || hostname || "Link content");
       setGenericAuthor(data.siteName?.trim() ?? "");
       setGenericRawContent(raw);
-      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "段落"));
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "Paragraph"));
       setGenericCheckedIds([]);
       setMaterialUseFullExplicit(false);
-      setGenericWorkspaceNotice("正文已拆分为可选段落。请勾选需要的块。");
+      setGenericWorkspaceNotice("Body split into optional paragraphs. Select the blocks you need.");
       return true;
     } catch (err) {
-      setLinkExtractStatus(err instanceof Error ? err.message : "提取失败");
+      setLinkExtractStatus(err instanceof Error ? err.message : "Extract failed");
       return false;
     } finally {
       setLinkExtractLoading(false);
@@ -2435,7 +2435,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   async function runLinkMaterialExtract() {
     const url = linkExtractUrl.trim();
     if (!url) {
-      setLinkExtractStatus("请输入链接。");
+      setLinkExtractStatus("Enter a URL.");
       return;
     }
     await fetchAndApplyGenericLink(url);
@@ -2448,19 +2448,19 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setSourceMaterialPipeline("paste");
     setGenericMaterialKind("text");
     setGenericMaterialUrl("");
-    setGenericMaterialTitle("粘贴长文");
+    setGenericMaterialTitle("Pasted long text");
     setGenericAuthor("");
     setGenericRawContent(text);
-    setGenericSegments(splitPlainTextIntoParagraphBlocks(text, "段落"));
+    setGenericSegments(splitPlainTextIntoParagraphBlocks(text, "Paragraph"));
     setGenericCheckedIds([]);
     setMaterialUseFullExplicit(false);
-    setGenericWorkspaceNotice("已拆分为段落块，请勾选需要的部分。");
+    setGenericWorkspaceNotice("Split into paragraph blocks. Select what you need.");
   }
 
   function applyPasteMaterialBlocks() {
     const raw = pasteBlockInput.trim();
     if (!raw) {
-      setGenericWorkspaceNotice("请先粘贴长文。");
+      setGenericWorkspaceNotice("Paste long text first.");
       return;
     }
     applyPasteMaterialBlocksFromRaw(raw);
@@ -2468,7 +2468,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
   async function transcribeAudioFile(file: File) {
     if (!file.size) {
-      setGenericWorkspaceNotice("音频文件为空。");
+      setGenericWorkspaceNotice("Audio file is empty.");
       return;
     }
     setAudioUploadLoading(true);
@@ -2481,12 +2481,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = (await res.json()) as { text?: string; error?: string };
       if (!res.ok) {
-        setGenericWorkspaceNotice(data.error ?? "转写失败");
+        setGenericWorkspaceNotice(data.error ?? "Transcription failed");
         return;
       }
       const raw = (data.text ?? "").trim();
       if (!raw) {
-        setGenericWorkspaceNotice("转写结果为空。");
+        setGenericWorkspaceNotice("Transcription returned empty text.");
         return;
       }
       setSourceMaterialPipeline("audio");
@@ -2495,12 +2495,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       setGenericMaterialTitle(file.name);
       setGenericAuthor("");
       setGenericRawContent(raw);
-      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "转录段落"));
+      setGenericSegments(splitPlainTextIntoParagraphBlocks(raw, "Transcript paragraph"));
       setGenericCheckedIds([]);
       setMaterialUseFullExplicit(false);
-      setGenericWorkspaceNotice("转写完成。按段落勾选后再分析或写入 Source。");
+      setGenericWorkspaceNotice("Transcription complete. Select paragraphs before analysis or writing to Source.");
     } catch (err) {
-      setGenericWorkspaceNotice(err instanceof Error ? err.message : "转写失败");
+      setGenericWorkspaceNotice(err instanceof Error ? err.message : "Transcription failed");
     } finally {
       setAudioUploadLoading(false);
     }
@@ -2512,7 +2512,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     try {
       raw = await file.text();
     } catch {
-      setGenericWorkspaceNotice("无法读取该文件。");
+      setGenericWorkspaceNotice("Could not read this file.");
       return;
     }
     let segments: SourceSegment[] = [];
@@ -2522,7 +2522,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
       segments = segmentsFromVttContent(raw);
     }
     if (!segments.length) {
-      segments = splitPlainTextIntoParagraphBlocks(raw, "段落");
+      segments = splitPlainTextIntoParagraphBlocks(raw, "Paragraph");
     }
     setSourceMaterialPipeline("document");
     setGenericMaterialKind("document");
@@ -2535,8 +2535,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
     setMaterialUseFullExplicit(false);
     setGenericWorkspaceNotice(
       segments.some((s) => s.startTime !== undefined)
-        ? "已识别时间轴字幕块。"
-        : "已按段落拆分，请勾选需要的部分。",
+        ? "Detected timed caption blocks."
+        : "Split into paragraphs — select what you need.",
     );
   }
 
@@ -2573,13 +2573,13 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   function replaceSourceCaptureFromMaterialSelection() {
     const sel = computeSelectedSourceMaterial();
     if (!sel) {
-      setMaterialAnalysisStatus("请先选择素材源。");
+      setMaterialAnalysisStatus("Select source material first.");
       return;
     }
     replaceSource(
       sel.text,
       "mixed_source_content",
-      "已用所选素材源替换 Source Capture。",
+      "Replaced Source Capture with selected source material.",
       setMaterialAnalysisStatus,
       1,
     );
@@ -2753,30 +2753,30 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             setSourceType("youtube_url");
             setSourceMaterialPipeline("transcript");
             setInput("");
-            setAutoExtractStatus("Extracting transcript… / 正在提取字幕…");
+            setAutoExtractStatus("Extracting transcript…");
             await getTranscript(raw);
             setAutoExtractStatus(null);
             return;
           }
           if (WEBPAGE_RE.test(raw) && /\.(mp3|wav|m4a|aac|ogg)(\?|$|#)/i.test(raw)) {
             setAutoExtractStatus(
-              "Transcript not available for direct audio URL. Please paste transcript or upload audio. / 直连音频无法自动转写，请粘贴文稿或上传音频。",
+              "Transcript not available for direct audio URL. Please paste transcript or upload audio.",
             );
             return;
           }
           if (WEBPAGE_RE.test(raw)) {
-            setAutoExtractStatus("正在提取正文…");
+            setAutoExtractStatus("Extracting page text…");
             const ok = await fetchAndApplyGenericLink(raw);
-            setAutoExtractStatus(ok ? null : "页面正文提取失败，请尝试手动粘贴。");
+            setAutoExtractStatus(ok ? null : "Page extract failed. Try pasting manually.");
             return;
           }
           const compact = raw.replace(/\s/g, "");
           if (compact.length >= 80 && (raw.includes("\n") || raw.length >= 200)) {
             applyPasteMaterialBlocksFromRaw(raw);
-            setAutoExtractStatus("已拆分为可选段落，请勾选需要的块。");
+            setAutoExtractStatus("Split into optional paragraphs — select the blocks you need.");
           }
         } catch {
-          setAutoExtractStatus("自动提取失败，请使用中间栏工具手动处理。");
+          setAutoExtractStatus("Auto extract failed — use the center column tools.");
         }
       })();
     }, 750);
@@ -3091,7 +3091,9 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
   };
 
   const shellExportFinal = () => {
-    selectWorkflowStep(5);
+    selectWorkflowStep(4);
+    scrollToAdvancedStudio();
+    afterAdvancedStudioOpen(() => scrollToEl("ee-advanced-export-anchor"));
   };
 
   return (
@@ -3217,12 +3219,12 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             type="button"
             className="collapse-toggle"
             onClick={() => setControlsCollapsed((value) => !value)}
-            aria-label={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
-            title={controlsCollapsed ? "展开引擎与设置" : "收起引擎与设置"}
+            aria-label={controlsCollapsed ? "Expand Engine & Settings" : "Collapse Engine & Settings"}
+            title={controlsCollapsed ? "Expand Engine & Settings" : "Collapse Engine & Settings"}
           >
             ☰
           </button>
-          {!controlsCollapsed && <span>引擎与设置</span>}
+          {!controlsCollapsed && <span>Engine &amp; Settings</span>}
         </div>
         <MaterialWorkspace
           active
@@ -3244,8 +3246,8 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {transcriptText && sourceMaterialPipeline === "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
               <div className="range-head">
-                <strong>Extracted transcript / 已提取字幕（快速勾选）</strong>
-                <p>详细分段见中间栏。勾选后可用于「已选题材」或 「Generate」。</p>
+                <strong>Extracted transcript (quick select)</strong>
+                <p>Fine-grained segments are in the center column. Your checks feed the saved topic or Generate.</p>
               </div>
               <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {fullTranscriptSections.map((section) => (
@@ -3284,7 +3286,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                     />
                   </label>
                   <button type="button" className="secondary" onClick={useTranscriptRangeAsSource}>
-                    Use selected range / 使用此时间范围
+                    Use selected range
                   </button>
                 </div>
               </div>
@@ -3294,7 +3296,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {genericSegments.length > 0 && sourceMaterialPipeline !== "transcript" ? (
             <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
               <div className="range-head">
-                <strong>Extracted blocks / 已提取段落或块</strong>
+                <strong>Extracted blocks</strong>
               </div>
               <div className="chapter-list compact" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {genericSegments.map((seg, idx) => (
@@ -3317,7 +3319,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
           <div className="timestamp-chapters" style={{ marginTop: "1rem" }}>
             <div className="range-head">
-              <strong>Extraction &amp; selection / 提取与勾选</strong>
+              <strong>Extraction &amp; Selection</strong>
               <p className="transcript-note" style={{ marginTop: "0.35rem" }}>
                 Live preview of what you checked in <strong>Source Extractor</strong>. Save it as your <strong>saved topic</strong> in the Topic panel before processing.
               </p>
@@ -3329,12 +3331,14 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
                   {labelForMaterialKind(computeSelectedSourceMaterial()!.analysisSourceType, "en")}
                 </p>
                 <p>
-                  <strong>Range / 范围:</strong> {computeSelectedSourceMaterial()?.summary}
+                  <strong>Range:</strong> {computeSelectedSourceMaterial()?.summary}
                 </p>
                 <textarea readOnly className="transcript-preview" rows={4} value={computeSelectedSourceMaterial()?.text ?? ""} />
               </>
             ) : (
-              <p className="transcript-note">尚未选择可用素材源。请先勾选上方块或时间范围，或勾选「使用完整素材源」。</p>
+              <p className="transcript-note">
+                No selectable source yet. Check blocks or a time range above, or enable Use Full Source.
+              </p>
             )}
             <div className="range-actions cta-row ee-quick-action-grid">
               <button type="button" className="secondary" onClick={appendTopicMaterialFromSelection} disabled={!computeSelectedSourceMaterial()}>
@@ -4461,7 +4465,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           onActiveStepIndexChange={selectWorkflowStep}
           onPrimaryWorkspaceAction={() => void generate()}
           primaryWorkspaceDisabled={loading || !canProcessTopicMaterial(topicMaterial) || generateBlocked}
-          primaryWorkspaceLabel={loading ? "Generating…" : "生成本轮产出"}
+          primaryWorkspaceLabel={loading ? "Generating…" : "Generate AI output"}
         />
 
         <div id="ee-active-workspace" className="ee-active-workspace-anchor" aria-hidden="true" />
@@ -4574,16 +4578,16 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
 
       <details className="ee-mobile-classic-editor">
         <summary className="ee-mobile-classic-summary">
-          <span className="eyebrow">可选</span>
-          <strong className="ee-mobile-classic-title">完整编辑区</strong>
-          <span className="ee-mobile-classic-hint">草稿与本轮产出快捷入口 — 可选；主流程使用上方五步。</span>
+          <span className="eyebrow ee-mobile-classic-eyebrow">Optional</span>
+          <strong className="ee-mobile-classic-title">Advanced Studio</strong>
+          <span className="ee-mobile-classic-hint">Optional draft and AI output shortcuts. Main flow stays with the five steps above.</span>
         </summary>
         <div className="ee-mobile-classic-body">
-          <nav className="mobile-primary-tabs" aria-label="完整编辑区面板">
+          <nav className="mobile-primary-tabs" aria-label="Advanced Studio panels">
             {(
               [
                 { id: "draft" as const, label: "Draft" },
-                { id: "result" as const, label: "本轮产出" },
+                { id: "result" as const, label: "AI Output" },
               ]
             ).map((tab) => (
               <button
@@ -4601,7 +4605,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
             <section className="mobile-panel mobile-draft-panel">
               <div className="mobile-panel-head">
                 <strong>Draft</strong>
-                <span>用于润色与发布 — 不属于 Source / 素材源步骤</span>
+                <span>For polish and publish — not part of the Source step</span>
               </div>
               <input
                 value={essayDraftTitle}
@@ -4646,11 +4650,11 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           {mobileActiveTab === "result" && (
             <section className="mobile-panel mobile-result-panel">
               <div className="mobile-panel-head">
-                <strong>本轮产出</strong>
-                <span>最新生成的 AI 输出</span>
+                <strong>AI Output</strong>
+                <span>Latest generated model output</span>
               </div>
               <div className="mobile-result-output" data-selectable-output="true">
-                {primaryResultOutput || "尚无本轮产出。请在生成任务中从素材源生成。"}
+                {primaryResultOutput || "No AI output yet. Generate from your saved topic in Process."}
               </div>
               <div className="mobile-action-grid">
                 <button
@@ -5623,7 +5627,7 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
         .manual-range-row {
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-          gap: 10px;
+          gap: 10px 12px;
           align-items: end;
           border: 1px solid #e3e9ef;
           border-radius: 8px;
@@ -6342,6 +6346,10 @@ export function EngineForm({ result, onResult, viewMode, navTrailing }: Props) {
           }
           .workspace.ee-narrow .ee-mobile-classic-summary::-webkit-details-marker {
             display: none;
+          }
+          .workspace.ee-narrow .ee-mobile-classic-summary .ee-mobile-classic-eyebrow {
+            display: block;
+            margin-bottom: 2px;
           }
           .workspace.ee-narrow .ee-mobile-classic-title {
             color: #17202a;

@@ -71,8 +71,8 @@ export default function HomePage() {
                     type="button"
                     className="console-view-toggle console-view-toggle--icon"
                     onClick={() => persistViewMode(effectiveIsMobileLayout ? "desktop" : "mobile")}
-                    aria-label={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
-                    title={effectiveIsMobileLayout ? "宽屏布局" : "手机布局"}
+                    aria-label={effectiveIsMobileLayout ? "Wide layout" : "Phone layout"}
+                    title={effectiveIsMobileLayout ? "Wide layout" : "Phone layout"}
                   >
                     <span aria-hidden="true">{effectiveIsMobileLayout ? "🖥" : "📱"}</span>
                   </button>
